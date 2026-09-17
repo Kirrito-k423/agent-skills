@@ -1,4 +1,4 @@
 interface:
   display_name: "数据流动画化"
-  short_description: "将并行源码转为双屏联动动画，逐步红色高亮数据读写与对应代码"
-  default_prompt: "使用 $data-flow-animation 分析这段并行代码，制作双屏联动、一屏可读、每步红色高亮的数据流动画。"
+  short_description: "逐元素展示数据对象组成与值变化，四卡白底动画联动完整函数上下文"
+  default_prompt: "使用 $data-flow-animation 分析这段源码，制作白底双屏动画；以数据对象的组成和每个元素的原值到新值为主线，支持完整数组与任意元素历史。通信任务至少四个 rank，解释所有数字，显示所属函数与连续源码上下文，验证元素没有相互遮挡。"
