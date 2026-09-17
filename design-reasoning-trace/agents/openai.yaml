@@ -1,0 +1,4 @@
+interface:
+  display_name: "设计思路溯源"
+  short_description: "从基础目标与常规方案出发，用可操作的分步场景解释设计动机、取舍和边界"
+  default_prompt: "使用 $design-reasoning-trace 溯源一个设计的动机，制作从简单场景逐步演化的交互 HTML。"

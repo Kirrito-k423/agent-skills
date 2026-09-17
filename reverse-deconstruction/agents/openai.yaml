@@ -1,0 +1,4 @@
+interface:
+  display_name: "反向拆解"
+  short_description: "反向拆解优秀成品的结构、关键选择、完成标准与迁移规律"
+  default_prompt: "使用 $reverse-deconstruction 拆解这个优秀范例。"

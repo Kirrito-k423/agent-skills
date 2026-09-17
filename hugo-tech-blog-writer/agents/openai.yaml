@@ -1,0 +1,4 @@
+interface:
+  display_name: "Hugo Tech Blog Writer"
+  short_description: "Research questions into illustrated Hugo posts"
+  default_prompt: "Use $hugo-tech-blog-writer to research my question, answer it with evidence, create an illustrated Hugo post, upload its images, and publish the completed document."

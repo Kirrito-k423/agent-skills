@@ -1,0 +1,4 @@
+interface:
+  display_name: "Buffer 空间设计图解"
+  short_description: "用可递归空间树与真实面积图解释内存组成，联动公式、基址换算和源码变量高亮"
+  default_prompt: "使用 $buffer-design-to-html 分析指定源码的内存组成，交付左右等宽联动的离线中文 HTML：左侧保留申请流程，以计算器驱动可递归树表和真实面积 treemap；右侧解释选中子空间的大小、bank、基址与偏移，精确高亮对应源码变量。逐层验证容量守恒、地址换算、字段证据和桌面及窄屏交互。"

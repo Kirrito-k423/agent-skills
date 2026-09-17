@@ -1,0 +1,4 @@
+interface:
+  display_name: "横纵分析法"
+  short_description: "沿历史纵轴与竞品横轴开展有来源、可追溯的系统深度研究"
+  default_prompt: "使用 $longitudinal-horizontal-analysis 深度研究这个对象。"

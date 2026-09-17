@@ -1,0 +1,4 @@
+interface:
+  display_name: "本地 Skill 创建器"
+  short_description: "在独立的 agent-skills 仓库中维护中文 Skill，并通过符号链接安装"
+  default_prompt: "使用 $skill-creator 在独立的 agent-skills 仓库根目录下创建一个中文 Skill，并通过符号链接安装到全局 Skill 目录。"

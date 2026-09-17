@@ -1,0 +1,4 @@
+interface:
+  display_name: "事实核查"
+  short_description: "联网核查事实证据与推理链，区分事实、结论和价值判断"
+  default_prompt: "使用 $evidence-fact-checking 核查这项说法及其推理链。"

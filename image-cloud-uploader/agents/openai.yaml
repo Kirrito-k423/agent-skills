@@ -1,0 +1,3 @@
+display_name: Image Cloud Uploader
+short_description: Upload images through PicGo
+default_prompt: Upload this local image through PicGo, return the cloud URL, and update any Markdown references if requested.

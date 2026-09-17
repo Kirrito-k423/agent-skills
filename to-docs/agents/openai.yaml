@@ -1,0 +1,4 @@
+interface:
+  display_name: "会话转博客文档"
+  short_description: "将当前会话保真整理为主线清楚、平易近人并保留真实作者声音的中文 Hugo 博客"
+  default_prompt: "使用 $to-docs 保留当前会话的真实第一人称、判断和情绪，沿读者问题链整理成有温度的中文 Hugo 博客，通过四层校验后发布。"

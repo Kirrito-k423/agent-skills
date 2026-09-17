@@ -1,0 +1,4 @@
+interface:
+  display_name: "专家会诊"
+  short_description: "组织三个互补专业视角互相质疑，并综合复杂问题解决方案"
+  default_prompt: "使用 $expert-panel 从互补专业视角会诊这个问题。"

@@ -1,0 +1,4 @@
+interface:
+  display_name: "代码走读 HTML"
+  short_description: "便宜快速模型起草、强模型独立复查的代码逻辑与内存通信双模式走读 HTML"
+  default_prompt: "使用 $code-to-html-walkthrough 将这份源码生成可交互的代码走读 HTML：普通函数、片段和逐行解释由便宜快速的子代理起草，以最小充分上下文派发，由更强模型独立复查，复杂语义升级处理并保持全量 PASS 门禁；若包含内存搬运，请继续追踪 allocator、大块容量、空间切片、地址公式、传输引擎与同步条件。"

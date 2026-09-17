@@ -1,0 +1,4 @@
+interface:
+  display_name: "PR 三栏审查"
+  short_description: "逐项复查 PR，生成宽屏三栏与可展开源码上下文的 HTML"
+  default_prompt: "使用 $pr-to-html 复查当前 PR 的每处改动，生成宽屏三栏并支持按需展开源码上下文的 HTML。"

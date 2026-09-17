@@ -1,0 +1,4 @@
+interface:
+  display_name: "第一性原理"
+  short_description: "区分底层事实、未证假设、目标和约束，重新推导可行路径"
+  default_prompt: "使用 $first-principles-reasoning 从底层事实重新推导方案。"

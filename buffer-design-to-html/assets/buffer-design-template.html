@@ -1,0 +1,571 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>SHMEM · 递归空间浏览器</title><style>
+/* RECURSIVE_STYLE_START */
+:root{--bg:#eef2f5;--panel:#fff;--ink:#183044;--muted:#617280;--line:#ced9e1;--accent:#126c75;--warm:#bc673d}*{box-sizing:border-box}body{margin:0;height:100vh;overflow:hidden;background:var(--bg);color:var(--ink);font:14px/1.6 system-ui,"PingFang SC",sans-serif;display:flex;flex-direction:column}header{padding:15px 22px;background:#152f42;color:#fff;flex:none;display:flex;align-items:center;justify-content:space-between;gap:16px}h1{font-size:21px;margin:0;line-height:1.3}header p{font-size:12px;margin:4px 0 0;color:#c3d6e1}h2{font-size:18px;margin:0 0 10px}h3{font-size:15px;margin:16px 0 7px}p{margin:6px 0 12px}button,input,select{font:inherit}button{border:1px solid #bdcdd6;border-radius:6px;padding:6px 10px;background:#fff;color:var(--ink);cursor:pointer}button:hover{background:#edf5f6}button[aria-pressed=true],button.active{background:#d9edef;border-color:var(--accent);color:#125861}button:focus-visible,input:focus-visible,summary:focus-visible{outline:3px solid #e3a749;outline-offset:2px}button:disabled{opacity:.4;cursor:default}input{width:100%;padding:6px;border:1px solid #bccbd5;border-radius:5px}code,.mono{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}code{font-size:.91em;background:#edf3f7;border-radius:3px;padding:2px 4px;overflow-wrap:anywhere}.layout{flex:1;min-height:0;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:12px;padding:12px}.reader-pane{overflow:auto;min-width:0;min-height:0;scrollbar-gutter:stable;overscroll-behavior:contain;border:1px solid var(--line);border-radius:10px;background:var(--panel)}.pane-top{padding:13px 16px;border-bottom:1px solid var(--line);background:#f9fbfc;position:sticky;top:0;z-index:5}.pane-top h2{margin:0;font-size:15px}.panel{padding:15px;border-bottom:1px solid var(--line)}.panel:last-child{border-bottom:0}.small{font-size:12px;color:var(--muted)}.actions{display:flex;flex-wrap:wrap;gap:6px;margin:9px 0}.presets button{font-size:12px}.controls{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin:13px 0}.controls label{font-size:12px;line-height:1.4}.controls small{display:block;font:10px/1.4 ui-monospace,monospace;color:#6c7f89;overflow-wrap:anywhere;margin:3px 0}.notice{border-left:3px solid var(--accent);background:#eaf5f4;padding:10px 12px}.error{background:#ffebdf;border:1px solid #c27755;color:#8e321e;padding:12px;margin:10px 15px;border-radius:6px}.mobile-tabs{display:none}summary{cursor:pointer;font-weight:600}.bank-selector{display:flex;align-items:center;flex-wrap:wrap;gap:8px;margin:10px 0}.bank-pairs{display:grid;grid-template-columns:1fr 1fr;gap:8px}.bank-pair{border:1px solid #c8d2dc;border-radius:8px;padding:10px;background:#f8fafc}.bank-pair.selected{border:2px solid #16817c;background:#eaf6f3;padding:9px}.bank-pair strong{display:block;margin-bottom:6px}.bank-pair button{display:block;text-align:left;width:100%;font-size:12px;margin:5px 0;border-left:5px solid var(--node-color)}.bank-pair .pair-link{font-size:11px;text-align:center;color:#557b7a}.flow{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-top:12px}.flow button{position:relative;font-size:12px;background:#f2f6f8;padding:9px 6px}.flow button:not(:last-child):after{content:'→';position:absolute;right:-15px;top:33%;font-size:15px;color:#617584}.flow small{display:block;font-size:10px;overflow-wrap:anywhere}.crumbs{display:flex;align-items:center;flex-wrap:wrap;gap:3px;margin:6px 0 10px}.crumbs button{font-size:11px;padding:3px 6px}.crumbs span{font-size:11px;color:#8998a1}.tree-wrap{max-height:360px;overflow:auto;border:1px solid var(--line);border-radius:7px}.tree{border-collapse:collapse;width:100%;font-size:12px;table-layout:fixed}.tree th{background:#e8eef2;position:sticky;top:0;z-index:1;text-align:left;font-weight:600;padding:6px}.tree td{padding:4px 6px;border-bottom:1px solid #e6ecf0;vertical-align:middle}.tree th:first-child{width:49%}.tree th:nth-child(2){width:25%}.tree th:nth-child(3){width:14%}.tree th:last-child{width:12%}.tree tr.selected{background:#e2f0ef}.tree-name{display:flex;align-items:center;gap:3px}.tree-name .toggle{padding:1px 4px;border:0;background:transparent;flex:none;width:20px}.node-select{border:0;background:transparent;text-align:left;line-height:1.35;padding:4px;min-width:0;overflow-wrap:anywhere;font-size:12px}.node-dot{height:9px;width:9px;border-radius:2px;background:var(--node-color);flex:none}.drill{font-size:11px;padding:2px 5px}.share-track{height:4px;background:#dce5e9;margin-top:3px}.share-fill{height:4px;background:var(--node-color)}.tree .bytes{font-variant-numeric:tabular-nums;line-height:1.3;overflow-wrap:anywhere}.treemap{position:relative;width:100%;height:290px;background:#d7e0e6;margin:10px 0;border:1px solid #bbcbd3;overflow:hidden;border-radius:6px}.tile{position:absolute;padding:0;border:0;border-radius:0;background:var(--node-color);box-shadow:inset 0 0 0 1px rgba(255,255,255,.6);overflow:hidden;color:#fff;line-height:1.35;text-align:left;font-size:12px}.tile:hover{filter:brightness(1.06);background:var(--node-color)}.tile.selected{outline:3px solid #172f3f;outline-offset:-4px;z-index:2}.tile .tile-label{display:block;padding:8px;pointer-events:none;font-weight:600;text-shadow:0 1px 1px rgba(0,0,0,.2)}.tile small{display:block;font-size:11px;font-weight:400;margin-top:5px}.tile[data-kind=padding]{background:repeating-linear-gradient(135deg,rgba(255,255,255,.2) 0 3px,transparent 3px 8px),var(--node-color)}.tile[data-kind=unknown]{background:repeating-linear-gradient(45deg,rgba(255,255,255,.15) 0 2px,transparent 2px 8px),var(--node-color)}.legend{display:flex;flex-wrap:wrap;gap:12px;font-size:11px;color:#607583}.legend i{display:inline-block;width:9px;height:9px;margin-right:4px}.detail-body{padding:17px}.detail-body>h2{font-size:20px;line-height:1.4}.tag{display:inline-block;padding:3px 7px;border-radius:4px;font-size:11px;background:#e7eef2;margin-right:5px}.formula{border:1px solid #b4d1cf;border-radius:8px;background:#f1f8f7;padding:13px;margin:14px 0}.formula .equation{font:600 13px/1.7 ui-monospace,monospace;overflow-wrap:anywhere}.formula .result{display:block;font-size:21px;color:#11625b;margin:8px 0}.formula p{font-size:12px;margin:5px 0}.code-names{display:flex;flex-wrap:wrap;gap:6px}.code-names code{background:#ffdc8b;color:#422f10}.source-card{margin:12px 0;border:1px solid #c7d6df;border-radius:8px;overflow:hidden}.source-label{padding:8px 10px;background:#edf3f6;font-size:12px}.source-path{font-size:10px;color:#5b7080;overflow-wrap:anywhere}.source-card pre{margin:0;background:#10293c;color:#dbe8ed;overflow:auto;padding:12px 8px;font:12px/1.75 ui-monospace,SFMono-Regular,Menlo,monospace;tab-size:4}.code-line{display:block;white-space:pre-wrap;overflow-wrap:anywhere}.line-number{display:inline-block;width:35px;color:#758c9e;font-size:10px;user-select:none}.source-card mark{background:#f6cc6a;color:#2d2e2b;border-radius:2px;padding:1px 0}.coordinate-path{display:grid;gap:0;margin:10px 0}.coordinate-step{border:1px solid #c2d5dd;background:#f1f6f8;border-radius:6px;padding:8px 10px;position:relative;margin-bottom:16px;font-size:12px}.coordinate-step:not(:last-child):after{content:'↓ 同一段内存，改用子区零点';position:absolute;top:100%;left:10px;font-size:10px;color:#5f7d87;background:white}.coordinate-step strong{display:block}.coordinate-step .small{font-size:10px}.address-bar{height:10px;background:#e2e9ee;position:relative;margin:4px 0}.address-bar i{position:absolute;height:100%;background:#238484;display:block}.terms{padding-left:18px;font-size:12px}.terms li{margin:7px 0}.terms button{font-size:11px;padding:2px 5px;margin-left:6px}.matrix{display:grid;gap:4px;margin:10px 0}.matrix button{padding:7px 4px;font-size:11px;background:#e5f1f0}.matrix .matrix-head{font-size:11px;color:#607484;text-align:center;padding:5px 2px}.alias{border-left:3px solid #719ba6;padding:7px 10px;margin:8px 0;background:#f2f6f7;font-size:12px}.alias code{margin-right:4px}.section-divider{border:0;border-top:1px solid var(--line);margin:18px 0}.zero-note{font-size:11px;color:#7b8992}.stats{font-size:12px;display:flex;flex-wrap:wrap;gap:10px;color:#4f6575}.selected-summary{font-size:12px;margin-top:6px;color:#3f646a}.selection-actions{margin:10px 0}.definition-list{display:grid;grid-template-columns:auto 1fr;gap:5px 12px;font-size:12px}.definition-list code{font-size:11px}.footnote{font-size:11px;color:#647c87}.bank-addresses{display:grid;grid-template-columns:1fr 1fr;gap:8px}.bank-address{border:1px solid #b5cdce;background:#f0f8f6;border-radius:6px;padding:10px;font-size:12px}.bank-address strong{display:block}.navigation-note{font-size:11px;color:#657e8a;margin:7px 0}.highlight-key{font-size:11px;color:#607583}.highlight-key mark{background:#f6cc6a;color:#342f24;padding:1px 4px}.overflow-note{font-size:12px;background:#fff1d7;padding:8px}.inspector-nav{display:flex;gap:6px;margin-top:7px}.inspector-nav button{font-size:11px;padding:4px 7px}[hidden]{display:none!important}@media(max-width:900px){header{padding:12px 15px}h1{font-size:18px}.mobile-tabs{display:flex;gap:8px;padding:8px 12px}.mobile-tabs button{flex:1}.layout{grid-template-columns:minmax(0,1fr);padding-top:0}.layout[data-mobile-pane=visual] #codePane,.layout[data-mobile-pane=code] #visualPane{display:none}.controls{grid-template-columns:repeat(3,minmax(0,1fr))}}@media(max-width:520px){header p{font-size:10px}.controls{grid-template-columns:repeat(2,minmax(0,1fr))}.panel{padding:12px}.flow{grid-template-columns:1fr 1fr;gap:10px}.flow button:after{display:none}.bank-pair{padding:7px}.bank-pair.selected{padding:6px}.tree th:first-child{width:43%}.tree th:nth-child(2){width:28%}.tree th:nth-child(3){width:16%}.tree th:last-child{width:13%}.treemap{height:250px}.tile .tile-label{padding:5px;font-size:10px}.tree-name .toggle{width:15px;padding:0}.tree .bytes{font-size:10px}.node-select{font-size:11px}.matrix button{font-size:10px}.detail-body{padding:13px}.bank-addresses{grid-template-columns:1fr}}@media print{body{height:auto;overflow:visible}.layout{display:block}.reader-pane{overflow:visible}.pane-top{position:static}.mobile-tabs{display:none}}
+.base-forest{margin:14px 0}.base-card{padding:9px 11px;border:1px solid #a9c7cb;border-radius:7px;background:#eef7f6;font-size:12px}.base-card>strong{display:block}.base-card .code-names{margin:5px 0}.base-children{margin-left:16px;padding-left:12px;border-left:2px solid #a9c7cb}.base-edge{font-size:10px;color:#577c84;padding:7px 0}.base-branch{min-width:0}.bank-selector{margin-top:0}.tree-wrap{max-height:290px}
+.inspector-nav{flex-wrap:wrap}.parameter-control{min-width:0}.parameter-heading{display:flex;gap:5px;align-items:center;justify-content:space-between;min-height:27px}.parameter-heading label{cursor:text}.parameter-help{flex:none;width:23px;height:23px;padding:0;border-radius:50%;font-size:12px;font-weight:700;color:#126c75;background:#eef8f7}.parameter-control[data-active=true] input{border-color:#23827c;background:#f5fbfa}.parameter-current{padding:8px 10px;background:#edf4f8;border-radius:6px;overflow-wrap:anywhere}.help-list{padding-left:20px;font-size:13px}.help-list li{margin:6px 0;overflow-wrap:anywhere}.parameter-links{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0}.parameter-links a{color:#176c78;font-size:12px}.diagnosis{border:1px solid #bad1d0;background:#f1f8f6;padding:13px;border-radius:9px;margin:18px 0 5px}.diagnosis h2{font-size:17px;margin:9px 0}.diagnosis-error{border-color:#d7a780;background:#fff6ec}.diagnostic-calculations{display:grid;gap:8px;margin:12px 0}.diagnostic-calculation{padding:10px;background:#fff;border:1px solid #d8e2e5;border-radius:6px;font-size:12px;overflow-wrap:anywhere}.diagnostic-calculation strong{display:block;margin-bottom:4px}.diagnostic-result{font:600 14px/1.5 ui-monospace,monospace;color:#17675f}.diagnostic-issue{padding:10px;margin:9px 0;border-left:3px solid #c17843;background:#fffaf4;font-size:12px}.diagnostic-issue p{margin:5px 0}.diagnostic-issue .actions{margin:5px 0 0}.diagnostic-actions button,.parameter-link{font-size:12px;text-align:left}.simulation-note{font-size:11px;color:#665640;border-top:1px solid #dfd0b8;padding-top:9px;margin-top:12px}
+.space-reading-nav{display:flex;flex-wrap:wrap;gap:7px;padding:9px 0;border-bottom:1px solid var(--line)}.space-narrative{font-size:13px;line-height:1.9;margin:17px 0}.space-narrative h3{font-size:16px;color:#153c49}.space-narrative p{margin:7px 0 13px}.formula-walk{padding-left:24px;counter-reset:formula;list-style:decimal}.formula-walk>li{padding:10px 12px;margin:9px 0;border-left:3px solid #8eb9b6;background:#f4f9f8}.formula-walk .equation{font-size:12px;overflow-wrap:anywhere;margin:5px 0}.worked-space-example{background:#fff7e6;border:1px solid #e4d6b6;border-radius:7px;padding:9px 13px}.space-lifecycle{list-style:decimal;padding-left:25px}.space-lifecycle>li{padding:8px 12px 15px;border-left:2px solid #a8c9ce;margin:0 0 12px}.space-lifecycle>li>strong{display:block;color:#15566a}.space-lifecycle .lifecycle-condition{font-size:12px;color:#546d75}.space-lifecycle summary{font-size:11px;font-weight:500;color:#286978;overflow-wrap:anywhere}.narrative-boundary{padding:12px;border:1px solid #d8d4c8;background:#faf8f0;border-radius:7px;font-size:12px}#space-source{padding-top:12px;border-top:1px solid var(--line)}
+/* RECURSIVE_STYLE_END */
+</style></head><body>
+<header><div><h1 id="caseTitle">递归空间浏览器</h1><p id="caseSubtitle"></p></div></header>
+<div class="mobile-tabs"><button id="mobileVisual" aria-pressed="true">空间图</button><button id="mobileCode" aria-pressed="false">代码解释</button></div>
+<main id="readerLayout" class="layout" data-mobile-pane="visual">
+<div class="reader-pane" id="visualPane" tabindex="0" aria-label="空间可视化">
+ <div class="pane-top"><h2>空间浏览 · 从大区进入子区</h2><div class="small" id="totalLabel"></div></div>
+ <section class="panel"><div class="presets actions" id="presets"></div><details id="calculator"><summary>交互计算器 · 调整维度与构建参数</summary><div class="controls" id="controls"></div><p class="small">改参数会重算整棵空间树；红色错误会隐藏旧图和旧代码。外部构建参数的默认值仅用于可复核示例。</p></details></section>
+ <p id="error" class="error" role="alert" hidden></p>
+ <div id="live">
+ <section class="panel"><details id="flowDisclosure"><summary>空间申请流程 · 谁申请、谁借用、谁释放</summary><div id="allocationFlow" class="flow"></div></details></section>
+ <section id="bankPanel" class="panel"><div class="bank-selector" id="bankSwitch"><span class="mono">dataState_ =</span><button data-bank="0" aria-pressed="true">0</button><button data-bank="1" aria-pressed="false">1</button><button id="explainBank">看懂 Bank 与基址</button></div><details id="bankDisclosure"><summary>两份状态 + 两份token：查看本轮选中哪一对</summary><p class="small">两份状态区 + 两份 token 窗口始终存在。改变返回值，成对移动状态和token基址；物理总容量不会变化。</p><div id="bankPairs" class="bank-pairs"></div><p class="navigation-note">按钮演示 InitWinState 的返回结果，不假设它每轮如何翻转。树表保留真实地址顺序。</p></details></section>
+ <section class="panel" id="spacePanel"><div id="shortcuts" class="actions"></div><div class="actions"><button id="up">上一级</button><button id="root">回到整个 allocation</button></div><div id="breadcrumbs" class="crumbs" aria-label="空间路径"></div><h2 id="focusTitle"></h2><div id="focusSize" class="stats"></div><p class="navigation-note">▸ 展开层级；点名称看右侧解释；“进入”或双击矩形将该空间放大。份数很大时，分组范围仍可继续递归进入。</p><div class="tree-wrap"><table class="tree" aria-label="递归空间目录"><thead><tr><th>空间 / 子元素</th><th>容量</th><th>占父区</th><th>深入</th></tr></thead><tbody id="treeBody"></tbody></table></div><p id="treeLimit" class="overflow-note" hidden>当前显示前320行；请进入目标子空间后继续展开。</p><div id="selectedLabel" class="selected-summary"></div><div id="treemap" class="treemap" aria-label="按真实容量比例的矩形树图"></div><div id="currentMapTotal" class="stats"></div><p id="mapNote" class="navigation-note"></p><div class="legend"><span><i style="background:#248575"></i>字段/组合空间</span><span><i style="background:#a58b65"></i>对齐留空</span><span><i style="background:#8794a4"></i>预留/未消费余位</span><span><i style="background:#8a78a6"></i>内部格式未确定</span></div></section>
+ <section class="panel"><details><summary>例子与源码边界</summary><p id="example" class="small"></p><div id="notes"></div></details></section>
+ </div>
+</div>
+<aside class="reader-pane" id="codePane" tabindex="0" aria-label="空间公式与对应源码"><div class="pane-top"><h2>选中空间 · 公式、地址、源码</h2><div class="inspector-nav"><button id="showSelected">所选空间</button><button id="showBases">基地址关系</button></div></div><div id="detail" class="detail-body"></div></aside>
+</main>
+<script>
+/* RECURSIVE_CORE_START */
+/* 递归内存布局核心：不依赖 DOM，不执行源码字符串。 */
+(function (scope, factory) {
+  'use strict';
+  const api = factory();
+  if (typeof module === 'object' && module.exports) module.exports = api;
+  if (scope) scope.RecursiveMemory = api;
+})(typeof globalThis === 'object' ? globalThis : this, function () {
+  'use strict';
+  const cache = new WeakMap();
+  const owns = (object, name) => Object.prototype.hasOwnProperty.call(object, name);
+
+  function uint(value, name) {
+    if (typeof value !== 'bigint' || value < 0n) {
+      throw new TypeError(name + ' 必须是非负 BigInt');
+    }
+    return value;
+  }
+
+  function object(node) {
+    if (!node || typeof node !== 'object' || Array.isArray(node)) {
+      throw new TypeError('内存节点必须是对象');
+    }
+    return node;
+  }
+
+  function checkNode(node, needsOffset) {
+    object(node);
+    if (typeof node.id !== 'string' || !node.id) throw new TypeError('node.id 必须是非空字符串');
+    uint(node.bytes, node.id + '.bytes');
+    if (needsOffset || owns(node, 'offset')) uint(node.offset, node.id + '.offset');
+    if (owns(node, 'children') && !Array.isArray(node.children)) throw new TypeError(node.id + '.children 必须是数组');
+    if (owns(node, 'childrenFactory') && typeof node.childrenFactory !== 'function') {
+      throw new TypeError(node.id + '.childrenFactory 必须是函数');
+    }
+    if (owns(node, 'children') && owns(node, 'childrenFactory')) {
+      throw new TypeError(node.id + ' 不能同时声明 children 与 childrenFactory');
+    }
+    return node;
+  }
+
+  /** 同一节点的工厂函数仅调用一次，包括抛出异常的情况。 */
+  function childrenOf(node) {
+    object(node);
+    if (owns(node, 'children') && owns(node, 'childrenFactory')) {
+      throw new TypeError('节点不能同时声明 children 与 childrenFactory');
+    }
+    if (owns(node, 'children')) {
+      if (!Array.isArray(node.children)) throw new TypeError('children 必须是数组');
+      return node.children;
+    }
+    if (!owns(node, 'childrenFactory')) return [];
+    if (typeof node.childrenFactory !== 'function') throw new TypeError('childrenFactory 必须是函数');
+    if (cache.has(node)) {
+      const saved = cache.get(node);
+      if (saved.error) throw saved.error;
+      if (!saved.done) throw new Error('childrenFactory 出现递归求值');
+      return saved.children;
+    }
+    const saved = { done: false, children: null, error: null };
+    cache.set(node, saved);
+    try {
+      const children = node.childrenFactory();
+      if (!Array.isArray(children)) throw new TypeError('childrenFactory 必须返回数组');
+      saved.children = children;
+      saved.done = true;
+      return children;
+    } catch (error) {
+      saved.error = error instanceof Error ? error : new Error(String(error));
+      throw saved.error;
+    }
+  }
+
+  /** 子节点采用父区局部字节坐标，必须连续、精确地覆盖父区。 */
+  function validateChildren(parent) {
+    checkNode(parent, false);
+    const children = childrenOf(parent);
+    if (!owns(parent, 'children') && !owns(parent, 'childrenFactory')) return children;
+    const ids = new Set();
+    let end = 0n;
+    for (const child of children) {
+      checkNode(child, true);
+      if (ids.has(child.id) || child.id === parent.id) throw new Error('节点 id 重复：' + child.id);
+      ids.add(child.id);
+      if (child.offset !== end) {
+        throw new Error(parent.id + '：子节点 ' + child.id + ' 不连续，offset 为 ' + child.offset + '，应为 ' + end);
+      }
+      end += child.bytes;
+      if (end > parent.bytes) throw new Error(parent.id + '：子节点超出父区容量');
+    }
+    if (end !== parent.bytes) throw new Error(parent.id + '：子区合计 ' + end + ' 不等于父区字节数 ' + parent.bytes);
+    return children;
+  }
+
+  /**
+   * 校验全部已物化分支。expandDepth: 1 还会展开根工厂函数；
+   * expandDepth: 2 还会展开根的直接子节点，依此类推。
+   * 未展开分支通过 deferred 报告，不视为整树验证完成；maxNodes 限制工作量。
+   */
+  function validateTree(root, options) {
+    const { maxNodes = 10000, expandDepth = 0 } = options || {};
+    if (!Number.isSafeInteger(maxNodes) || maxNodes < 1) throw new TypeError('maxNodes 必须是安全范围内的正整数');
+    if (!Number.isSafeInteger(expandDepth) || expandDepth < 0) throw new TypeError('expandDepth 必须是安全范围内的非负整数');
+    const stack = [{ node: root, depth: 0 }];
+    const seen = new Set();
+    const identities = new Set();
+    let nodes = 0, leaves = 0, deferred = 0;
+    while (stack.length) {
+      const { node, depth } = stack.pop();
+      if (++nodes > maxNodes) throw new Error('validateTree 超出 maxNodes 节点上限');
+      checkNode(node, depth > 0);
+      if (seen.has(node.id)) throw new Error('树内节点 id 重复：' + node.id);
+      if (identities.has(node)) throw new Error('树内出现循环或复用同一节点对象');
+      seen.add(node.id);
+      identities.add(node);
+      const lazy = owns(node, 'childrenFactory');
+      if (lazy && !cache.has(node) && depth >= expandDepth) {
+        deferred++;
+        continue;
+      }
+      const children = validateChildren(node);
+      if (nodes + stack.length + children.length > maxNodes) throw new Error('validateTree 超出 maxNodes 节点上限');
+      if (!children.length) leaves++;
+      for (let index = children.length - 1; index >= 0; index--) stack.push({ node: children[index], depth: depth + 1 });
+    }
+    return { nodes, leaves, deferred, complete: deferred === 0 };
+  }
+
+  // 先截取有效位再计算比例，避免把巨大 BigInt 直接转换为 Number。
+  function ratio(numerator, denominator) {
+    if (numerator === 0n) return 0;
+    if (numerator === denominator) return 1;
+    const ns = Math.max(0, numerator.toString(2).length - 53);
+    const ds = Math.max(0, denominator.toString(2).length - 53);
+    return (Number(numerator >> BigInt(ns)) / Number(denominator >> BigInt(ds))) * Math.pow(2, ns - ds);
+  }
+
+  /**
+   * 按输入顺序二分的矩形树图。面积与字节数成比例，不人为设置最小面积。
+   * 零字节项目使用零面积矩形。像素几何使用 Number，字节总数与分组判断保留 BigInt 精度。
+   */
+  function treemap(items, width, height) {
+    if (!Array.isArray(items)) throw new TypeError('treemap 的 items 必须是数组');
+    for (const [name, value] of [['width', width], ['height', height]]) {
+      if (typeof value !== 'number' || !Number.isFinite(value) || value < 0) throw new TypeError(name + ' 必须是有限的非负数');
+    }
+    const ids = new Set();
+    const output = items.map((item) => {
+      object(item);
+      if (typeof item.id !== 'string' || !item.id || ids.has(item.id)) throw new Error('treemap 要求各节点 id 非空且唯一');
+      ids.add(item.id);
+      uint(item.bytes, item.id + '.bytes');
+      return { id: item.id, bytes: item.bytes, x: 0, y: 0, w: 0, h: 0 };
+    });
+    const positive = output.filter(item => item.bytes > 0n);
+    if (!positive.length) return output;
+    const total = positive.reduce((sum, item) => sum + item.bytes, 0n);
+    const stack = [{ items: positive, sum: total, x: 0, y: 0, w: width, h: height }];
+    while (stack.length) {
+      const rect = stack.pop();
+      if (rect.items.length === 1) {
+        Object.assign(rect.items[0], { x: rect.x, y: rect.y, w: rect.w, h: rect.h });
+        continue;
+      }
+      let leftSum = 0n, split = 1, bestSum = 0n, bestDistance = null;
+      for (let i = 1; i < rect.items.length; i++) {
+        leftSum += rect.items[i - 1].bytes;
+        const doubled = 2n * leftSum - rect.sum;
+        const distance = doubled < 0n ? -doubled : doubled;
+        if (bestDistance === null || distance < bestDistance) {
+          bestDistance = distance;
+          split = i;
+          bestSum = leftSum;
+        }
+        if (doubled >= 0n) break;
+      }
+      const rightSum = rect.sum - bestSum;
+      // 直接计算较小一侧，避免先计算「1 − 极小值」时因浮点相消而丢失末尾小块。
+      const leftIsSmaller = bestSum <= rightSum;
+      const fraction = ratio(leftIsSmaller ? bestSum : rightSum, rect.sum);
+      const a = { items: rect.items.slice(0, split), sum: bestSum, x: rect.x, y: rect.y, w: rect.w, h: rect.h };
+      const b = { items: rect.items.slice(split), sum: rect.sum - bestSum, x: rect.x, y: rect.y, w: rect.w, h: rect.h };
+      if (rect.w >= rect.h) {
+        const smallerWidth = rect.w * fraction;
+        a.w = leftIsSmaller ? smallerWidth : rect.w - smallerWidth;
+        b.x = rect.x + a.w;
+        b.w = leftIsSmaller ? rect.w - smallerWidth : smallerWidth;
+      } else {
+        const smallerHeight = rect.h * fraction;
+        a.h = leftIsSmaller ? smallerHeight : rect.h - smallerHeight;
+        b.y = rect.y + a.h;
+        b.h = leftIsSmaller ? rect.h - smallerHeight : smallerHeight;
+      }
+      stack.push(b, a);
+    }
+    return output;
+  }
+
+  const identifier = /^[$_\p{ID_Start}][$\u200C\u200D_\p{ID_Continue}]*$/u;
+  const codeToken = /\/\/[^\n]*|\/\*[\s\S]*?\*\/|"(?:\\[\s\S]|[^"\\])*"|'(?:\\[\s\S]|[^'\\])*'|(?<![$\u200C\u200D_\p{ID_Continue}])[$_\p{ID_Start}][$\u200C\u200D_\p{ID_Continue}]*/gu;
+
+  /** 返回纯文本片段而非 HTML；字符串和注释中的名字不视为变量访问。 */
+  function highlightSegments(code, identifiers) {
+    if (typeof code !== 'string') throw new TypeError('code 必须是字符串');
+    if (!identifiers || typeof identifiers === 'string' || typeof identifiers[Symbol.iterator] !== 'function') {
+      throw new TypeError('identifiers 必须是由标识符字符串组成的可迭代集合');
+    }
+    const selected = new Set(identifiers);
+    for (const name of selected) {
+      if (typeof name !== 'string' || !identifier.test(name)) throw new TypeError('标识符无效：' + String(name));
+    }
+    const segments = [];
+    const append = (text, highlight) => {
+      if (!text) return;
+      const previous = segments[segments.length - 1];
+      if (previous && previous.highlight === highlight) previous.text += text;
+      else segments.push({ text, highlight });
+    };
+    const scanner = new RegExp(codeToken.source, codeToken.flags);
+    let cursor = 0;
+    for (const match of code.matchAll(scanner)) {
+      if (!selected.has(match[0])) continue;
+      append(code.slice(cursor, match.index), false);
+      append(match[0], true);
+      cursor = match.index + match[0].length;
+    }
+    append(code.slice(cursor), false);
+    return segments;
+  }
+
+  /**
+   * 惰性分组的固定步长序列。make(index) 接收相对重复根的 BigInt 全局索引，
+   * 可以省略 id/label/offset/bytes；若提供 offset，必须等于 index * stride，
+   * bytes 必须等于 stride。返回实例的 offset 将转换为其直接父组的局部坐标。
+   * 每层最多 8 个子节点。范围分组仅是查看方式，不是额外申请。
+   * 实例只缺省继承 evidence/codeNames/why，避免把父区矩阵、地址、token 标记
+   * 或容量公式当作实例语义。make 未提供实例公式时，缺省解释为一份 stride。
+   * 范围组只继承上述证据和 kind；地址以重复根的 address 加上 start * stride
+   * 单独换算，元素下标必须整除 elementBytes。根节点保留原属性及原 offset。
+   * 可用 rangeLabel 指明范围索引所对应的对象；缺省标题为「label · 子项」。
+   */
+  function repeatNode(configuration) {
+    object(configuration);
+    const { id, label = id, rangeLabel = label + ' · 子项', offset = 0n, count, stride, make, ...detail } = configuration;
+    if (typeof id !== 'string' || !id) throw new TypeError('重复节点 id 必须是非空字符串');
+    if (typeof label !== 'string') throw new TypeError('重复节点 label 必须是字符串');
+    if (typeof rangeLabel !== 'string') throw new TypeError('重复节点 rangeLabel 必须是字符串');
+    uint(offset, 'offset'); uint(count, 'count'); uint(stride, 'stride');
+    if (count > 0n && stride === 0n) throw new TypeError('非空重复序列的 stride 必须为正数');
+    if (typeof make !== 'function') throw new TypeError('重复节点的 make 必须是函数');
+    if (owns(detail, 'children') || owns(detail, 'childrenFactory')) throw new TypeError('repeatNode 会自行生成子节点，不能传入 children 或 childrenFactory');
+
+    const inherited = {};
+    for (const name of ['evidence', 'codeNames', 'why']) {
+      if (owns(detail, name)) inherited[name] = detail[name];
+    }
+    const rangeInherited = { ...inherited };
+    if (owns(detail, 'kind')) rangeInherited.kind = detail.kind;
+
+    function rangeAddress(start, nodeId) {
+      if (detail.address === undefined || detail.address === null) return {};
+      const source = object(detail.address);
+      uint(source.byteOffset, 'address.byteOffset');
+      if (source.terms !== undefined && !Array.isArray(source.terms)) throw new TypeError('address.terms 必须是数组');
+      const extra = start * stride;
+      const byteOffset = source.byteOffset + extra;
+      const { elementIndex, ...address } = source;
+      address.byteOffset = byteOffset;
+      address.terms = [
+        ...(source.terms || []).map(term => ({ ...term })),
+        { label: '跳过范围起点前的实例', expression: 'rangeStart × stride', value: extra, unit: 'B', nodeId },
+      ];
+      if (source.elementBytes !== undefined) {
+        uint(source.elementBytes, 'address.elementBytes');
+        if (source.elementBytes === 0n) throw new TypeError('address.elementBytes 必须大于零');
+        if (byteOffset % source.elementBytes !== 0n) throw new Error('范围组字节偏移不能整除 address.elementBytes，无法生成精确元素下标');
+        address.elementIndex = byteOffset / source.elementBytes;
+      }
+      return { address };
+    }
+
+    function strideFormula(nodeId, nodeLabel, length) {
+      return {
+        id: nodeId + ':formula',
+        label: nodeLabel + '容量',
+        expression: length === 1n ? '1 × stride' : 'rangeCount × stride',
+        substitution: length + ' × ' + stride + ' B',
+        value: length * stride,
+        unit: 'B',
+        why: length === 1n ? '当前实例占一份固定步长；内部字段与留空由该实例的子节点解释。' : '当前范围包含 ' + length + ' 份实例，每份预留 ' + stride + ' B；范围只是父序列的一段切片。',
+        count: length,
+        stride,
+      };
+    }
+
+    function group(start, length, localOffset, root) {
+      const nodeId = root ? id : id + ':range:' + start + ':' + length;
+      const nodeLabel = root ? label : rangeLabel + ' [' + start + ', ' + (start + length) + ')';
+      return {
+        ...(root ? detail : { ...rangeInherited, ...rangeAddress(start, nodeId) }),
+        id: nodeId,
+        label: nodeLabel,
+        offset: localOffset,
+        bytes: length * stride,
+        rangeStart: start,
+        rangeCount: length,
+        stride,
+        formula: root && detail.formula !== undefined ? detail.formula : strideFormula(nodeId, nodeLabel, length),
+        childrenFactory() {
+          if (length > 8n) {
+            const left = length / 2n;
+            return [group(start, left, 0n, false), group(start + left, length - left, left * stride, false)];
+          }
+          const children = [];
+          for (let i = start; i < start + length; i++) {
+            const supplied = object(make(i));
+            if (owns(supplied, 'offset') && supplied.offset !== i * stride) throw new Error('make(' + i + ') 的 offset 必须相对重复根，等于 index * stride');
+            if (owns(supplied, 'bytes') && supplied.bytes !== stride) throw new Error('make(' + i + ') 的 bytes 必须等于 stride');
+            const itemId = supplied.id === undefined ? id + ':item:' + i : supplied.id;
+            const itemLabel = supplied.label === undefined ? label + ' #' + i : supplied.label;
+            children.push({
+              ...inherited,
+              ...supplied,
+              id: itemId,
+              label: itemLabel,
+              offset: (i - start) * stride,
+              bytes: stride,
+              repeatIndex: i,
+              formula: supplied.formula === undefined ? strideFormula(itemId, itemLabel, 1n) : supplied.formula,
+            });
+          }
+          return children;
+        },
+      };
+    }
+    return group(0n, count, offset, true);
+  }
+
+  return Object.freeze({ childrenOf, validateChildren, validateTree, treemap, highlightSegments, repeatNode });
+});
+/* RECURSIVE_CORE_END */
+/* MEMORY_CASE_START */
+/* 可运行的小型教学模型。示例源码为完整合成C++函数，不代表任何目标算子。 */
+(function(){
+const proof={id:'example',file:'教学示例（合成代码，非目标仓库）',start:1,end:9,fn:'allocate_records',role:'完整教学例子',code:'constexpr size_t stride = 32;\nconstexpr size_t fields = 12;\nsize_t bytes = count * stride;\nuint8_t* records = static_cast<uint8_t*>(malloc(bytes));\nfor (size_t i = 0; i < count; ++i) {\n    int32_t* record = reinterpret_cast<int32_t*>(records + i * stride);\n    record[0] = i; record[1] = 1; record[2] = 2;\n}\nfree(records);',highlights:['records','record']};
+const formula=(expression,value,substitution,why)=>({expression,value,substitution,why,unit:'B'});
+globalThis.MemoryCase={title:'递归内存设计 · 可适配教学模板',parameters:[{id:'N',label:'记录数',codeName:'count',value:'2',min:1,max:1000000}],presets:[{label:'2条记录',values:{N:'2'}},{label:'百万条记录',values:{N:'1000000'}}],build(raw){if(!/^\d{1,8}$/.test(raw.N)||BigInt(raw.N)<1n||BigInt(raw.N)>1000000n)throw Error('记录数需为1到1000000之间的整数');const count=BigInt(raw.N);const root=RecursiveMemory.repeatNode({id:'records',label:'记录allocation',offset:0n,count,stride:32n,formula:formula('count × stride',count*32n,count+' × 32','每条记录保留32 B。'),why:'这是明确标注的合成教学代码。正式产物应替换模型、证据与叙述。',codeNames:['records'],evidence:[proof],make(i){return{id:'records/r'+i,label:'record ['+i+']',offset:i*32n,bytes:32n,kind:'group',formula:formula('stride',32n,'32','每条记录由12 B字段与20 B留空组成。'),why:'int32 record视图借用records父allocation。',codeNames:['record'],evidence:[proof],children:[{id:'records/r'+i+'/fields',label:'三个int32字段',offset:0n,bytes:12n,kind:'group',formula:formula('3 × sizeof(int32_t)',12n,'3 × 4','三个4 B整数。'),why:'继续进入具体字段。',evidence:[proof],codeNames:['record'],children:[0n,1n,2n].map(j=>({id:'records/r'+i+'/f'+j,label:'record['+j+']',offset:j*4n,bytes:4n,kind:'field',formula:formula('sizeof(int32_t)',4n,'4','一个int32字段。'),why:'对应代码第7行的record['+j+']。',evidence:[{...proof,start:7,end:7,code:'record['+j+'] = '+(j===0n?'i':j)+';',highlights:['record']}],codeNames:['record']}))},{id:'records/r'+i+'/padding',label:'记录尾部留空',offset:12n,bytes:20n,kind:'padding',formula:formula('stride − 3×4',20n,'32 − 12','间距扣除已定义字段。'),why:'没有独立变量，也没有赋值语句；由stride与字段末尾推导。',codeNames:['stride','fields'],evidence:[{...proof,start:1,end:2,code:'constexpr size_t stride = 32;\nconstexpr size_t fields = 12;',highlights:['stride','fields']}]}]};}});return{root,title:this.title,subtitle:'左：树表与真面积矩形；右：每层推导和源码',notes:['模板为合成教学模型；适配时替换实际申请、切片、消费者及证据，不可将该示例当目标算子。'],shortcuts:[{id:'records',label:'整个allocation'}],allocationFlow:[{id:'records',label:'申请',detail:'malloc(count × 32)'},{label:'填字段',detail:'record[i]',evidence:[proof]},{label:'释放',detail:'free(records)',evidence:[proof]}]};}};
+})();
+/* 教学模型也示范逐层叙述；这里只解释合成代码明确做出的分配、赋值和释放。 */
+(function(){
+ const Case=globalThis.MemoryCase,originalBuild=Case.build;
+ Case.build=function(raw){return {...originalBuild.call(this,raw),values:{count:BigInt(raw.N)}};};
+ Case.explainSpace=function(n,d){
+  const count=d.count,range=n.id.match(/:range:(\d+):(\d+)$/),record=n.id.match(/\/r(\d+)/),field=n.id.match(/\/f(\d+)$/),padding=n.id.endsWith('/padding'),fields=n.id.endsWith('/fields');
+  const i=record?BigInt(record[1]):range?BigInt(range[1]):0n;
+  const amount=range?BigInt(range[2]):record?1n:count;
+  const proof=Case.build({N:'1'}).root.evidence[0];
+  const kind=padding?'留空段':field?'单个字段':fields?'字段组':record?'一条记录':range?'记录索引范围':'记录父申请';
+  const lifecycle=[{phase:'建立地址',actor:'allocate_records',condition:'malloc 返回可用地址后，进入 i<count 的循环。',action:'用 records+i×32 定位记录，再转为 int32_t*。这里的32是教学代码选定的记录步长，不是int32_t的最低硬件对齐要求。',evidence:[proof]}];
+  if(!padding)lifecycle.push({phase:'写入',actor:'循环内的赋值语句',condition:field?'循环走到记录 i='+i+' 时。':'循环逐条走过当前索引范围时。',action:field?'record['+field[1]+'] 写入 '+(field[1]==='0'?'当前记录编号 i='+i:field[1])+'。':'每条记录的前三个 int32_t 分别保存 i、1、2，当前示例没有后续业务消费者。',evidence:[proof]});
+  lifecycle.push({phase:'释放与未知消费',actor:'allocate_records',condition:'赋值循环结束后。',action:'示例直接 free(records)，没有读取字段、轮询ready或复用记录的代码；这些行为不能从空间形状推断。',evidence:[Case.build({N:'1'}).root.evidence[0]]});
+  return {
+   purpose:[kind+'属于同一个 records allocation，不会另行申请。'+(padding?'这20 B没有字段赋值，只用于保持相邻记录相隔32 B。':field?'它对应一个独立4 B赋值位置，而不是整条32 B记录。':fields?'它把3个4 B赋值位置组合为连续12 B有效字段区。':'它将重复的32 B记录按索引组织，便于解释容量与相邻起点。'), '这是教学用的合成函数，并没有提供真实业务场景。必要性只对当前记录布局成立：删减某段必须一起修改步长或字段下标，不能宣称这些字节具有未展示的通信作用。'],
+   formulaSteps:[{label:'当前空间的容量',expression:n.formula.expression,substitution:n.formula.substitution+' = '+n.bytes+' B',reason:padding?'32 B记录扣去3×4 B字段，剩下20 B。剩余不是额外字段，也没有被初始化。':field?'字段宽度来自 int32_t，每个下标前进4 B。':fields?'3个赋值位置各占4 B，因此连续覆盖12 B。':'当前范围有'+amount+'条记录，每条按32 B stride计入容量；重复数量不等于有效字段数。'},{label:'定位这份空间',expression:'记录起点 = i×32；字段偏移 = j×4',substitution:'i='+i+'，记录起点 '+i*32n+' B；本节点局部偏移 '+n.offset+' B',reason:'相对allocation的记录起点与相对父空间的局部偏移是两个坐标。索引范围只是查看窗口，不是再次分配。'}],
+   necessity:[padding?'若想移除20 B留空，可将stride改为12并同步所有寻址；本示例没有证据证明32 B不可改变。':field?'删去该字段必须同时删除或调整对应赋值及依赖它的接口；本合成函数没有展示消费者，所以不能推断业务后果。':'当前地址公式依赖固定32 B步长。更紧凑的布局可以设计，但必须改动malloc容量与循环寻址，不能只缩小图上面积。'],lifecycle,
+   example:['当前count='+count+'，父申请 '+count+'×32='+count*32n+' B。所选'+kind+'占 '+n.bytes+' B，首个相关记录编号为 '+i+'。'],
+   boundaries:['没有独立业务读取、发布协议、清零或并发同步的证据。malloc返回值检查也未包含在教学片段中；不要直接用此合成代码作为生产实现。'],related:record?[{id:'records',label:'回到父申请'}]:[]
+  };
+ };
+})();
+/* MEMORY_CASE_END */
+/* RECURSIVE_READER_START */
+/* 中文离线递归空间阅读器；MemoryCase 提供源码支撑的纯数据模型。 */
+(function(){
+'use strict';
+if(typeof document==='undefined')return;
+const Core=globalThis.RecursiveMemory,Case=globalThis.MemoryCase;
+const $=id=>document.getElementById(id),mk=(tag,text,cls)=>{const n=document.createElement(tag);if(text!==undefined)n.textContent=text;if(cls)n.className=cls;return n;};
+const format=n=>n.toString().replace(/\B(?=(\d{3})+(?!\d))/g,',');
+const human=n=>{for(const[u,d]of [['GiB',1073741824n],['MiB',1048576n],['KiB',1024n]])if(n>=d)return (Number(n*100n/d)/100).toFixed(2)+' '+u;return n+' B';};
+const percent=(n,d)=>d?Number(n*1000000n/d)/10000:0;
+const palette=['#376c9e','#248575','#8e69a7','#b67544','#708499','#ac665d','#5a7d55','#7a73a2'];
+const typeName={group:'组合空间',field:'字段',padding:'对齐留空',reserve:'预留 / 未消费余位',unknown:'内部格式未确定'};
+let model,selected,focus,bank=0,expanded=new Set(),registry=new Map(),params={},valid=false;
+let inspectorMode='space',activeParameter=null,currentDiagnosis=null,lastBuildError=null,rememberedSpace={};
+function button(text,fn,cls){const b=mk('button',text,cls);b.type='button';b.addEventListener('click',fn);return b;}
+function color(n){if(n.kind==='padding')return '#a58b65';if(n.kind==='reserve')return '#8794a4';if(n.kind==='unknown')return '#8a78a6';let h=0;for(const c of n.id)h=(h*31+c.charCodeAt(0))>>>0;return palette[h%palette.length];}
+function getChildren(node){const kids=Core.childrenOf(node);let sum=0n;for(const n of kids){n.parent=node;n.absolute=node.absolute+n.offset;registry.set(n.id,n);sum+=n.bytes;}if(kids.length)Core.validateChildren(node);return kids;}
+function isBranch(n){return !!(n.childrenFactory||(n.children&&n.children.length));}
+function path(n){const a=[];for(let cur=n;cur;cur=cur.parent)a.unshift(cur);return a;}
+function resolve(id){if(!id||!model?.root)return null;if(registry.has(id))return registry.get(id);let cursor=model.root;for(let tries=0;tries<160;tries++){const cs=getChildren(cursor);const direct=cs.find(n=>n.id===id);if(direct)return direct;const next=cs.find(n=>id.startsWith(n.id+'/')||id.startsWith(n.id+':range:')||id.startsWith(n.id+':item:'));if(next){cursor=next;continue;}const rootId=cursor.id.split(':range:')[0],tail=id.slice(rootId.length);const match=tail.match(/^(?:\/[A-Za-z-]+|:item:|:range:)(\d+)/);if(match){const index=BigInt(match[1]),range=cs.find(n=>n.rangeStart!==undefined&&index>=n.rangeStart&&index<n.rangeStart+n.rangeCount);if(range){cursor=range;continue;}}return null;}return null;}
+function normalize(node){return node;}
+function select(n,{reveal=true}={}){inspectorMode='space';selected=normalize(n);renderTree();renderMap();renderInspector();if(reveal&&innerWidth<=900)switchPane('code');}
+function drill(n){if(!n||!valid)return;inspectorMode='space';if(!isBranch(n)){select(n);return;}focus=n;expanded.add(n.id);selected=normalize(n);getChildren(n);renderSpace();renderInspector();}
+function visit(id,zoom=false){const n=resolve(id);if(n){if(zoom)drill(n);else select(n);}}
+function switchPane(p){$('readerLayout').dataset.mobilePane=p;$('mobileVisual').setAttribute('aria-pressed',String(p==='visual'));$('mobileCode').setAttribute('aria-pressed',String(p==='code'));}
+function showEvidence(title,why,proof){inspectorMode='evidence';$('detail').replaceChildren(mk('h2',title),mk('p',why));renderSources($('detail'),proof||[]);$('codePane').scrollTop=0;if(innerWidth<=900)switchPane('code');}
+const asList=value=>Array.isArray(value)?value:[];
+const display=value=>value===undefined||value===null?'未计算':String(value);
+function defaultParameter(p){
+ const range=p.min!==undefined||p.max!==undefined?'页面输入护栏：'+(p.min??'无下限')+' ～ '+(p.max??'无上限')+'；这是本页接收范围，不能据此推断源码或硬件极限。':'此模型未提供范围限制的进一步说明。';
+ return {title:p.label+' · 参数与限制',meaning:p.meaning||p.description||p.label+'；对应 '+(p.codeName||p.id)+'。',unit:p.unit||'以参数定义为准',category:'输入护栏 / 模型元数据',codeNames:p.codeName?[p.codeName]:[],limits:[range],effects:['修改后重新计算当前模拟器中的空间布局。'],notes:['此通用模型未提供分层限制解释，正式案例应补充源码硬约束、容量约束和建模假设。'],evidence:[],links:[]};
+}
+function diagnoseCurrent(){
+ let diagnosis;
+ try{if(typeof Case.diagnose==='function')diagnosis=Case.diagnose({...params},bank);}catch(error){diagnosis={ok:false,title:'当前输入无法完成诊断',summary:error.message,issues:[{title:'诊断输入未解析',detail:error.message,parameters:activeParameter?[activeParameter]:[]}]};}
+ if(!diagnosis||typeof diagnosis!=='object')diagnosis={ok:valid,title:valid?'当前参数已通过模型检查':'当前参数无法构建空间树',summary:lastBuildError||'该通用模型未提供进一步的容量诊断。',issues:valid?[]:[{title:'请修正当前输入',detail:lastBuildError||'输入或容量不满足模型条件。',parameters:activeParameter?[activeParameter]:[]}]};
+ if(!valid&&diagnosis.ok)diagnosis={...diagnosis,ok:false,issues:[...asList(diagnosis.issues),{title:'空间模型仍未通过',detail:lastBuildError||'本次空间树构建失败。',parameters:[]}]};
+ currentDiagnosis={...diagnosis,ok:diagnosis.ok===true};
+ return currentDiagnosis;
+}
+function addList(target,title,items){if(!asList(items).length)return;target.append(mk('h3',title));const list=mk('ul',undefined,'help-list');for(const text of items)list.append(mk('li',display(text)));target.append(list);}
+function applySimulation(values){
+ for(const p of Case.parameters)if(Object.prototype.hasOwnProperty.call(values||{},p.id)){params[p.id]=String(values[p.id]);$('param-'+p.id).value=params[p.id];}
+ refresh();
+}
+function appendDiagnosis(target){
+ const diagnosis=currentDiagnosis||diagnoseCurrent(),section=mk('section',undefined,'diagnosis '+(diagnosis.ok?'diagnosis-ok':'diagnosis-error'));
+ section.dataset.diagnosisOk=String(diagnosis.ok);section.append(mk('span',diagnosis.ok?'当前输入可建模':'当前输入需要调整','tag'),mk('h2',diagnosis.title||'当前容量诊断'),mk('p',diagnosis.summary||'诊断使用当前输入参数。'));
+ for(const issue of asList(diagnosis.issues)){const card=mk('article',undefined,'diagnostic-issue');card.append(mk('strong',issue.title||'待调整项'),mk('p',issue.detail||''));const related=mk('div',undefined,'actions');for(const id of asList(issue.parameters)){const p=Case.parameters.find(p=>p.id===id);if(p)related.append(button('解释 '+p.label,()=>showParameter(id,{reveal:true}),'parameter-link'));}card.append(related);section.append(card);}
+ if(asList(diagnosis.actions).length){section.append(mk('p','以下按钮只改变本页模拟器输入，不会修改 Host 配置、重新申请设备内存或执行外部源码。','simulation-note'));const actions=mk('div',undefined,'actions diagnostic-actions');for(const action of diagnosis.actions)actions.append(button(action.label||'应用模拟参数',()=>{inspectorMode='diagnosis';applySimulation(action.values);},'diagnostic-action'));section.append(actions);}
+ if(asList(diagnosis.calculations).length){const disclosure=mk('details',undefined,'diagnostic-derivation');disclosure.open=inspectorMode!=='parameter';disclosure.append(mk('summary','逐步推导容量 · '+diagnosis.calculations.length+' 项当前计算'));const calculations=mk('div',undefined,'diagnostic-calculations');for(const item of diagnosis.calculations){const row=mk('article',undefined,'diagnostic-calculation');row.append(mk('strong',item.label||'当前计算'),mk('div',display(item.expression),'mono'),mk('p','代入：'+display(item.substitution),'small'),mk('div',display(item.result),'diagnostic-result'));calculations.append(row);}disclosure.append(calculations);section.append(disclosure);}
+ addList(section,'诊断边界',diagnosis.notes);
+ if(asList(diagnosis.evidence).length){const source=mk('details');source.append(mk('summary','诊断依据与限制来源'));renderSources(source,diagnosis.evidence);section.append(source);}target.append(section);
+}
+function renderParameter(){
+ const p=Case.parameters.find(p=>p.id===activeParameter)||Case.parameters[0];if(!p)return;activeParameter=p.id;
+ let help=defaultParameter(p);
+ try{if(typeof Case.explainParameter==='function'){const supplied=Case.explainParameter(p.id,{...params},bank);if(supplied&&typeof supplied==='object')help={...help,...supplied};}}catch(error){help.notes=[...asList(help.notes),'当前输入下的扩展解释未能生成：'+error.message];}
+ const div=$('detail');div.hidden=false;div.replaceChildren(mk('span',help.category||'参数与限制','tag'),mk('h2',help.title||p.label),mk('p',help.meaning||p.label));
+ div.append(mk('p','当前输入：'+display(params[p.id])+' · 单位：'+(help.unit||'以参数定义为准'),'parameter-current'));
+ const names=mk('div',undefined,'code-names');for(const name of asList(help.codeNames))names.append(mk('code',name));div.append(names);
+ addList(div,'限制来自哪里',help.limits);addList(div,'它影响哪些空间',help.effects);addList(div,'说明与假设',help.notes);
+ if(asList(help.links).length){const links=mk('div',undefined,'parameter-links');for(const item of help.links){try{const url=new URL(item.url);if(!['https:','http:'].includes(url.protocol))continue;const anchor=mk('a',item.label||url.hostname);anchor.href=url.href;anchor.target='_blank';anchor.rel='noopener noreferrer';links.append(anchor);}catch{}}div.append(links);}
+ appendDiagnosis(div);
+ if(asList(help.evidence).length){const source=mk('details');source.append(mk('summary','参数与限制的源码依据'));renderSources(source,help.evidence);div.append(source);}
+ for(const definition of Case.parameters){const control=$('param-'+definition.id)?.closest('.parameter-control');if(control)control.dataset.active=String(definition.id===p.id);}
+}
+function showParameter(id,{reveal=false,preserveScroll=false}={}){const oldTop=$('codePane').scrollTop;activeParameter=id;inspectorMode='parameter';renderParameter();$('codePane').scrollTop=preserveScroll?oldTop:0;if(reveal&&innerWidth<=900)switchPane('code');}
+function showDiagnostic({reveal=true,preserveScroll=false}={}){const oldTop=$('codePane').scrollTop;inspectorMode='diagnosis';const div=$('detail');div.hidden=false;div.replaceChildren();appendDiagnosis(div);$('codePane').scrollTop=preserveScroll?oldTop:0;if(reveal&&innerWidth<=900)switchPane('code');}
+function renderCurrentInspector(){if(inspectorMode==='parameter')renderParameter();else if(inspectorMode==='diagnosis'||!valid){$('detail').hidden=false;$('detail').replaceChildren();appendDiagnosis($('detail'));}else renderInspector();}
+function refresh(){
+ const oldSel=selected?.id||rememberedSpace.selected,oldFocus=focus?.id||rememberedSpace.focus,oldExpanded=expanded.size?[...expanded]:(rememberedSpace.expanded||[]),oldRightTop=$('codePane').scrollTop;
+ lastBuildError=null;
+ try{model=Case.build(params,bank);registry=new Map();model.root.absolute=0n;model.root.parent=null;registry.set(model.root.id,model.root);Core.validateTree(model.root,{expandDepth:1,maxNodes:2000});getChildren(model.root);focus=model.root;selected=model.root;expanded=new Set([model.root.id]);
+  for(const id of oldExpanded){const n=resolve(id);if(n)expanded.add(n.id);}focus=resolve(oldFocus)||model.root;selected=resolve(oldSel)||focus;valid=true;$('error').hidden=true;$('live').hidden=false;$('detail').hidden=false;
+  document.title=model.title||Case.title;$('caseTitle').textContent=model.title||Case.title;$('caseSubtitle').textContent=model.subtitle||'';$('totalLabel').textContent='总容量 '+human(model.root.bytes)+' · 精确 '+format(model.root.bytes)+' B';
+  $('notes').replaceChildren(...(model.notes||[]).map(x=>mk('p',x,'footnote')));$('example').textContent=model.example||'';
+  rememberedSpace={selected:selected.id,focus:focus.id,expanded:[...expanded]};renderBank();renderFlow();renderShortcuts();renderSpace();
+ }catch(e){valid=false;lastBuildError=e.message;rememberedSpace={selected:oldSel,focus:oldFocus,expanded:oldExpanded};model=undefined;selected=undefined;focus=undefined;registry=new Map();expanded=new Set();$('error').textContent=e.message;$('error').hidden=false;$('live').hidden=true;$('detail').hidden=false;$('selectedLabel').textContent='当前输入未生成空间树；右侧显示本次诊断';$('totalLabel').textContent='当前参数尚未形成有效空间布局';$('caseSubtitle').textContent='当前输入待校验 · 右侧解释参数含义与限制';}
+ diagnoseCurrent();renderCurrentInspector();if(inspectorMode==='parameter'||inspectorMode==='diagnosis')$('codePane').scrollTop=oldRightTop;
+}
+function renderShortcuts(){$('shortcuts').replaceChildren();for(const s of model.shortcuts||[])$('shortcuts').append(button(s.label,()=>visit(s.id,true)));}
+function renderBank(){const box=$('bankPanel');box.hidden=!(model.bankPairs?.length);if(box.hidden)return;$('bankPairs').replaceChildren();for(const pair of model.bankPairs){const n=mk('div',undefined,'bank-pair'+(pair.bank===bank?' selected':''));n.dataset.bank=String(pair.bank);n.append(mk('strong','Bank '+pair.bank+(pair.bank===bank?' · 本轮选中':' · 另一物理份')));for(const [id,label]of [[pair.stateId,'状态'],[pair.windowId,'token']]){const node=resolve(id),b=button(label+'：'+human(node.bytes)+' · +'+format(node.absolute)+' B',()=>drill(node));b.style.setProperty('--node-color',color(node));n.append(b);if(label==='状态')n.append(mk('div','同一个 dataState_ 配对选择 ↓','pair-link'));}$('bankPairs').append(n);}
+ for(const b of $('bankSwitch').querySelectorAll('button[data-bank]'))b.setAttribute('aria-pressed',String(+b.dataset.bank===bank));
+}
+function renderFlow(){$('allocationFlow').replaceChildren();for(const s of model.allocationFlow||[]){const b=button(s.label,()=>s.id?visit(s.id):showEvidence(s.label,s.detail,s.evidence));b.append(mk('small',s.detail));$('allocationFlow').append(b);}}
+function renderSpace(){renderCrumbs();renderTree();renderMap();}
+function renderCrumbs(){$('breadcrumbs').replaceChildren();for(const [i,n]of path(focus).entries()){if(i)$('breadcrumbs').append(mk('span','/'));$('breadcrumbs').append(button(n.label,()=>drill(n)));}$('focusTitle').textContent=focus.label;$('focusSize').textContent=format(focus.bytes)+' B · '+human(focus.bytes);$('up').disabled=!focus.parent;}
+function renderTree(){if(!valid)return;const body=$('treeBody'),wrap=body.closest('.tree-wrap'),oldTop=wrap.scrollTop,oldLeft=$('visualPane').scrollTop;body.replaceChildren();let rows=0;
+ function row(node,depth){if(++rows>320)return;normalize(node);const tr=mk('tr');tr.dataset.node=node.id;if(selected.id===node.id)tr.className='selected';const td=mk('td'),name=mk('div',undefined,'tree-name');name.style.paddingLeft=Math.min(depth,10)*12+'px';const branch=isBranch(node),toggle=button(branch?(expanded.has(node.id)?'▾':'▸'):'·',()=>{if(!branch)return;if(expanded.has(node.id))expanded.delete(node.id);else{getChildren(node);expanded.add(node.id);}renderTree();},'toggle');toggle.setAttribute('aria-label',(expanded.has(node.id)?'收起 ':'展开 ')+node.label);toggle.setAttribute('aria-expanded',String(expanded.has(node.id)));if(!branch)toggle.disabled=true;const dot=mk('span',undefined,'node-dot');dot.style.setProperty('--node-color',color(node));const label=button(node.label,()=>select(node),'node-select');label.title=node.id;name.append(toggle,dot,label);td.append(name);const interval=mk('div','父区 ['+format(node.offset)+', '+format(node.offset+node.bytes)+') B','small tree-interval');interval.style.paddingLeft=(Math.min(depth,10)*12+33)+'px';td.append(interval);
+ const size=mk('td',undefined,'bytes');size.append(mk('div',human(node.bytes)),mk('small',format(node.bytes)+' B','small'));const share=mk('td',undefined,'bytes'),pct=percent(node.bytes,node.parent?.bytes||node.bytes);share.append(mk('div',pct<.01&&pct>0?'<0.01%':pct.toFixed(2)+'%'));const track=mk('div',undefined,'share-track'),fill=mk('div',undefined,'share-fill');fill.style.width=pct+'%';fill.style.setProperty('--node-color',color(node));track.append(fill);share.append(track);const action=mk('td');if(branch)action.append(button('进入',()=>drill(node),'drill'));else action.append(mk('span',typeName[node.kind]||'字段','small'));tr.append(td,size,share,action);body.append(tr);if(branch&&expanded.has(node.id))for(const c of getChildren(node))row(c,depth+1);
+ }
+ row(focus,0);$('treeLimit').hidden=rows<=320;$('selectedLabel').textContent='选中：'+selected.label;wrap.scrollTop=oldTop;$('visualPane').scrollTop=oldLeft;
+}
+function renderMap(){if(!valid)return;const area=$('treemap');area.replaceChildren();const children=getChildren(focus),items=children.length?children:[focus],w=area.clientWidth,h=area.clientHeight;if(!w||!h)return;
+ const rects=Core.treemap(items,w,h);for(const r of rects){const node=items.find(n=>n.id===r.id);if(!node||r.w<=0||r.h<=0)continue;const tile=button('',()=>select(node),'tile'+(selected.id===node.id?' selected':''));tile.dataset.node=node.id;tile.dataset.kind=node.kind;tile.style.left=r.x+'px';tile.style.top=r.y+'px';tile.style.width=r.w+'px';tile.style.height=r.h+'px';tile.style.setProperty('--node-color',color(node));tile.title=node.label+'\n'+format(node.bytes)+' B\n占当前层 '+percent(node.bytes,focus.bytes).toFixed(4)+'%\n单击看解释；双击进入';tile.setAttribute('aria-label',node.label+'，'+format(node.bytes)+' B');tile.addEventListener('dblclick',()=>drill(node));if(r.w>=74&&r.h>=44){const label=mk('span',node.label,'tile-label');label.append(mk('small',human(node.bytes)));tile.append(label);}area.append(tile);}
+ const zero=items.filter(n=>n.bytes===0n);$('mapNote').textContent='矩形面积 = 本层字节占比。很小的区可从上方树表进入；空间顺序看树表与右侧地址路径。'+(zero.length?' 本层另有 '+zero.length+' 个0 B子区，在树表保留，面积为0。':'');
+ $('currentMapTotal').textContent='当前层 '+format(focus.bytes)+' B = 子空间 '+format(children.length?children.reduce((s,n)=>s+n.bytes,0n):focus.bytes)+' B';
+}
+function renderSources(target,proof){for(const p of proof){const article=mk('article',undefined,'source-card');article.dataset.evidence=p.id||'';const label=mk('div',undefined,'source-label');label.append(mk('strong',p.role||'源码证据'));if(p.fn)label.append(mk('div',p.fn,'small'));label.append(mk('div',(p.file||'已标注来源')+(p.start?':'+p.start+(p.end&&p.end!==p.start?'–'+p.end:''):''),'source-path'));const pre=mk('pre');const lines=String(p.code||'无独立赋值语句；由相邻字段边界推导。').split('\n');for(let i=0;i<lines.length;i++){const line=mk('span',undefined,'code-line');line.append(mk('span',p.start?String(p.start+i):'','line-number'));for(const seg of Core.highlightSegments(lines[i],p.highlights||[]))line.append(mk(seg.highlight?'mark':'span',seg.text));pre.append(line);}article.append(label,pre);target.append(article);}}
+function addCoordinateView(target,n){const steps=path(n),section=mk('div');section.append(mk('h3','基地址坐标：从父 allocation 一层层进入'),mk('p','下面每个框是上一框的一部分。加上本层offset就得到它在父区中的位置；图中的箭头表示包含与换零点。','small'));const stack=mk('div',undefined,'coordinate-path');for(const item of steps){const b=mk('div',undefined,'coordinate-step');b.append(mk('strong',item.label));const line=item.parent?'父区内 ['+format(item.offset)+', '+format(item.offset+item.bytes)+') B':'本allocation相对坐标 [0, '+format(item.bytes)+') B';b.append(mk('div',line,'mono'),mk('div','allocation起点 + '+format(item.absolute)+' B；跨度 '+format(item.bytes)+' B','small'));if(item.parent){const bar=mk('div',undefined,'address-bar'),part=mk('i');part.style.left=percent(item.offset,item.parent.bytes)+'%';part.style.width=percent(item.bytes,item.parent.bytes)+'%';bar.append(part);b.append(bar,mk('div','上条在父空间中按真实比例定位；下个框重新放大。','small'));}if(item.id!==n.id)b.append(button('查看这一层的公式与源码',()=>select(item), 'drill'));stack.append(b);}section.append(stack);target.append(section);}
+function effectiveAddress(n){for(let a=n;a;a=a.parent){if(!a.address)continue;const extra=n.absolute-a.absolute;if(!extra)return a.address;const x=a.address;return {...x,byteOffset:x.byteOffset+extra,elementIndex:x.elementBytes?(x.byteOffset+extra)/x.elementBytes:undefined,terms:[...x.terms,{label:'进入当前子字段',expression:'所选字段相对 '+a.label+' 的偏移',value:extra,unit:'B',nodeId:n.id}]};}return null;}
+function baseGraph(entries){const group=mk('div',undefined,'base-forest'),byId=new Map(entries.map(e=>[e.id,e]));function walk(a){const wrap=mk('div',undefined,'base-branch'),parent=byId.get(a.parentId);if(parent)wrap.append(mk('div','↓ +'+format(a.offset-parent.offset)+' B（从 '+parent.label+' 起）','base-edge'));const card=mk('div',undefined,'base-card');card.append(mk('strong',a.label),mk('div','相对 shmemBuffer_：+'+format(a.offset)+' B','small'));const aliases=mk('div',undefined,'code-names');for(const [i,name]of (a.codeNames||[]).entries()){if(i)aliases.append(mk('span','≡'));aliases.append(mk('code',name));}card.append(aliases);if(a.explanation)card.append(mk('p',a.explanation,'small'));if(resolve(a.id))card.append(button('进入这段空间',()=>visit(a.id,true),'drill'));wrap.append(card);const children=entries.filter(e=>e.parentId===a.id);if(children.length){const sub=mk('div',undefined,'base-children');for(const c of children)sub.append(walk(c));wrap.append(sub);}return wrap;}for(const e of entries.filter(e=>!e.parentId||!byId.has(e.parentId)))group.append(walk(e));return group;}
+function addSymbols(target,n){const text=[n.formula?.expression,...(effectiveAddress(n)?.terms||[]).map(t=>t.expression)].join(' ');const matches=(model.symbols||[]).filter(s=>new RegExp('(^|[^A-Za-z0-9_])('+s.id+'|'+s.codeName+')([^A-Za-z0-9_]|$)').test(text));if(!matches.length)return;const d=mk('div',undefined,'definition-list');for(const s of matches){d.append(mk('code',s.id+' = '+format(s.value)+' '+s.unit),mk('span',s.codeName+'：'+s.meaning));}target.append(d);}
+function addAddress(target,n){const a=effectiveAddress(n);if(!a)return;const base=resolve(a.baseId),card=mk('div',undefined,'formula');card.append(mk('h3','把源码下标递归拆成空间项'));const list=mk('ol',undefined,'terms');for(const t of a.terms||[]){const li=mk('li');li.append(mk('strong',t.label+'：'),mk('code',t.expression),mk('span',' = '+format(t.value)+' '+t.unit));if(t.nodeId)li.append(button('进入对应子空间',()=>visit(t.nodeId,true)));list.append(li);}card.append(list);card.append(mk('p','相对 '+(base?.label||a.baseId)+' 的字节偏移 = '+(a.terms||[]).map(x=>format(x.value)).join(' + ')+' = '+format(a.byteOffset)+' B','mono'));if(a.elementBytes){card.append(mk('p','Tensor的[]按元素计数：'+format(a.byteOffset)+' B ÷ '+a.elementBytes+' B/元素 = 下标 '+format(a.elementIndex),'mono'),mk('p','因此 /sizeof(float) 只改变下标单位；它没有再划分或申请空间。4 × 元素下标会回到同一个字节地址。','small'));}if(base)card.append(mk('p','最终地址 = shmemBuffer_ + '+format(base.absolute)+' + '+format(a.byteOffset)+' = shmemBuffer_ + '+format(base.absolute+a.byteOffset)+' B','mono'));target.append(card);}
+function addAliases(target,n){const entries=model.baseEntries||[];if(!entries.length)return;const d=mk('details');d.open=!!n.address;d.append(mk('summary','真实源码基址与别名：它们在同一块内哪里？'));d.append(mk('p','以下offset都相对本Rank的shmemBuffer_。StateBank等名称是图上的空间标签；源码对象用等宽高亮显示。','small'));d.append(baseGraph(entries));const explanations=mk('details');explanations.append(mk('summary','各基址的绑定源码与限定条件'));for(const a of entries){const row=mk('div',undefined,'alias');row.append(mk('strong',a.label+' · +'+format(a.offset)+' B'));const code=mk('div',undefined,'code-names');for(const name of a.codeNames||[])code.append(mk('code',name));row.append(code,mk('p',a.explanation));if(resolve(a.id))row.append(button('在空间树定位',()=>visit(a.id,true),'drill'));row.append(button('查看绑定源码',()=>showEvidence(a.label,a.explanation,a.evidence),'drill'));explanations.append(row);}d.append(explanations);target.append(d);}
+function addMatrix(target,n){if(!n.matrix)return;const {rows,cols,rowLabel,colLabel}=n.matrix;if(rows>16n||cols>16n)return;const div=mk('div');div.append(mk('h3','每个32 B格为什么重复？'),mk('p','生产核p连续写一整行；消费核q跨行读取自己的一列，并只清这一列。每个消费者需要独立完成标志，所以同一个sum要复制U份。','small'));const grid=mk('div',undefined,'matrix');grid.style.gridTemplateColumns='66px repeat('+cols+',minmax(0,1fr))';grid.append(mk('span','写 ↓ / 读 →','matrix-head'));for(let j=0n;j<cols;j++)grid.append(mk('span',colLabel+'='+j,'matrix-head'));for(let i=0n;i<rows;i++){grid.append(button(rowLabel+'='+i,()=>visit(n.id+'/p'+i,true),'matrix-head'));for(let j=0n;j<cols;j++)grid.append(button('sum / flag\np'+i+' → q'+j,()=>visit(n.id+'/p'+i+'/q'+j,true)));}div.append(grid);if(rows===1n)div.append(mk('p','当前U=1，复制关系退化成一格。用左侧“2个CumSum核”预设查看2×2矩阵。','notice'));div.append(mk('p','写行：起点 (RR×32 + p×U×32)/4，连续复制U个32 B块。读列：起点 (RR×32 + q×32)/4，每次读32 B，再跳(U−1)个32 B块。','small'));target.append(div);}
+function getSpaceExplanation(n){
+ if(typeof Case.explainSpace!=='function')return null;
+ try{return Case.explainSpace(n,model.values)||null;}catch(error){return {purpose:['详细解释生成失败：'+error.message],boundaries:['当前说明不完整，请重新生成并验证产物。']};}
+}
+function explanationNavigation(target,explanation){
+ if(!explanation)return;
+ const nav=mk('div',undefined,'space-reading-nav');nav.setAttribute('aria-label','当前空间的阅读导航');
+ for(const [id,label]of [['space-purpose','为什么需要'],['space-formula','公式详解'],['space-lifecycle','何时使用'],['space-source','源码与地址']])nav.append(button(label,()=>{const section=$(id);if(!section)return;const pane=$('codePane');pane.scrollTop+=section.getBoundingClientRect().top-pane.getBoundingClientRect().top-pane.querySelector('.pane-top').offsetHeight-10;},'drill'));
+ target.append(nav);
+}
+function appendSpacePurpose(target,x){if(!x)return;const section=mk('section',undefined,'space-narrative');section.id='space-purpose';section.append(mk('h3','为什么需要这段空间？'));for(const p of x.purpose||[])section.append(mk('p',p));target.append(section);}
+function appendFormulaReasoning(target,x){
+ if(!x)return;const section=mk('section',undefined,'space-narrative');
+ if(x.formulaSteps?.length){section.append(mk('h3','沿着公式逐项推导'));const steps=mk('ol',undefined,'formula-walk');for(const s of x.formulaSteps){const li=mk('li');li.append(mk('strong',s.label),mk('div',s.expression,'equation mono'),mk('div','当前代入：'+s.substitution,'small mono'),mk('p',s.reason));steps.append(li);}section.append(steps);}
+ if(x.necessity?.length){section.append(mk('h3','这些份数与布局能直接省掉吗？'));for(const p of x.necessity)section.append(mk('p',p));}
+ if(x.example?.length){const example=mk('div',undefined,'worked-space-example');example.append(mk('h3','用当前参数走一遍'));for(const p of x.example)example.append(mk('p',p));section.append(example);}
+ target.append(section);
+}
+function appendSpaceLifecycle(target,x){
+ if(!x)return;const section=mk('section',undefined,'space-narrative');section.id='space-lifecycle';section.append(mk('h3','谁在何时使用它？'));
+ const timeline=mk('ol',undefined,'space-lifecycle');for(const step of x.lifecycle||[]){const li=mk('li');li.append(mk('strong',step.phase+' · '+step.actor));if(step.condition)li.append(mk('p','发生条件：'+step.condition,'lifecycle-condition'));li.append(mk('p',step.action));if(step.evidence?.length){const proof=mk('details');proof.append(mk('summary','核对这一步的源码 · '+step.evidence.map(e=>e.fn+' L'+e.start+'–'+e.end).join(' / ')));renderSources(proof,step.evidence);li.append(proof);}timeline.append(li);}section.append(timeline);
+ if(x.boundaries?.length){const boundaries=mk('div',undefined,'narrative-boundary');boundaries.append(mk('strong','源码事实与解释边界'));for(const p of x.boundaries)boundaries.append(mk('p',p));section.append(boundaries);}
+ if(x.related?.length){const links=mk('div',undefined,'actions');for(const item of x.related)links.append(button('继续看：'+item.label,()=>visit(item.id,true),'drill'));section.append(links);}
+ target.append(section);
+}
+function renderInspector(){
+ if(!valid)return;
+ const n=normalize(selected),div=$('detail'),x=getSpaceExplanation(n);div.replaceChildren();
+ div.append(mk('span',typeName[n.kind]||'组合空间','tag'),mk('span','相对allocation +'+format(n.absolute)+' B','tag'),mk('h2',n.label),mk('p',n.why||n.formula?.why||''));
+ const codeNames=mk('div',undefined,'code-names');for(const name of n.codeNames||[])codeNames.append(mk('code',name));div.append(codeNames,mk('p','黄色高亮对应真实源码标识符。下面按必要性、公式因子、使用时序逐步解释。','highlight-key'));
+ explanationNavigation(div,x);appendSpacePurpose(div,x);
+ const formulaSection=mk('section');formulaSection.id='space-formula';const f=n.formula;
+ if(f){const c=mk('div',undefined,'formula');c.append(mk('h3','这个子空间为什么占这些字节？'),mk('div',f.expression,'equation'),mk('p','当前代入：'+f.substitution,'mono'),mk('strong',format(n.bytes)+' B · '+human(n.bytes),'result'),mk('p',f.why));formulaSection.append(c);}
+ appendFormulaReasoning(formulaSection,x);addSymbols(formulaSection,n);div.append(formulaSection);
+ const bankAncestor=path(n).find(a=>a.bank!==undefined);if(bankAncestor&&bankAncestor.bank!==bank)div.append(mk('p','当前查看Bank '+bankAncestor.bank+'的物理容量；当前演示dataState_='+bank+'。以下getter只有在dataState_='+bankAncestor.bank+'时才指向所选这份空间。','notice'));
+ appendSpaceLifecycle(div,x);
+ const sourceSection=mk('section');sourceSection.id='space-source';const proofs=n.evidence||[];
+ if(proofs.length){sourceSection.append(mk('h3','对应源码 · 高亮本空间对象'));renderSources(sourceSection,proofs.slice(0,1));if(proofs.length>1){const more=mk('details');more.append(mk('summary','另外 '+(proofs.length-1)+' 段构造 / 消费证据'));renderSources(more,proofs.slice(1));sourceSection.append(more);}}
+ const actions=mk('div',undefined,'actions selection-actions');if(isBranch(n))actions.append(button('在左侧进入此空间',()=>drill(n)));if(n.parent)actions.append(button('看父空间',()=>select(n.parent)));sourceSection.append(actions);addAddress(sourceSection,n);addMatrix(sourceSection,n);
+ if(n.packedRange){const [lo,hi]=n.packedRange;sourceSection.append(mk('h3','packed 坐标如何变成物理坐标？'),mk('p','本片段在packed中为 ['+lo+', '+hi+') B。每480 B packed数据后插入32 B trailer，因此：','small'),mk('p','物理 token 偏移 = floor(t/480)×512 + t%480','mono'),mk('p','片段起点 t='+lo+' → '+(lo/480n)+'×512 + '+(lo%480n)+' = '+((lo/480n)*512n+lo%480n)+' B','mono'));}
+ addCoordinateView(sourceSection,n);addAliases(sourceSection,n);div.append(sourceSection);$('codePane').scrollTop=0;
+}
+
+function bankExplanation(){if(!valid)return showDiagnostic();inspectorMode='bank';const d=model.values;if(!d||!model.bankPairs?.length)return;const div=$('detail');div.replaceChildren(mk('h2','Bank：同一块申请中的两对可选空间'),mk('p','每Rank始终保留两份状态区、两份token窗口。dataState_是一个0/1选择值；本次调用选择编号相同的一份状态区和一份token窗口。它们处理同一轮，但在allocation中处于不同位置。'));
+ const g=mk('div',undefined,'bank-addresses');for(const pair of model.bankPairs){const s=resolve(pair.stateId),w=resolve(pair.windowId),card=mk('div',undefined,'bank-address');card.append(mk('strong','dataState_ = '+pair.bank+(pair.bank===bank?'（当前演示）':'')),mk('p','状态：+ '+format(s.absolute)+' B，跨度 '+human(s.bytes)),mk('p','token：+ '+format(w.absolute)+' B，跨度 '+human(w.bytes)),button('进入状态Bank '+pair.bank,()=>drill(s)),button('进入token Bank '+pair.bank,()=>drill(w)));g.append(card);}div.append(g,mk('p','状态地址 = 共同状态起点 + dataState_×384 KiB','mono'),mk('p','token地址 = token池起点 + dataState_×(tokenWinSize/2)','mono'),mk('p','切换只移动这两组基址。stage、staging、URMA预留、selector仍在各自固定位置，本次模拟的 '+human(model.root.bytes)+'（'+format(model.root.bytes)+' B）总容量不会变化。','notice'),mk('p','InitWinState的定义未随附件提供，因此按钮仅展示“如果返回0/1，地址分别在哪里”，不模拟未知的自动翻转时序。flagPadOffset_是UB中另一套双缓冲，未画入本SHMEM allocation。','small'));
+ if(Object.prototype.hasOwnProperty.call(params,'AM'))div.append(mk('p','allocation 大小由当前 AM 模拟输入决定。调整 AM 只用于规划容量；本页没有修改 Host/Device 中的申请或常量，也没有重新申请设备内存。','simulation-note'));
+ addAliases(div,model.root);const all=[...resolve('state'+bank).evidence,...resolve('window'+bank).evidence];renderSources(div,all);$('codePane').scrollTop=0;if(innerWidth<=900)switchPane('code');}
+function setup(){
+ for(const p of Case.parameters){
+  params[p.id]=String(p.value??'');const control=mk('div',undefined,'parameter-control'),head=mk('div',undefined,'parameter-heading'),label=mk('label',p.label),small=mk('small',p.codeName||p.id),input=mk('input');
+  input.id='param-'+p.id;label.htmlFor=input.id;input.type='text';input.inputMode='numeric';input.value=params[p.id];input.setAttribute('aria-label',p.label);
+  const help=button('?',()=>showParameter(p.id,{reveal:true}),'parameter-help');help.id='help-'+p.id;help.setAttribute('aria-label','解释参数 '+p.label);help.title='查看含义、限制来源、影响空间和当前诊断';
+  input.addEventListener('focus',()=>showParameter(p.id,{reveal:false}));input.addEventListener('input',()=>{params[p.id]=input.value;activeParameter=p.id;inspectorMode='parameter';refresh();});
+  head.append(label,help);control.append(head,small,input);$('controls').append(control);
+ }
+ for(const preset of Case.presets)$('presets').append(button(preset.label,()=>applySimulation(preset.values)));
+ const nav=$('showSelected').parentElement,parametersButton=button('参数与限制',()=>showParameter(activeParameter||Case.parameters[0].id,{reveal:true})),diagnosisButton=button('容量诊断',()=>showDiagnostic());parametersButton.id='showParameters';diagnosisButton.id='showDiagnosis';nav.append(parametersButton,diagnosisButton);
+ const calculatorNote=$('calculator').querySelector('p.small');if(calculatorNote)calculatorNote.textContent='聚焦参数查看右侧解释，点“?”查看含义与限制。输入会重算；超限时隐藏旧空间树，并显示当前参数的容量诊断。所有操作仅用于本页模拟。';
+ $('mobileVisual').addEventListener('click',()=>switchPane('visual'));$('mobileCode').addEventListener('click',()=>switchPane('code'));$('up').addEventListener('click',()=>{if(focus?.parent)drill(focus.parent);});$('root').addEventListener('click',()=>drill(model?.root));$('explainBank').addEventListener('click',bankExplanation);$('showSelected').addEventListener('click',()=>{if(!valid)return showDiagnostic();inspectorMode='space';renderInspector();});$('showBases').addEventListener('click',()=>{if(!valid)return showDiagnostic();inspectorMode='bases';const div=$('detail');div.replaceChildren(mk('h2','基地址与视图的坐标关系'));addAliases(div,{address:true});$('codePane').scrollTop=0;});
+ for(const b of $('bankSwitch').querySelectorAll('button[data-bank]'))b.addEventListener('click',()=>{const old=bank;bank=+b.dataset.bank;if(selected?.id.startsWith('state'+old)||selected?.id.startsWith('window'+old)){const replacement=selected.id.replace(new RegExp('^(state|window)'+old),'$1'+bank);selected={id:replacement};}if(focus?.id.startsWith('state'+old)||focus?.id.startsWith('window'+old))focus={id:focus.id.replace(new RegExp('^(state|window)'+old),'$1'+bank)};refresh();});
+ let resize;addEventListener('resize',()=>{clearTimeout(resize);resize=setTimeout(renderMap,100);});refresh();
+ globalThis.MemoryReader={getState:()=>({selected:selected?.id,focus:focus?.id,bank,valid,registered:registry.size,inspectorMode,activeParameter,diagnosisOk:currentDiagnosis?.ok}),refresh,resolve,showParameter,showDiagnostic};
+}
+setup();
+})();
+/* RECURSIVE_READER_END */
+</script></body></html>

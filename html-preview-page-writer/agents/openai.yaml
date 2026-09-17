@@ -1,0 +1,4 @@
+interface:
+  display_name: "HTML 预览页写作器"
+  short_description: "生成可被首页、分类和标签索引的站内 HTML 文章"
+  default_prompt: "使用 $html-preview-page-writer 为这个主题生成参与站内索引的方案 B HTML 文章。"

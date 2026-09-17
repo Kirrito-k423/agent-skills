@@ -1,0 +1,4 @@
+interface:
+  display_name: "技术洞察"
+  short_description: "以证据、代码与可复现实验完成技术冲击分析和横向选型"
+  default_prompt: "使用 $technology-insight 分析一个新技术对现有技术栈的冲击，并完成可复现实验与横向比较。"

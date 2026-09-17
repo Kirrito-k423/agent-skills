@@ -1,0 +1,4 @@
+interface:
+  display_name: "人生设计术"
+  short_description: "通过多轮对话设计三个五年人生版本，并形成原型行动蓝图"
+  default_prompt: "使用 $life-design 帮我设计三个未来人生版本。"

@@ -1,0 +1,4 @@
+interface:
+  display_name: "Goal 证据化执行"
+  short_description: "用证据驱动的有界循环执行 Goal，持续归档过程、交付代码与汇报"
+  default_prompt: "使用 $goal-execution 按证据驱动协议执行这个 Goal，并持续形成过程记录和交付件。"

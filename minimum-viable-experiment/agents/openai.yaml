@@ -1,0 +1,4 @@
+interface:
+  display_name: "最小实验"
+  short_description: "围绕关键假设设计低成本、可逆、可度量的现实验证实验"
+  default_prompt: "使用 $minimum-viable-experiment 为这个选择设计最小实验。"

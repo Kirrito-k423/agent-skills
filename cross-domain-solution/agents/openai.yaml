@@ -1,0 +1,4 @@
+interface:
+  display_name: "跨领域借解"
+  short_description: "从历史和远距离领域寻找结构相似机制，迁移为低成本实验"
+  default_prompt: "使用 $cross-domain-solution 从其他领域寻找可迁移解法。"

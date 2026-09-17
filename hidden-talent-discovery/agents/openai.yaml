@@ -1,0 +1,4 @@
+interface:
+  display_name: "挖掘隐藏天赋"
+  short_description: "通过经历、能量、怪癖和羡慕线索，发现可迁移底层天赋"
+  default_prompt: "使用 $hidden-talent-discovery 帮我发现被忽略的底层天赋。"

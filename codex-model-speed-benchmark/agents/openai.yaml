@@ -1,0 +1,4 @@
+interface:
+  display_name: "Codex 模型测速"
+  short_description: "对比 Codex 模型、推理档位与标准或快速模式的实际性能"
+  default_prompt: "使用 $codex-model-speed-benchmark 规划并运行一组可复现的 Codex 模型测速。"

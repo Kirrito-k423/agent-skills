@@ -1,0 +1,4 @@
+interface:
+  display_name: "需求分析"
+  short_description: "识别真实需求、技术选型、可行性与价值评估并定义验收"
+  default_prompt: "使用 $requirements-analysis 分析客户真实需求，拆解范围，比较技术方案，评估可行性、工作量和价值，并形成开发前验收合同。"

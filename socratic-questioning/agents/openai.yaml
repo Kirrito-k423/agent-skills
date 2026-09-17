@@ -1,0 +1,4 @@
+interface:
+  display_name: "苏格拉底式提问"
+  short_description: "通过逐轮苏格拉底式追问澄清事实、假设、目标与真正问题"
+  default_prompt: "使用 $socratic-questioning 帮我澄清真正需要解决的问题。"

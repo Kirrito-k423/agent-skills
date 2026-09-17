@@ -1,0 +1,4 @@
+interface:
+  display_name: "时间线三列代码对照"
+  short_description: "把执行配置、关键代码耗时与实测色块横向对照，生成可追溯的交互式HTML"
+  default_prompt: "使用 $timelinetohtml 将这份性能时间线与对应源码整理成三列交互HTML：执行配置、代码耗时、颜色汇总与实测对比。"

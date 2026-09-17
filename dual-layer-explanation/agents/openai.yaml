@@ -1,0 +1,4 @@
+interface:
+  display_name: "双层解释法"
+  short_description: "以小白版和专业版双层解释概念，并通过问题检查理解程度"
+  default_prompt: "使用 $dual-layer-explanation 帮我理解这个陌生概念。"

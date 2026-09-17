@@ -1,0 +1,4 @@
+interface:
+  display_name: "软件设计与任职举证"
+  short_description: "从需求与代码提交生成软件设计文档、任职举证和缺口清单"
+  default_prompt: "使用 $software-design-evidence 分析需求和穿刺代码 commits，生成软件设计文档、任职举证报告与待补工作清单。"

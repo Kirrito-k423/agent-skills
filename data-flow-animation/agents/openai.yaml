@@ -1,0 +1,4 @@
+interface:
+  display_name: "数据流动画化"
+  short_description: "将并行源码转为双屏联动动画，逐步红色高亮数据读写与对应代码"
+  default_prompt: "使用 $data-flow-animation 分析这段并行代码，制作双屏联动、一屏可读、每步红色高亮的数据流动画。"
