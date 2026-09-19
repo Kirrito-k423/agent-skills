@@ -1,0 +1,4 @@
+interface:
+  display_name: "模型降智自检"
+  short_description: "生成鹈鹕复杂场景与数学谜题检验图片，保留首答并由用户判断模型表现"
+  default_prompt: "使用 $model-intelligence-check 生成一次降智检验图片，展示首答并让我自己判断。"
