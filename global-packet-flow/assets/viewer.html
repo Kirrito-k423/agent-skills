@@ -33,12 +33,18 @@ body[data-role=visual][data-view=curves] #app{grid-template-rows:auto auto minma
 body[data-role=visual] .trend-panel{display:flex;flex-direction:column}body[data-role=visual] .chart-grid{flex:1}body[data-role=visual] .trend-settings,body[data-role=visual] .milestone-table,body[data-role=visual] .curve-explain{display:none}
 body[data-role=visual][data-view=flow] .trend-panel{display:none}
 @media(max-width:950px){body[data-role=control] .chart-grid{grid-template-columns:1fr;height:700px}.sync-bar{flex-wrap:wrap}}
+.bandwidth-panel{min-height:0;padding:12px 0}.bandwidth-panel input[type=number]{width:110px;border:1px solid #d5dee7;border-radius:6px;padding:6px}.bandwidth-now{font-size:13px;color:#173b45;font-weight:600;padding:9px 12px;margin-bottom:10px;background:#eff7f7;border-radius:7px}.bandwidth-actions{display:flex;gap:6px;flex-wrap:wrap;margin:8px 0}.bandwidth-tables{display:grid;grid-template-columns:1fr 1fr;gap:16px}.bandwidth-tables h2{margin:14px 0 6px}.bandwidth-caption{color:#647488;font-size:11px;margin:6px 0}.bandwidth-panel .curve-legend{min-height:35px;line-height:1.5}
+body:not([data-view=bandwidth]) .bandwidth-panel,body[data-view=bandwidth] .trend-panel,body[data-view=bandwidth] .overview,body[data-view=bandwidth] .details{display:none}
+body[data-role=visual][data-view=bandwidth] #app{grid-template-rows:auto auto minmax(0,1fr) auto}
+body[data-role=visual][data-view=bandwidth] .bandwidth-panel{display:flex;flex-direction:column}
+body[data-role=visual] .bandwidth-tables,body[data-role=visual] .bandwidth-actions,body[data-role=visual] #bandwidthEvidence{display:none}
+@media(max-width:950px){.bandwidth-tables{grid-template-columns:1fr}}
 </style>
 <body data-role="__PAGE_ROLE__" data-view="curves">
 <div id="loading"><h2>正在装载全量位图观察</h2><p>只在本地解压，不请求第三方服务。</p></div>
 <main id="app">
  <header><div><div class="headline"><h1 id="title">全局数据流</h1><span class="pill" id="scale"></span><span class="pill amber" id="coverage"></span></div><p>在此屏操作和查看证据，将动画页拖到另一块屏幕。动画页点选核或块，会反向定位这里的详情。</p></div><div class="screen-actions"><a id="otherPage" target="_blank" rel="noopener">打开另一页 ↗</a><button id="fullscreen">全屏</button><button id="about">数据来源</button></div></header>
- <div class="sync-bar"><span id="syncStatus">正在建立双屏会话…</span><div class="view-tabs"><button id="showflow">流动网图</button><button id="showcurves">完成度曲线</button></div><span id="viewState"></span></div>
+ <div class="sync-bar"><span id="syncStatus">正在建立双屏会话…</span><div class="view-tabs"><button id="showflow">流动网图</button><button id="showcurves">完成度曲线</button><button id="showbandwidth">观测带宽</button></div><span id="viewState"></span></div>
  <div class="controls">
   <label>轮次<select id="launch" aria-label="kernel launch"></select></label>
   <button class="primary" id="play">播放</button><button id="reset" title="回到开始">↤ 起点</button>
@@ -66,6 +72,24 @@ body[data-role=visual][data-view=flow] .trend-panel{display:none}
   <div class="curve-notes"><p id="curveClockNote"></p><p>完成度 = 累计首次观察为 1 的块 / 应到总块数。阶梯按完整日志绘制，红色游标与动画联动；圆点为聚焦曲线的首块、P10、P50、P90、P100。</p></div>
   <div class="milestone-table"><h2>group 关键节点 <span class="muted">· 点击时间同步定位两屏</span></h2><p class="curve-explain">真实发送开始未记录。首次检查是轮询 start，首块是首次观察到就绪块的检查 end；二者都不能替代真实发送起点。P10/P50/P90/P100 是累计块完成比例首次达到阈值的观测时间，不是 rank 时延的分位数。未达到阈值显示“未达”，不补 100%。</p><div class="table-scroll"><table><thead><tr><th>group / rank</th><th>应到块</th><th>首次检查</th><th>首块观测</th><th>P10</th><th>P50</th><th>P90</th><th>P100</th><th>P90→P100</th></tr></thead><tbody id="groupMilestones"></tbody></table></div><h2>各 rank 关键节点 <span class="muted">· 当前 group，完整列表可滚动</span></h2><div class="table-scroll"><table><thead><tr><th>rank / group</th><th>应到块</th><th>首次检查</th><th>首块观测</th><th>P10</th><th>P50</th><th>P90</th><th>P100</th><th>P90→P100</th></tr></thead><tbody id="rankMilestones"></tbody></table></div></div>
  </section>
+ <section class="bandwidth-panel">
+  <div class="trend-settings"><label>rank 组成<select id="bwAxis"><option value="dst">接收 rank</option><option value="src">来源 rank</option></select></label><label>group<select id="bwGroup"><option value="all">全部 group</option></select></label><label>rank<select id="bwRank"><option value="all">全部 rank</option></select></label><label><input id="bwLocal" type="checkbox">包含本机复制</label><label>测量区间<select id="bwMode"><option value="adjacent">相邻观测点</option><option value="window">固定 tick 窗口</option></select></label><label>窗口 tick<input id="bwWindow" type="number" min="1" value="1000"></label></div>
+  <div class="trend-settings"><label>每包 B<input id="bwPacketBytes" type="number" min="1" step="1" value="512"></label><label>每 cycle μs<input id="bwCycleUs" type="number" min="0" step="any" placeholder="未配置"></label><label>纵轴<select id="bwUnit"><option value="packets">包/tick（原始）</option><option value="gbps" disabled>GB/s（配置换算）</option></select></label><label>参考上限<input id="bwCapacity" type="number" min="0" step="any" placeholder="可选"><span id="bwCapacityUnit">包/tick</span></label></div>
+  <p class="curve-scope" id="bandwidthScope"></p><p class="bandwidth-now" id="bandwidthNow"></p>
+  <div class="bandwidth-actions"><button id="bwPrevious">← 上一测量区间</button><button id="bwNext">下一测量区间 →</button><button id="bwZoom">放大游标 ±1000 tick</button><button id="bwFull">查看全程</button><button id="bwExport">导出区间与组成 CSV</button></div>
+  <div class="chart-grid">
+   <article class="chart-card"><h2>总吞吐与 group 组成</h2><div id="bwGroupLegend" class="curve-legend"></div><div class="chart-wrap"><canvas id="groupsBandwidth" class="progress-canvas" aria-label="按 group 堆叠的时间带宽曲线"></canvas><div class="chart-tip" id="groupsBandwidthTip" hidden></div></div></article>
+   <article class="chart-card"><h2>总吞吐与 rank 组成</h2><div id="bwRankLegend" class="curve-legend"></div><div class="chart-wrap"><canvas id="ranksBandwidth" class="progress-canvas" aria-label="按 rank 堆叠的时间带宽曲线"></canvas><div class="chart-tip" id="ranksBandwidthTip" hidden></div></div></article>
+  </div>
+  <p class="bandwidth-caption">彩色堆叠 + 深色线：像素区间内按时间加权的均值；灰色细线：原区间峰值。红线：共享游标。点击图定位原始区间，两图的总量一致。</p>
+  <p class="curve-notes">观测吞吐 = 新增首次就绪包数 / tick 差。1 包 = 1 个 flag 块，并非网卡报文。接收 rank 入口分别对齐，未经全局时钟校准；轮询批量与间隔会制造尖峰，不能据此认定物理链路已满或空闲。</p>
+  <p class="curve-explain" id="bandwidthEvidence"></p>
+  <div class="bandwidth-tables">
+   <section><h2>当前区间 · group 构成</h2><div class="table-scroll"><table><thead><tr><th>group</th><th>新增包</th><th>包/tick</th><th>估算 GB/s</th><th>占比</th></tr></thead><tbody id="bwGroupRows"></tbody></table></div></section>
+   <section><h2>当前区间 · rank 构成</h2><div class="table-scroll"><table><thead><tr><th>rank</th><th>新增包</th><th>包/tick</th><th>估算 GB/s</th><th>占比</th></tr></thead><tbody id="bwRankRows"></tbody></table></div></section>
+  </div>
+  <p class="curve-explain">表格列出当前区间有新增观测包的全部贡献者，点击名称可聚焦；各表独立相加都等于总吞吐，不能把两表相加。未列出的对象在本区间无新增观测，不等于链路空闲。首测包数不计入差分区间；未观测到的包不补零。CSV 的 total / groups / ranks 是三种统计口径，total 包括零增量区间。GB/s = 包/tick × B/包 ÷ (μs/cycle) ÷ 1000；一个 tick 按一个 cycle 换算。参考上限由用户输入，显示的是参考比，未经校准不能称为实测利用率。</p>
+ </section>
  <div class="details">
   <section><div class="detail-head"><h2>接收区域钻取</h2><span id="mini-status"></span></div><div class="picker"><label>rank <input id="rxRank" type="number" min="0" value="61" aria-label="接收 rank"></label><label>AIV <input id="rxCore" type="number" min="0" value="20" aria-label="接收 AIV"></label><button id="locate">定位</button></div><div class="picker"><select id="task" aria-label="来源专家任务"></select></div><div class="facts" id="flowFacts"></div><div style="display:flex;gap:6px;margin-top:7px"><button id="prev">← 上一观察</button><button id="next">下一观察 →</button></div></section>
   <section class="flag-panel"><div class="detail-head"><h2 id="blockTitle">token slot × block</h2><div class="picker" style="margin:0"><button id="slotPrev" title="上一组 slot">‹</button><span id="slotPage" class="muted"></span><button id="slotNext" title="下一组 slot">›</button></div></div><p>列为 block 编号；行是接收 slot，不是源 tokenId。动画页点选一块可回看原始记录。</p><div class="block-picker"><label>slot <input id="blockSlot" type="number" min="0" value="0" aria-label="接收 slot"></label><label>block <input id="blockIndex" type="number" min="0" value="0" aria-label="块编号"></label><button id="selectBlock">查看此块</button></div><canvas id="blocks" aria-label="所选任务的逐块到达位图"></canvas><div id="blockFacts"></div></section>
@@ -78,6 +102,7 @@ body[data-role=visual][data-view=flow] .trend-panel{display:none}
 <script id="packed" type="application/octet-stream">__PACKED_MODEL__</script>
 <script>__SYNC_SCRIPT__</script>
 <script>__PROGRESS_SCRIPT__</script>
+<script>__BANDWIDTH_SCRIPT__</script>
 <script>
 'use strict';
 const $=id=>document.getElementById(id), GROUP_COLORS=['#4b72d4','#129b92','#d99b35','#9b68bb'], count=n=>Number(n).toLocaleString('zh-CN');
@@ -116,12 +141,12 @@ function seek(value){
  while(cursor<events.length&&events[cursor][0]<=t){const e=events[cursor++];if(!accepted[e[1]])continue;const task=L.tasks[e[1]],rx=task[1]*M.cores+task[2],tx=task[0]*M.cores+task[5];rxReady[rx]+=e[2];rxKnown[rx]+=e[3];rxCopied[rx]+=e[4];if(task[5]>=0)txReady[tx]+=e[2];totals.ready+=e[2];totals.known+=e[3];totals.copied+=e[4]}
  $('timeline').value=Math.round(t/duration*1000);$('clock').textContent=`${count(Math.round(t))} tick`;
  $('stats').innerHTML=`<span>就绪 <b>${(totals.expected?totals.ready/totals.expected*100:0).toFixed(1)}%</b></span><span>块 <b>${count(totals.ready)} / ${count(totals.expected)}</b></span><span>未观察 <b>${count(totals.expected-totals.known)}</b></span>`;
- draw();updateDetail();drawProgress();
+ draw();updateDetail();drawProgress();drawBandwidth();
 }
 function layout(w,h){let gap=62,pw=(w-gap)/2,columns=Math.ceil(Math.sqrt(M.ranks)),rows=Math.ceil(M.ranks/columns),cw=pw/columns,ch=h/rows;return {w,h,gap,pw,columns,rows,cw,ch,coreCols:14,coreRows:Math.ceil(M.cores/14)}}
 function cell(side,rank,core){const g=geometry,x0=side?(g.pw+g.gap):0,rx=x0+(rank%g.columns)*g.cw,ry=Math.floor(rank/g.columns)*g.ch;let label=Math.min(14,g.ch*.25),sx=(g.cw-8)/g.coreCols,sy=(g.ch-label-5)/g.coreRows,size=Math.min(sx-1,sy-1,8);if(core<0)return {x:rx+g.cw/2,y:ry+label,size:2};return {x:rx+4+(core%g.coreCols)*sx+sx/2,y:ry+label+Math.floor(core/g.coreCols)*sy+sy/2,size:Math.max(1.8,size)}}
 function draw(){
- if(ROLE!=='visual'||document.body.dataset.view==='curves')return;
+ if(ROLE!=='visual'||document.body.dataset.view!=='flow')return;
  let [w,h]=fit(canvas);geometry=layout(w,h);ctx.clearRect(0,0,w,h);const g=geometry;
  for(let side=0;side<2;side++)for(let r=0;r<M.ranks;r++){
   let x=(side?g.pw+g.gap:0)+(r%g.columns)*g.cw,y=Math.floor(r/g.columns)*g.ch,sel=side&&r===selectedRank;
@@ -191,14 +216,24 @@ function reduceState(previous,action,now){
  const s={...previous,tick:clockTick(previous,now),at:now};if(s.tick>=runDuration(s.launch))s.playing=false;
  switch(action.type){
   case 'play': if(s.tick>=runDuration(s.launch))s.tick=0;s.playing=!s.playing;break;
-  case 'seek': s.tick=Math.max(0,Math.min(runDuration(s.launch),action.ratio*runDuration(s.launch)));s.playing=false;break;
+  case 'seek': s.tick=Math.round(Math.max(0,Math.min(runDuration(s.launch),Number.isFinite(action.tick)?action.tick:action.ratio*runDuration(s.launch))));s.playing=false;break;
   case 'speed': s.speed=Number(action.value);break;
-  case 'launch': s.launch=Number(action.value);s.tick=0;s.playing=false;selectCoreState(s,s.rank,s.core);break;
+  case 'launch': s.launch=Number(action.value);s.tick=0;s.playing=false;s.bwFrom=s.bwTo=0;selectCoreState(s,s.rank,s.core);break;
   case 'filter': s[action.field]=action.value;break;
   case 'clear': s.group=s.sourceRank=s.destRank='all';break;
   case 'scene': s.scene=action.value;break;
   case 'curve': if(['curveAxis','curveGroup','curveRank'].includes(action.field))s[action.field]=action.value;break;
   case 'curveReset': s.curveGroup=s.curveRank='all';break;
+  case 'bandwidth': {
+   const f=action.field,v=action.value,n=Number(v);
+   if(f==='bwLocal')s[f]=v===true;
+   else if(f==='bwAxis'&&['src','dst'].includes(v)||f==='bwMode'&&['adjacent','window'].includes(v)||f==='bwUnit'&&['packets','gbps'].includes(v))s[f]=v;
+   else if(f==='bwGroup'&&(v==='all'||Number.isInteger(n)&&n>=-1&&n<M.groups)||f==='bwRank'&&(v==='all'||Number.isInteger(n)&&n>=0&&n<M.ranks))s[f]=v;
+   else if(['bwWindow','bwPacketBytes','bwCycleUs','bwCapacity'].includes(f)&&Number.isFinite(n))s[f]=Math.max(['bwWindow','bwPacketBytes'].includes(f)?1:0,['bwWindow','bwPacketBytes'].includes(f)?Math.trunc(n):n);
+   if(['bwUnit','bwPacketBytes','bwCycleUs'].includes(f))s.bwCapacity=0;
+   if(!s.bwCycleUs)s.bwUnit='packets';break;
+  }
+  case 'bwZoom': s.bwFrom=action.from;s.bwTo=action.to;break;
   case 'core': selectCoreState(s,action.rank,action.core);break;
   case 'sourceCore': {
    s.sourceRank=String(action.rank);const tasks=M.launches[s.launch].tasks,i=tasks.findIndex(a=>a[0]===action.rank&&a[5]===action.core&&a[4]);
@@ -225,6 +260,7 @@ function renderSharedTime(){
  $('app').dataset.tick=String(Math.round(t));$('app').dataset.task=String(selectedTask);$('app').dataset.block=String(selectedBlock);
  $('app').dataset.revision=String(shared.revision);$('app').dataset.launch=String(shared.launch);
  if(document.body.dataset.view==='curves')$('lineStatus').textContent='全程完成度阶梯曲线 · 每个块只计首次就绪 · 点击关键节点定位动画';
+ if(document.body.dataset.view==='bandwidth')$('lineStatus').textContent='相邻观测差分 · 默认排除本机复制 · 原始包/tick 与配置换算值双屏同步';
  if(document.activeElement!==$('blockSlot'))$('blockSlot').value=Math.floor(selectedBlock/M.blocksPerToken);
  if(document.activeElement!==$('blockIndex'))$('blockIndex').value=selectedBlock%M.blocksPerToken;
  $('blockSlot').max=selectedTask<0?0:Math.max(0,L.tasks[selectedTask][4]-1);$('blockIndex').max=M.blocksPerToken-1;
@@ -233,7 +269,7 @@ function renderSharedTime(){
 }
 function applyShared(s){
  shared=s;const changed=s.launch!==appliedLaunch;
- document.body.dataset.view=s.scene||'curves';for(const view of ['flow','curves'])$('show'+view).classList.toggle('active',document.body.dataset.view===view);
+ document.body.dataset.view=s.scene||'curves';for(const view of ['flow','curves','bandwidth'])$('show'+view).classList.toggle('active',document.body.dataset.view===view);
  if(changed){$('launch').value=s.launch;buildRun(s.launch);appliedLaunch=s.launch;appliedFilters='';appliedSelection='';}
  $('speed').value=String(s.speed);
  const filters=[s.group,s.sourceRank,s.destRank].join('/');if(filters!==appliedFilters){for(const id of ['group','sourceRank','destRank'])$(id).value=s[id];filterTasks();appliedFilters=filters;}
@@ -271,7 +307,7 @@ new ResizeObserver(()=>{if(shared)renderSharedTime();else if(M&&L){draw();update
  document.title=M.title+(ROLE==='control'?' · 控制台':' · 动画屏');
  const other=new URL(ROLE==='control'?'visual.html':'control.html',location.href);other.searchParams.set('session',SESSION);$('otherPage').href=other.href;$('otherPage').textContent=ROLE==='control'?'打开动画屏 ↗':'打开控制台 ↗';
  $('sessionHelp').textContent=`会话：${SESSION}。使用同一浏览器和同一 localhost 地址打开两页，再将标签页拖到不同屏幕。播放、筛选、核与块选择双向联动；刷新和后打开的页面会接续当前进度。`;
- $('loading').remove();initProgress();buildRun(0);
+ $('loading').remove();initProgress();initBandwidth();buildRun(0);
  const initial={launch:0,tick:t,at:Date.now(),playing:false,speed:1,scene:'curves',curveAxis:'dst',curveGroup:'all',curveRank:'all',group:'all',sourceRank:'all',destRank:'all',rank:selectedRank,core:selectedCore,task:selectedTask,block:0,page:0,revision:0};
  try{
   session=await createPacketSession({key:'packet-flow.dual.v1:__MODEL_ID__:'+SESSION,role:ROLE,initial,reduce:reduceState,onState:applyShared,onPresence:peers=>{

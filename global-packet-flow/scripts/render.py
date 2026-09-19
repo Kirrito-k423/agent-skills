@@ -55,6 +55,7 @@ def render(model, output):
     template = template.replace('__PACKED_MODEL__', packed).replace('__MODEL_ID__', hashlib.sha256(data).hexdigest())
     template = template.replace('__SYNC_SCRIPT__', (assets / 'sync.js').read_text())
     template = template.replace('__PROGRESS_SCRIPT__', (assets / 'progress.js').read_text() + '\n' + (assets / 'charts.js').read_text())
+    template = template.replace('__BANDWIDTH_SCRIPT__', (assets / 'bandwidth.js').read_text() + '\n' + (assets / 'bandwidth-view.js').read_text())
     for role in ('control', 'visual'):
         (output.parent / f'{role}.html').write_text(template.replace('__PAGE_ROLE__', role))
     # 保留旧入口；两个实际页面都内嵌完整数据，移动文件时一起复制即可。
@@ -84,7 +85,7 @@ def self_test():
         for role in ('control', 'visual'):
             page = (output.parent / f'{role}.html').read_text()
             assert f'data-role="{role}"' in page
-            assert not re.search(r'__(PACKED_MODEL|PAGE_ROLE|SYNC_SCRIPT|PROGRESS_SCRIPT|MODEL_ID)__', page)
+            assert not re.search(r'__(PACKED_MODEL|PAGE_ROLE|SYNC_SCRIPT|PROGRESS_SCRIPT|BANDWIDTH_SCRIPT|MODEL_ID)__', page)
             encoded = re.search(r'<script id="packed"[^>]*>(.*?)</script>', page, re.S).group(1)
             assert json.loads(gzip.decompress(base64.b64decode(encoded))) == fixture
         assert 'location.search' in output.read_text()

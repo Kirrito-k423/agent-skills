@@ -2,7 +2,7 @@
 
 ## 页面分工
 
-- `visual.html`：全量发送与接收网图、连线动画、最小块位图；也可切换至 group/rank 完成度曲线。核、块、曲线和曲线上关键点可点击。
+- `visual.html`：全量发送与接收网图、连线动画、最小块位图；也可切换至 group/rank 完成度曲线、区间带宽和组成堆叠图。核、块、曲线和曲线上关键点可点击。
 - `control.html`：播放与暂停、时间轴、速度、轮次、筛选、核与来源任务选择、slot 翻页、原始记录和完整说明；曲线视图含统计口径、group/rank 聚焦、完整关键节点表格与 CSV 导出。
 - `index.html`：兼容旧入口，保留查询参数跳到控制页。两个实际页面互相提供入口，用户可将标签页拖到不同窗口和屏幕。
 
@@ -15,6 +15,8 @@
 状态包含 revision、launch、tick、at、playing、speed、group、sourceRank、destRank、rank、core、task、page、block。每个命令先在锁内读取最新快照，按共享时间锚点结算，再执行用户意图并递增 revision。不能把某页陈旧的完整快照覆盖回去。双击播放按两次顺序命令处理；两个控制页各改一项，不丢失另一项。
 
 曲线扩展字段为 scene（flow/curves）、curveAxis（dst/src）、curveGroup、curveRank。旧快照缺少字段时采用曲线视图、接收 rank、全部 group/rank 默认值，不丢弃原播放位置。点击节点只改变共享时间；曲线聚焦与网图顶层筛选分别保留，界面明确曲线继承了哪些顶层筛选。
+
+带宽扩展将 scene 增加 bandwidth，状态包含 bwAxis、bwGroup、bwRank、bwLocal、bwMode、bwWindow、bwPacketBytes、bwCycleUs、bwUnit、bwCapacity、bwFrom、bwTo。控制页承担参数输入、贡献表、说明和导出；动画页只保留曲线、当前区间、摘要与必要边界。相邻/固定窗口、B/包、μs/cycle、纵轴、参考上限与缩放范围双向共享。旧快照采用原始包/tick、未配置时钟、排除本机复制的默认值。
 
 每一帧只根据 `tick + (当前时间 - at) × 速度 × 当前轮次总时长 / 展示总时长` 渲染，不写共享状态。浏览器墙钟只用于同一台电脑的展示进度，不是设备日志的全局时钟。暂停、拖动、变速先结算当前位置；后台恢复、新开和刷新均读取同一锚点。到末尾停止渲染，重新播放回到起点。
 

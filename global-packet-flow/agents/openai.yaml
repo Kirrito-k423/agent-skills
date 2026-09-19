@@ -1,4 +1,4 @@
 interface:
   display_name: "全局数据包流动网图"
-  short_description: "制作双屏数据流动画与控制页，比较各 group、rank 的完成曲线和关键百分位节点"
-  default_prompt: "使用 $global-packet-flow 将全卡多核日志制作成双屏联动网图，补全各 group、rank 的时间完成度曲线和首块、P10、P50、P90、P100 节点，支持点击节点同步定位及逐块证据钻取。"
+  short_description: "制作双屏数据流动画、完成曲线和包/tick 带宽图，展示 group/rank 组成并支持单位换算"
+  default_prompt: "使用 $global-packet-flow 将全卡多核日志制作成双屏联动网图，补全 group、rank 完成曲线及 P10/P50/P90/P100，增加相邻测量点包/tick 吞吐和组成堆叠，允许配置 B/包与 μs/cycle 换算 GB/s，支持区间定位与逐块证据钻取。"

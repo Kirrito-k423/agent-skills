@@ -5,7 +5,7 @@ const groupLabel=g=>g==='all'?'全部 group':Number(g)<0?'本机复制':`group $
 const rankColor=r=>`hsl(${(Number(r)*137.508)%360} 53% 44%)`;
 function progressOptions(){return {axis:shared?.curveAxis||'dst',group:String(shared?.curveGroup??'all'),rank:String(shared?.curveRank??'all')}}
 function progressName(s){return s.rank==='all'?groupLabel(s.group):`R${s.rank} · ${groupLabel(s.group)}`}
-function progressJump(tick){if(tick!==null)send({type:'seek',ratio:tick/duration})}
+function progressJump(tick){if(tick!==null)send({type:'seek',tick})}
 function progressSeries(group,rank){return progressData.get(`${group}/${rank}`)}
 function progressTableBody(id,series){
  const body=$(id);body.replaceChildren();
