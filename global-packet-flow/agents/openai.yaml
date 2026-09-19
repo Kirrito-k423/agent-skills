@@ -1,4 +1,4 @@
 interface:
   display_name: "全局数据包流动网图"
-  short_description: "制作双屏数据流动画、完成曲线和包/tick 带宽图，展示 group/rank 组成并支持单位换算"
-  default_prompt: "使用 $global-packet-flow 将全卡多核日志制作成双屏联动网图，补全 group、rank 完成曲线及 P10/P50/P90/P100，增加相邻测量点包/tick 吞吐和组成堆叠，允许配置 B/包与 μs/cycle 换算 GB/s，支持区间定位与逐块证据钻取。"
+  short_description: "制作双屏数据流网图，聚焦发送接收对象，联动原子包时序、完成曲线和带宽组成"
+  default_prompt: "使用 $global-packet-flow 将全卡多核日志制作成双屏联动网图，按来源和目的 rank 聚焦；组合数不超过 512 时自动呈现原子包时序并随播放标记完成。补全完成度关键节点、包/tick 吞吐和 group/rank 组成，支持单位换算、重合包展开及逐块证据钻取。"

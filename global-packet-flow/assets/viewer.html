@@ -39,12 +39,21 @@ body[data-role=visual][data-view=bandwidth] #app{grid-template-rows:auto auto mi
 body[data-role=visual][data-view=bandwidth] .bandwidth-panel{display:flex;flex-direction:column}
 body[data-role=visual] .bandwidth-tables,body[data-role=visual] .bandwidth-actions,body[data-role=visual] #bandwidthEvidence{display:none}
 @media(max-width:950px){.bandwidth-tables{grid-template-columns:1fr}}
+.packet-panel{display:none;min-height:0;padding:8px 0}.packet-toolbar{display:flex;gap:7px;align-items:center;flex-wrap:wrap;margin-bottom:6px}.packet-toolbar label{display:flex;gap:5px;align-items:center}.packet-toolbar button,.packet-toolbar select{font-size:11px;padding:4px 8px}.packet-scope{font-size:12px;color:#456076;margin-bottom:5px}.packet-chart{position:relative;min-height:0;flex:1;border:1px solid var(--line);border-radius:8px;padding:5px}#packetCanvas{width:100%;height:100%;display:block}.packet-note{font-size:11px;color:#80672c;margin:4px 0}.packet-selected{background:#e5f5f2}.packet-list{margin:12px 0}.packet-list .table-scroll{max-height:260px}
+body[data-view=packets] .packet-panel,body[data-view=flow][data-packets=ready] .packet-panel{display:flex;flex-direction:column}
+body[data-view=packets] .overview,body[data-view=packets] .trend-panel{display:none}
+body[data-role=control] .packet-chart{flex:none;height:370px}
+body[data-role=visual] .packet-list,body[data-role=visual] .packet-axis-controls{display:none}
+body[data-role=visual][data-view=packets] .details,body[data-role=visual][data-view=flow][data-packets=ready] .details{display:none}
+body[data-role=visual][data-view=packets] #app{grid-template-rows:auto auto minmax(0,1fr) auto}
+body[data-role=visual][data-view=flow][data-packets=ready] #app{grid-template-rows:auto auto minmax(230px,1fr) 260px auto}
+body[data-view=packets] #packetExpand{display:none}
 </style>
 <body data-role="__PAGE_ROLE__" data-view="curves">
 <div id="loading"><h2>正在装载全量位图观察</h2><p>只在本地解压，不请求第三方服务。</p></div>
 <main id="app">
  <header><div><div class="headline"><h1 id="title">全局数据流</h1><span class="pill" id="scale"></span><span class="pill amber" id="coverage"></span></div><p>在此屏操作和查看证据，将动画页拖到另一块屏幕。动画页点选核或块，会反向定位这里的详情。</p></div><div class="screen-actions"><a id="otherPage" target="_blank" rel="noopener">打开另一页 ↗</a><button id="fullscreen">全屏</button><button id="about">数据来源</button></div></header>
- <div class="sync-bar"><span id="syncStatus">正在建立双屏会话…</span><div class="view-tabs"><button id="showflow">流动网图</button><button id="showcurves">完成度曲线</button><button id="showbandwidth">观测带宽</button></div><span id="viewState"></span></div>
+ <div class="sync-bar"><span id="syncStatus">正在建立双屏会话…</span><div class="view-tabs"><button id="showflow">流动网图</button><button id="showpackets">信包时序</button><button id="showcurves">完成度曲线</button><button id="showbandwidth">观测带宽</button></div><span id="viewState"></span></div>
  <div class="controls">
   <label>轮次<select id="launch" aria-label="kernel launch"></select></label>
   <button class="primary" id="play">播放</button><button id="reset" title="回到开始">↤ 起点</button>
@@ -90,6 +99,13 @@ body[data-role=visual] .bandwidth-tables,body[data-role=visual] .bandwidth-actio
   </div>
   <p class="curve-explain">表格列出当前区间有新增观测包的全部贡献者，点击名称可聚焦；各表独立相加都等于总吞吐，不能把两表相加。未列出的对象在本区间无新增观测，不等于链路空闲。首测包数不计入差分区间；未观测到的包不补零。CSV 的 total / groups / ranks 是三种统计口径，total 包括零增量区间。GB/s = 包/tick × B/包 ÷ (μs/cycle) ÷ 1000；一个 tick 按一个 cycle 换算。参考上限由用户输入，显示的是参考比，未经校准不能称为实测利用率。</p>
  </section>
+ <section class="packet-panel">
+  <div class="packet-toolbar"><h2>原子信包时序</h2><button id="packetExpand">展开时序图 ↗</button><label class="packet-axis-controls">视角<select id="packetAxis"><option value="src">发送端优先</option><option value="dst">接收端优先</option></select></label><label class="packet-axis-controls">每页组合<select id="packetRows"><option value="8">8</option><option value="16">16</option><option value="32">32</option></select></label><button id="packetPrev">← 上页</button><span id="packetPageLabel"></span><button id="packetNext">下页 →</button><button id="packetZoom">游标 ±1000 tick</button><button id="packetFull">全程</button></div>
+  <p class="packet-scope" id="packetScope"></p>
+  <div class="packet-chart"><canvas id="packetCanvas" aria-label="来源目的组合的原子信包观测时序图"></canvas><div id="packetTip" class="chart-tip" hidden></div></div>
+  <p class="packet-note">横轴：首次就绪观测 end，真实发送时刻未记录。每点 1 个 flag 包；灰色尚未到时，绿色已观测完成。同行微错开仅为显示；重合点点击展开。时钟按接收 rank 对齐，非全局物理时间。</p>
+  <div class="packet-list"><h2>所选位置的全部原子包</h2><p id="packetPick" class="curve-explain"></p><div class="packet-toolbar"><button id="packetListPrev">← 前 64 包</button><button id="packetListNext">后 64 包 →</button></div><div class="table-scroll"><table><thead><tr><th>task / slot / block（点击定位）</th><th>当前状态</th><th>group</th><th>发送→接收 AIV</th><th>首次检查区间</th><th>原始记录</th></tr></thead><tbody id="packetRowsBody"></tbody></table></div></div>
+ </section>
  <div class="details">
   <section><div class="detail-head"><h2>接收区域钻取</h2><span id="mini-status"></span></div><div class="picker"><label>rank <input id="rxRank" type="number" min="0" value="61" aria-label="接收 rank"></label><label>AIV <input id="rxCore" type="number" min="0" value="20" aria-label="接收 AIV"></label><button id="locate">定位</button></div><div class="picker"><select id="task" aria-label="来源专家任务"></select></div><div class="facts" id="flowFacts"></div><div style="display:flex;gap:6px;margin-top:7px"><button id="prev">← 上一观察</button><button id="next">下一观察 →</button></div></section>
   <section class="flag-panel"><div class="detail-head"><h2 id="blockTitle">token slot × block</h2><div class="picker" style="margin:0"><button id="slotPrev" title="上一组 slot">‹</button><span id="slotPage" class="muted"></span><button id="slotNext" title="下一组 slot">›</button></div></div><p>列为 block 编号；行是接收 slot，不是源 tokenId。动画页点选一块可回看原始记录。</p><div class="block-picker"><label>slot <input id="blockSlot" type="number" min="0" value="0" aria-label="接收 slot"></label><label>block <input id="blockIndex" type="number" min="0" value="0" aria-label="块编号"></label><button id="selectBlock">查看此块</button></div><canvas id="blocks" aria-label="所选任务的逐块到达位图"></canvas><div id="blockFacts"></div></section>
@@ -103,6 +119,7 @@ body[data-role=visual] .bandwidth-tables,body[data-role=visual] .bandwidth-actio
 <script>__SYNC_SCRIPT__</script>
 <script>__PROGRESS_SCRIPT__</script>
 <script>__BANDWIDTH_SCRIPT__</script>
+<script>__PACKETS_SCRIPT__</script>
 <script>
 'use strict';
 const $=id=>document.getElementById(id), GROUP_COLORS=['#4b72d4','#129b92','#d99b35','#9b68bb'], count=n=>Number(n).toLocaleString('zh-CN');
@@ -133,6 +150,7 @@ function filterTasks(){
  const g=$('group').value,s=$('sourceRank').value,d=$('destRank').value,n=M.ranks*M.cores;
  rxTotals=new Uint32Array(n);txTotals=new Uint32Array(n);let all=0;
  accepted=L.tasks.map(x=>{const ok=(g==='all'||x[6]===+g)&&(s==='all'||x[0]===+s)&&(d==='all'||x[1]===+d);if(ok){let b=x[4]*M.blocksPerToken;rxTotals[x[1]*M.cores+x[2]]+=b;if(x[5]>=0)txTotals[x[0]*M.cores+x[5]]+=b;all+=b}return ok});
+ document.body.dataset.packets=PacketTimeline.scope(M.ranks,s,d).eligible?'ready':'large';
  totals={expected:all,ready:0,known:0,copied:0};resetState();
 }
 function resetState(){let n=M.ranks*M.cores;rxReady=new Uint32Array(n);txReady=new Uint32Array(n);rxKnown=new Uint32Array(n);rxCopied=new Uint32Array(n);totals.ready=totals.known=totals.copied=0;cursor=0}
@@ -141,17 +159,18 @@ function seek(value){
  while(cursor<events.length&&events[cursor][0]<=t){const e=events[cursor++];if(!accepted[e[1]])continue;const task=L.tasks[e[1]],rx=task[1]*M.cores+task[2],tx=task[0]*M.cores+task[5];rxReady[rx]+=e[2];rxKnown[rx]+=e[3];rxCopied[rx]+=e[4];if(task[5]>=0)txReady[tx]+=e[2];totals.ready+=e[2];totals.known+=e[3];totals.copied+=e[4]}
  $('timeline').value=Math.round(t/duration*1000);$('clock').textContent=`${count(Math.round(t))} tick`;
  $('stats').innerHTML=`<span>就绪 <b>${(totals.expected?totals.ready/totals.expected*100:0).toFixed(1)}%</b></span><span>块 <b>${count(totals.ready)} / ${count(totals.expected)}</b></span><span>未观察 <b>${count(totals.expected-totals.known)}</b></span>`;
- draw();updateDetail();drawProgress();drawBandwidth();
+ draw();updateDetail();drawProgress();drawBandwidth();drawPackets();
 }
-function layout(w,h){let gap=62,pw=(w-gap)/2,columns=Math.ceil(Math.sqrt(M.ranks)),rows=Math.ceil(M.ranks/columns),cw=pw/columns,ch=h/rows;return {w,h,gap,pw,columns,rows,cw,ch,coreCols:14,coreRows:Math.ceil(M.cores/14)}}
-function cell(side,rank,core){const g=geometry,x0=side?(g.pw+g.gap):0,rx=x0+(rank%g.columns)*g.cw,ry=Math.floor(rank/g.columns)*g.ch;let label=Math.min(14,g.ch*.25),sx=(g.cw-8)/g.coreCols,sy=(g.ch-label-5)/g.coreRows,size=Math.min(sx-1,sy-1,8);if(core<0)return {x:rx+g.cw/2,y:ry+label,size:2};return {x:rx+4+(core%g.coreCols)*sx+sx/2,y:ry+label+Math.floor(core/g.coreCols)*sy+sy/2,size:Math.max(1.8,size)}}
+function layout(w,h){const gap=62,pw=(w-gap)/2,scope=packetScope(),sides=[scope.sources,scope.destinations].map(ranks=>{const columns=Math.ceil(Math.sqrt(ranks.length)),rows=Math.ceil(ranks.length/columns);return {ranks,positions:new Map(ranks.map((r,i)=>[r,i])),columns,rows,cw:pw/columns,ch:h/rows}});return {w,h,gap,pw,sides,coreCols:14,coreRows:Math.ceil(M.cores/14)}}
+function rankBox(side,rank){const g=geometry,s=g.sides[side],index=s.positions.get(rank);return {x:(side?g.pw+g.gap:0)+(index%s.columns)*s.cw,y:Math.floor(index/s.columns)*s.ch,w:s.cw,h:s.ch};}
+function cell(side,rank,core){const g=geometry,r=rankBox(side,rank),label=Math.min(22,r.h*.25),sx=(r.w-8)/g.coreCols,sy=(r.h-label-5)/g.coreRows,size=Math.min(sx-2,sy-2,g.sides[side].ranks.length<=4?26:8);if(core<0)return {x:r.x+r.w/2,y:r.y+label,size:2};return {x:r.x+4+(core%g.coreCols)*sx+sx/2,y:r.y+label+Math.floor(core/g.coreCols)*sy+sy/2,size:Math.max(1.8,size)}}
 function draw(){
  if(ROLE!=='visual'||document.body.dataset.view!=='flow')return;
  let [w,h]=fit(canvas);geometry=layout(w,h);ctx.clearRect(0,0,w,h);const g=geometry;
- for(let side=0;side<2;side++)for(let r=0;r<M.ranks;r++){
-  let x=(side?g.pw+g.gap:0)+(r%g.columns)*g.cw,y=Math.floor(r/g.columns)*g.ch,sel=side&&r===selectedRank;
-  ctx.fillStyle=sel?'#f0f9f8':'#fff';ctx.fillRect(x+1,y+1,g.cw-3,g.ch-3);ctx.strokeStyle=sel?'#85bfb9':'#e8edf2';ctx.lineWidth=sel?1.2:.6;ctx.strokeRect(x+1,y+1,g.cw-3,g.ch-3);
-  ctx.font=`${Math.max(8,Math.min(11,g.ch*.2))}px -apple-system,sans-serif`;ctx.fillStyle=sel?'#087f79':'#617084';ctx.fillText('R'+String(r).padStart(2,'0'),x+5,y+Math.min(12,g.ch*.22));
+ for(let side=0;side<2;side++)for(const r of g.sides[side].ranks){
+  const box=rankBox(side,r),{x,y,w:cw,h:ch}=box,sel=side&&r===selectedRank;
+  ctx.fillStyle=sel?'#f0f9f8':'#fff';ctx.fillRect(x+1,y+1,cw-3,ch-3);ctx.strokeStyle=sel?'#85bfb9':'#e8edf2';ctx.lineWidth=sel?1.2:.6;ctx.strokeRect(x+1,y+1,cw-3,ch-3);
+  ctx.font=`${Math.max(8,Math.min(13,ch*.2))}px -apple-system,sans-serif`;ctx.fillStyle=sel?'#087f79':'#617084';ctx.fillText('R'+String(r).padStart(2,'0'),x+5,y+Math.min(16,ch*.22));
   for(let c=0;c<M.cores;c++){const p=cell(side,r,c),idx=r*M.cores+c,total=side?rxTotals[idx]:txTotals[idx],ready=side?rxReady[idx]:txReady[idx],ratio=total?ready/total:0;
    ctx.fillStyle=side?'#e1e7ee':(M.roles.find(v=>c>=v.begin&&c<v.end)?.color||'#dce3eb');ctx.globalAlpha=(!side&&c<28)?.65:1;ctx.fillRect(p.x-p.size/2,p.y-p.size/2,p.size,p.size);ctx.globalAlpha=1;
    if(side&&total&&rxKnown[idx]){const known=rxKnown[idx]/total;ctx.fillStyle='#ebaa96';ctx.fillRect(p.x-p.size/2,p.y+p.size/2-p.size*known,p.size,p.size*known)}
@@ -159,6 +178,7 @@ function draw(){
    if(side&&total&&rxCopied[idx]===total){ctx.fillStyle='#154f68';ctx.fillRect(p.x-p.size/2,p.y-p.size/2,p.size,p.size)}
    if(side&&!total){ctx.clearRect(p.x-p.size/2+.7,p.y-p.size/2+.7,Math.max(.1,p.size-1.4),Math.max(.1,p.size-1.4));}
    if((side&&r===selectedRank&&c===selectedCore)||(!side&&selectedTask>=0&&L.tasks[selectedTask][0]===r&&L.tasks[selectedTask][5]===c)){ctx.strokeStyle='#dd4e4e';ctx.lineWidth=1.6;ctx.strokeRect(p.x-p.size/2-2,p.y-p.size/2-2,p.size+4,p.size+4)}
+   if(p.size>=13){ctx.font='9px sans-serif';ctx.fillStyle='#254357';ctx.textAlign='center';ctx.fillText(c,p.x,p.y+3);ctx.textAlign='left';}
   }
  }
  const span=duration*.055,edges=new Map();let winBlocks=0;
@@ -166,7 +186,7 @@ function draw(){
  const selected=e=>e.task[1]===selectedRank&&e.task[2]===selectedCore;
  activeLinks=Array.from(edges.values()).sort((a,b)=>Number(selected(b))-Number(selected(a))||b.blocks-a.blocks);const budget=160,shown=activeLinks.slice(0,budget);
  // 保留全部核与 rank 标题；连线只经过核心格和中间通道，不盖住 rank 标签。
- ctx.save();ctx.beginPath();ctx.rect(g.pw,0,g.gap,h);for(let side=0;side<2;side++)for(let r=0;r<M.ranks;r++){let x=(side?g.pw+g.gap:0)+(r%g.columns)*g.cw,y=Math.floor(r/g.columns)*g.ch,label=Math.min(14,g.ch*.25);ctx.rect(x,y+label,g.cw,g.ch-label)}ctx.clip();
+ ctx.save();ctx.beginPath();ctx.rect(g.pw,0,g.gap,h);for(let side=0;side<2;side++)for(const r of g.sides[side].ranks){const b=rankBox(side,r),label=Math.min(22,b.h*.25);ctx.rect(b.x,b.y+label,b.w,b.h-label)}ctx.clip();
  for(let e of shown){const a=e.task,p=cell(0,a[0],a[5]),q=cell(1,a[1],a[2]);let highlight=selected(e),alpha=highlight?.76:.13;
   ctx.strokeStyle=color(a[6]);ctx.globalAlpha=alpha;ctx.lineWidth=highlight?1.7:.6+Math.min(e.blocks/250,1);ctx.beginPath();ctx.moveTo(p.x,p.y);ctx.bezierCurveTo(g.pw+16,p.y,g.pw+g.gap-16,q.y,q.x,q.y);ctx.stroke();
   if(highlight||shown.length<45){const z=playing&&!motionReduced?(performance.now()/1300+e.time/span)%1:1,iz=1-z,c1=g.pw+16,c2=g.pw+g.gap-16;let px=iz**3*p.x+3*iz**2*z*c1+3*iz*z*z*c2+z**3*q.x,py=iz**3*p.y+3*iz**2*z*p.y+3*iz*z*z*q.y+z**3*q.y;ctx.fillStyle='#db504c';ctx.globalAlpha=.95;ctx.beginPath();ctx.arc(px,py,highlight?2.5:1.5,0,Math.PI*2);ctx.fill()}
@@ -174,13 +194,14 @@ function draw(){
  }
  ctx.restore();ctx.fillStyle='#fff';ctx.fillRect(g.pw+1,0,g.gap-2,18);ctx.fillStyle='#7c8b9d';ctx.font='10px sans-serif';ctx.textAlign='center';ctx.fillText('观察流向',g.pw+g.gap/2,12);ctx.textAlign='left';
  $('lineStatus').textContent=`观察窗 ${count(Math.round(span))} tick · 新观察 ${count(winBlocks)} 块 · ${count(edges.size)} 条合并边，绘制 ${shown.length} 条（选中优先，余按块数；统计不采样）`;
- canvas.dataset.visibleNodes=String(M.ranks*M.cores*2);canvas.dataset.ready=String(totals.ready);canvas.dataset.expected=String(totals.expected);
+ $('leftCount').textContent=`${g.sides[0].ranks.length} rank · ${g.sides[0].ranks.length*M.cores} 核`;$('rightCount').textContent=`${g.sides[1].ranks.length} rank · ${g.sides[1].ranks.length*M.cores} 核`;
+ canvas.dataset.sources=g.sides[0].ranks.join(',');canvas.dataset.destinations=g.sides[1].ranks.join(',');canvas.dataset.visibleNodes=String((g.sides[0].ranks.length+g.sides[1].ranks.length)*M.cores);canvas.dataset.ready=String(totals.ready);canvas.dataset.expected=String(totals.expected);
 }
-function pickCore(rank,core,redraw=true){selectedRank=rank;selectedCore=core;$('rxRank').value=rank;$('rxCore').value=core;$('task').replaceChildren();let ids=[];L.tasks.forEach((a,i)=>{if(a[1]===rank&&a[2]===core)ids.push(i)});for(let i of ids){let a=L.tasks[i];$('task').add(new Option(`来源 R${a[0]} · 专家 ${a[3]} · ${a[4]} token`,i))}selectedTask=ids.find(i=>L.tasks[i][4]>0)??ids[0]??-1;if(selectedTask>=0)$('task').value=selectedTask;slotPage=0;selectedBlock=0;$('mini-status').textContent=`${ids.length} 个来源任务`;if(redraw){draw();updateDetail()}}
+function pickCore(rank,core,redraw=true){selectedRank=rank;selectedCore=core;$('rxRank').value=rank;$('rxCore').value=core;$('task').replaceChildren();let ids=[];L.tasks.forEach((a,i)=>{if(accepted[i]&&a[1]===rank&&a[2]===core)ids.push(i)});for(let i of ids){let a=L.tasks[i];$('task').add(new Option(`来源 R${a[0]} · 专家 ${a[3]} · ${a[4]} token`,i))}selectedTask=ids.find(i=>L.tasks[i][4]>0)??ids[0]??-1;if(selectedTask>=0)$('task').value=selectedTask;slotPage=0;selectedBlock=0;$('mini-status').textContent=`筛选内 ${ids.length} 个来源任务`;if(redraw){draw();updateDetail()}}
 function taskState(id,time){const task=L.tasks[id],masks=new Uint32Array(task[4]),known=new Uint8Array(task[4]),copies=new Uint8Array(task[4]);let current=null;for(const o of taskObs[id]){if(o[2]>time)break;current=o;for(let i=0;i<o[5].length;i++){masks[o[4]+i]=o[5][i];known[o[4]+i]=1;if(o[3]&&o[3]<=time)copies[o[4]+i]=1}}return {masks,known,copies,current}}
 function updateDetail(){
  const evidence=$('evidence');evidence.replaceChildren();
- if(selectedTask<0){$('flowFacts').textContent='这个 AIV 没有分配到 LW 来源任务。';$('blockTitle').textContent='无到达区域';$('blockFacts').textContent='无任务与缺失数据不同。';$('slotPage').textContent='无任务';for(const id of ['slotPrev','slotNext','prev','next'])$(id).disabled=true;let[w,h]=fit(bc);bx.clearRect(0,0,w,h);bc.dataset.ready='0';addText(evidence,'没有任务，不能视为等待未结束。');blockGeometry=null;return}
+ if(selectedTask<0){$('flowFacts').textContent='当前筛选内没有与选中核关联的 LW 来源任务。';$('blockTitle').textContent='无到达区域';$('blockFacts').textContent='无任务与缺失数据不同。';$('slotPage').textContent='无任务';for(const id of ['slotPrev','slotNext','prev','next'])$(id).disabled=true;let[w,h]=fit(bc);bx.clearRect(0,0,w,h);bc.dataset.ready='0';addText(evidence,'当前范围没有关联任务，不能视为等待未结束。');blockGeometry=null;return}
  const a=L.tasks[selectedTask],state=taskState(selectedTask,t),obs=state.current,ready=Array.from(state.masks).reduce((n,v)=>n+pop(v),0),total=a[4]*M.blocksPerToken;
  $('flowFacts').innerHTML=`<b>R${a[0]} / AIV${a[5]<0?'未知':a[5]}</b> → <b>R${a[1]} / AIV${a[2]}</b><br>localExpert ${a[3]} · ${a[6]<0?'本机复制':'group '+a[6]} · 就绪 ${ready}/${total} 块<br><span class="muted">发送核：源码推导；接收核：日志实测</span>`;
  $('blockTitle').textContent=`到达区域 · ${a[4]} slot × ${M.blocksPerToken} 块`;$('prev').disabled=!taskObs[selectedTask].some(o=>o[2]<t);$('next').disabled=!taskObs[selectedTask].some(o=>o[2]>t);
@@ -209,19 +230,35 @@ function runDuration(index){return durations[index]??(durations[index]=Math.max(
 function clockTick(s,now=Date.now()){return Math.max(0,Math.min(runDuration(s.launch),s.tick+(s.playing?Math.max(0,now-s.at)/20000*runDuration(s.launch)*s.speed:0)))}
 function selectCoreState(s,rank,core){
  s.rank=Math.max(0,Math.min(M.ranks-1,Math.trunc(Number(rank))||0));s.core=Math.max(0,Math.min(M.cores-1,Math.trunc(Number(core))||0));
- const tasks=M.launches[s.launch].tasks,ids=[];tasks.forEach((a,i)=>{if(a[1]===s.rank&&a[2]===s.core)ids.push(i)});
+ const tasks=M.launches[s.launch].tasks,ids=[];tasks.forEach((a,i)=>{if(a[1]===s.rank&&a[2]===s.core&&PacketTimeline.matches(a,s))ids.push(i)});
  s.task=ids.find(i=>tasks[i][4]>0)??ids[0]??-1;s.block=0;s.page=0;
 }
+function reconcileFocus(s){
+ const tasks=M.launches[s.launch].tasks,valid=a=>PacketTimeline.matches(a,s);
+ if(s.task>=0&&tasks[s.task]&&valid(tasks[s.task]))return;
+ const i=tasks.findIndex(a=>valid(a)&&a[4]&&a[1]===s.rank&&a[2]===s.core),j=i>=0?i:tasks.findIndex(a=>valid(a)&&a[4]),k=j>=0?j:tasks.findIndex(valid);
+ if(k>=0){s.task=k;s.rank=tasks[k][1];s.core=tasks[k][2];}else{s.task=-1;s.rank=s.destRank==='all'?0:Number(s.destRank);s.core=0;}
+ s.block=s.page=0;
+}
+function resetPacketFocus(s){s.packetPage=s.packetListPage=s.packetFrom=s.packetTo=0;delete s.packetPairSrc;delete s.packetPairDst;delete s.packetPickFrom;delete s.packetPickTo;}
+function choosePacket(s,p){const a=M.launches[s.launch].tasks[p.task];if(!a||!PacketTimeline.matches(a,s))return;s.task=p.task;s.rank=a[1];s.core=a[2];s.block=p.slot*M.blocksPerToken+p.block;s.page=Math.floor(p.slot/8);s.tick=p.end??p.tick;s.playing=false;}
 function reduceState(previous,action,now){
  const s={...previous,tick:clockTick(previous,now),at:now};if(s.tick>=runDuration(s.launch))s.playing=false;
  switch(action.type){
   case 'play': if(s.tick>=runDuration(s.launch))s.tick=0;s.playing=!s.playing;break;
   case 'seek': s.tick=Math.round(Math.max(0,Math.min(runDuration(s.launch),Number.isFinite(action.tick)?action.tick:action.ratio*runDuration(s.launch))));s.playing=false;break;
   case 'speed': s.speed=Number(action.value);break;
-  case 'launch': s.launch=Number(action.value);s.tick=0;s.playing=false;s.bwFrom=s.bwTo=0;selectCoreState(s,s.rank,s.core);break;
-  case 'filter': s[action.field]=action.value;break;
-  case 'clear': s.group=s.sourceRank=s.destRank='all';break;
-  case 'scene': s.scene=action.value;break;
+  case 'launch': s.launch=Number(action.value);s.tick=0;s.playing=false;s.bwFrom=s.bwTo=0;resetPacketFocus(s);selectCoreState(s,s.rank,s.core);reconcileFocus(s);break;
+  case 'filter': s[action.field]=action.value;resetPacketFocus(s);reconcileFocus(s);break;
+  case 'clear': s.group=s.sourceRank=s.destRank='all';resetPacketFocus(s);reconcileFocus(s);break;
+  case 'pairFocus': s.sourceRank=String(action.src);s.destRank=String(action.dst);resetPacketFocus(s);reconcileFocus(s);break;
+  case 'packetSetting': if(['packetAxis','packetRows'].includes(action.field)){s[action.field]=action.value;s.packetPage=0;}break;
+  case 'packetPage': {const scope=PacketTimeline.scope(M.ranks,s.sourceRank,s.destRank),size=s.scene==='flow'?8:Number(s.packetRows)||8;s.packetPage=Math.max(0,Math.min(Math.ceil(scope.count/size)-1,(Number(s.packetPage)||0)+action.delta));break;}
+  case 'packetZoom': s.packetFrom=action.from;s.packetTo=action.to;break;
+  case 'packetListPage': s.packetListPage=Math.max(0,(Number(s.packetListPage)||0)+action.delta);break;
+  case 'packetPick': s.packetPairSrc=action.src;s.packetPairDst=action.dst;s.packetPickFrom=action.from;s.packetPickTo=action.to;s.packetListPage=0;choosePacket(s,action.packet);break;
+  case 'packet': choosePacket(s,action);break;
+  case 'scene': s.scene=action.value;s.packetPage=0;break;
   case 'curve': if(['curveAxis','curveGroup','curveRank'].includes(action.field))s[action.field]=action.value;break;
   case 'curveReset': s.curveGroup=s.curveRank='all';break;
   case 'bandwidth': {
@@ -235,9 +272,10 @@ function reduceState(previous,action,now){
   }
   case 'bwZoom': s.bwFrom=action.from;s.bwTo=action.to;break;
   case 'core': selectCoreState(s,action.rank,action.core);break;
+  case 'destCore': s.destRank=String(action.rank);resetPacketFocus(s);selectCoreState(s,action.rank,action.core);break;
   case 'sourceCore': {
-   s.sourceRank=String(action.rank);const tasks=M.launches[s.launch].tasks,i=tasks.findIndex(a=>a[0]===action.rank&&a[5]===action.core&&a[4]);
-   if(i>=0){selectCoreState(s,tasks[i][1],tasks[i][2]);s.task=i;}break;
+   s.sourceRank=String(action.rank);resetPacketFocus(s);const tasks=M.launches[s.launch].tasks,i=tasks.findIndex(a=>a[0]===action.rank&&a[5]===action.core&&a[4]&&PacketTimeline.matches(a,s));
+   if(i>=0){selectCoreState(s,tasks[i][1],tasks[i][2]);s.task=i;}else{s.task=-1;s.block=s.page=0;}break;
   }
   case 'task': s.task=Number(action.value);s.block=0;s.page=0;break;
   case 'page': {
@@ -261,6 +299,7 @@ function renderSharedTime(){
  $('app').dataset.revision=String(shared.revision);$('app').dataset.launch=String(shared.launch);
  if(document.body.dataset.view==='curves')$('lineStatus').textContent='全程完成度阶梯曲线 · 每个块只计首次就绪 · 点击关键节点定位动画';
  if(document.body.dataset.view==='bandwidth')$('lineStatus').textContent='相邻观测差分 · 默认排除本机复制 · 原始包/tick 与配置换算值双屏同步';
+ if(document.body.dataset.view==='packets')$('lineStatus').textContent='每点一个 task/slot/block · 首次就绪观测时间 · 灰色未来 / 绿色完成 · 未观测包不虚构时间';
  if(document.activeElement!==$('blockSlot'))$('blockSlot').value=Math.floor(selectedBlock/M.blocksPerToken);
  if(document.activeElement!==$('blockIndex'))$('blockIndex').value=selectedBlock%M.blocksPerToken;
  $('blockSlot').max=selectedTask<0?0:Math.max(0,L.tasks[selectedTask][4]-1);$('blockIndex').max=M.blocksPerToken-1;
@@ -268,20 +307,20 @@ function renderSharedTime(){
  if(ROLE==='visual')$('blockTitle').textContent=selectedTask<0?'无到达区域':`R${L.tasks[selectedTask][0]} / AIV${L.tasks[selectedTask][5]} → R${selectedRank} / AIV${selectedCore} · 专家 ${L.tasks[selectedTask][3]} · ${L.tasks[selectedTask][4]} slot × ${M.blocksPerToken} 块`;
 }
 function applyShared(s){
- shared=s;const changed=s.launch!==appliedLaunch;
- document.body.dataset.view=s.scene||'curves';for(const view of ['flow','curves','bandwidth'])$('show'+view).classList.toggle('active',document.body.dataset.view===view);
+ if(s.task>=0&&!PacketTimeline.matches(M.launches[s.launch].tasks[s.task],s)){s={...s};reconcileFocus(s);}shared=s;const changed=s.launch!==appliedLaunch;
+ document.body.dataset.view=s.scene||'curves';for(const view of ['flow','curves','bandwidth','packets'])$('show'+view).classList.toggle('active',document.body.dataset.view===view);
  if(changed){$('launch').value=s.launch;buildRun(s.launch);appliedLaunch=s.launch;appliedFilters='';appliedSelection='';}
  $('speed').value=String(s.speed);
- const filters=[s.group,s.sourceRank,s.destRank].join('/');if(filters!==appliedFilters){for(const id of ['group','sourceRank','destRank'])$(id).value=s[id];filterTasks();appliedFilters=filters;}
+ const filters=[s.group,s.sourceRank,s.destRank].join('/');if(filters!==appliedFilters){for(const id of ['group','sourceRank','destRank'])$(id).value=s[id];filterTasks();appliedFilters=filters;appliedSelection='';}
  const selection=[s.rank,s.core,s.task,s.block,s.page].join('/');if(selection!==appliedSelection){pickCore(s.rank,s.core,false);selectedTask=s.task;$('task').value=s.task;selectedBlock=s.block;slotPage=s.page;appliedSelection=selection;}
  cancelAnimationFrame(raf);renderSharedTime();if(playing){lastFrame=0;raf=requestAnimationFrame(frame);}
 }
 function frame(now){if(!shared||!playing)return;if(now-lastFrame>=32){lastFrame=now;renderSharedTime();}if(playing)raf=requestAnimationFrame(frame);}
 async function send(action){if(!session)return;try{await session.command(action)}catch(e){$('syncStatus').classList.add('warn');$('syncStatus').textContent='同步失败：'+e.message;}}
-function hit(x,y){const g=geometry;let side=x>=g.pw+g.gap?1:x<=g.pw?0:-1;if(side<0)return null;const px=x-(side?g.pw+g.gap:0),col=Math.floor(px/g.cw),row=Math.floor(y/g.ch),rank=row*g.columns+col;if(rank>=M.ranks)return null;let nearest=0,dist=Infinity;for(let c=0;c<M.cores;c++){const p=cell(side,rank,c),d=(p.x-x)**2+(p.y-y)**2;if(d<dist){dist=d;nearest=c}}return {side,rank,core:nearest}}
+function hit(x,y){const g=geometry;if(!g)return null;let side=x>=g.pw+g.gap?1:x<=g.pw?0:-1;if(side<0||x<0||y<0||y>g.h)return null;const grid=g.sides[side],px=x-(side?g.pw+g.gap:0),col=Math.floor(px/grid.cw),row=Math.floor(y/grid.ch),rank=grid.ranks[row*grid.columns+col];if(rank===undefined)return null;let nearest=0,dist=Infinity;for(let c=0;c<M.cores;c++){const p=cell(side,rank,c),d=(p.x-x)**2+(p.y-y)**2;if(d<dist){dist=d;nearest=c}}return {side,rank,core:nearest}}
 canvas.addEventListener('mousemove',e=>{let r=canvas.getBoundingClientRect(),p=hit(e.clientX-r.left,e.clientY-r.top);if(!p)return;let idx=p.rank*M.cores+p.core,total=p.side?rxTotals[idx]:txTotals[idx],ready=p.side?rxReady[idx]:txReady[idx];$('hover').textContent=`${p.side?'接收':'发送'} R${p.rank} / AIV${p.core} · ${p.side?'观察就绪':'对端观察'} ${ready}/${total} 块`;$('hover').style.display='block';$('hover').style.left=Math.min(e.clientX-r.left+12,r.width-310)+'px';$('hover').style.top=Math.max(0,e.clientY-r.top-35)+'px'});
 canvas.addEventListener('mouseleave',()=>$('hover').style.display='none');
-canvas.addEventListener('click',e=>{let r=canvas.getBoundingClientRect(),p=hit(e.clientX-r.left,e.clientY-r.top);if(p)send({type:p.side?'core':'sourceCore',rank:p.rank,core:p.core})});
+canvas.addEventListener('click',e=>{let r=canvas.getBoundingClientRect(),p=hit(e.clientX-r.left,e.clientY-r.top);if(p)send({type:p.side?'destCore':'sourceCore',rank:p.rank,core:p.core})});
 bc.addEventListener('click',e=>{if(!blockGeometry)return;let r=bc.getBoundingClientRect(),g=blockGeometry,b=Math.floor((e.clientX-r.left-g.left)/g.sw),row=Math.floor((e.clientY-r.top-g.top)/g.sh);if(b<0||b>=M.blocksPerToken||row<0||row>=g.rows)return;send({type:'block',value:(g.start+row)*M.blocksPerToken+b})});
 $('play').onclick=()=>send({type:'play'});$('reset').onclick=()=>send({type:'seek',ratio:0});$('end').onclick=()=>send({type:'seek',ratio:1});
 $('timeline').oninput=()=>send({type:'seek',ratio:Number($('timeline').value)/1000});$('speed').onchange=()=>send({type:'speed',value:$('speed').value});
@@ -307,7 +346,7 @@ new ResizeObserver(()=>{if(shared)renderSharedTime();else if(M&&L){draw();update
  document.title=M.title+(ROLE==='control'?' · 控制台':' · 动画屏');
  const other=new URL(ROLE==='control'?'visual.html':'control.html',location.href);other.searchParams.set('session',SESSION);$('otherPage').href=other.href;$('otherPage').textContent=ROLE==='control'?'打开动画屏 ↗':'打开控制台 ↗';
  $('sessionHelp').textContent=`会话：${SESSION}。使用同一浏览器和同一 localhost 地址打开两页，再将标签页拖到不同屏幕。播放、筛选、核与块选择双向联动；刷新和后打开的页面会接续当前进度。`;
- $('loading').remove();initProgress();initBandwidth();buildRun(0);
+ $('loading').remove();initProgress();initBandwidth();initPackets();buildRun(0);
  const initial={launch:0,tick:t,at:Date.now(),playing:false,speed:1,scene:'curves',curveAxis:'dst',curveGroup:'all',curveRank:'all',group:'all',sourceRank:'all',destRank:'all',rank:selectedRank,core:selectedCore,task:selectedTask,block:0,page:0,revision:0};
  try{
   session=await createPacketSession({key:'packet-flow.dual.v1:__MODEL_ID__:'+SESSION,role:ROLE,initial,reduce:reduceState,onState:applyShared,onPresence:peers=>{

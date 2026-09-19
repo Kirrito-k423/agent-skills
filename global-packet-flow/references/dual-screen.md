@@ -18,6 +18,8 @@
 
 带宽扩展将 scene 增加 bandwidth，状态包含 bwAxis、bwGroup、bwRank、bwLocal、bwMode、bwWindow、bwPacketBytes、bwCycleUs、bwUnit、bwCapacity、bwFrom、bwTo。控制页承担参数输入、贡献表、说明和导出；动画页只保留曲线、当前区间、摘要与必要边界。相邻/固定窗口、B/包、μs/cycle、纵轴、参考上限与缩放范围双向共享。旧快照采用原始包/tick、未配置时钟、排除本机复制的默认值。
 
+原子时序扩展 scene=packets，状态包含 packetAxis、packetRows、packetPage、packetFrom、packetTo、packetPairSrc、packetPairDst、packetPickFrom、packetPickTo、packetListPage。flow 模式在组合数 ≤512 时自动显示预览；网图只展示 sourceRank/destRank 指定对象。点击原子包在同一串行命令中更新时间、核、task、slot/block，不能拆成两页各自解释的选择。
+
 每一帧只根据 `tick + (当前时间 - at) × 速度 × 当前轮次总时长 / 展示总时长` 渲染，不写共享状态。浏览器墙钟只用于同一台电脑的展示进度，不是设备日志的全局时钟。暂停、拖动、变速先结算当前位置；后台恢复、新开和刷新均读取同一锚点。到末尾停止渲染，重新播放回到起点。
 
 监听器先安装，再发送 hello；对端回复 presence。页面显示等待或已连接，关闭时通知，失联后超时标记。缺少 Web Locks、BroadcastChannel 或存储权限时明确降级为单页预览，不能显示“已联动”。
