@@ -44,16 +44,31 @@ body[data-view=packets] .packet-panel,body[data-view=flow][data-packets=ready] .
 body[data-view=packets] .overview,body[data-view=packets] .trend-panel{display:none}
 body[data-role=control] .packet-chart{flex:none;height:370px}
 body[data-role=visual] .packet-list,body[data-role=visual] .packet-axis-controls{display:none}
-body[data-role=visual][data-view=packets] .details,body[data-role=visual][data-view=flow][data-packets=ready] .details{display:none}
+body[data-role=visual][data-view=packets] .details{display:none}
 body[data-role=visual][data-view=packets] #app{grid-template-rows:auto auto minmax(0,1fr) auto}
-body[data-role=visual][data-view=flow][data-packets=ready] #app{grid-template-rows:auto auto minmax(230px,1fr) 260px auto}
 body[data-view=packets] #packetExpand{display:none}
+/* 控制页只有操作、数据表和证据。所有动态图由独立动画窗口承载。 */
+body[data-role=control]:not([data-standalone]) canvas,body[data-role=control]:not([data-standalone]) .chart-grid,body[data-role=control]:not([data-standalone]) .packet-chart{display:none}
+body[data-role=control] .details{display:grid}
+.window-launcher{display:flex;gap:8px;flex-wrap:wrap;align-items:center;padding:10px 0;border-bottom:1px solid var(--line)}.window-launcher a{padding:6px 10px;border:1px solid var(--line);border-radius:7px;text-decoration:none}.window-launcher p{flex-basis:100%;font-size:12px;color:var(--muted)}
+body[data-role=visual] .window-launcher{display:none}.view-tabs{flex-wrap:wrap}.screen-actions{flex-wrap:wrap}.visual-mode{display:none;align-items:center;gap:6px;font-size:12px}body[data-role=visual] .visual-mode{display:flex}
+.flag-legend{display:flex;flex-wrap:wrap;gap:10px;color:var(--muted);font-size:11px;margin:4px 0}.flag-summary{font-size:12px;color:#456076;margin:4px 0}
+body[data-role=control] .flag-legend{display:none}
+body[data-role=visual][data-view=flow] #app{grid-template-rows:auto auto minmax(300px,1fr) 240px auto;min-height:780px}
+body[data-role=visual][data-view=flow][data-packets=ready] #app{grid-template-rows:auto auto minmax(230px,1fr) 250px 240px auto;min-height:1000px}
+body[data-role=visual][data-view=flow] .details,body[data-role=visual][data-view=flags] .details{display:block}
+body[data-role=visual] #blocks{max-width:none;min-height:80px}body[data-role=visual] #slotPrev,body[data-role=visual] #slotNext{display:inline-block}
+body[data-view=flags] .overview,body[data-view=flags] .trend-panel,body[data-view=flags] .packet-panel{display:none}
+body[data-role=visual][data-view=flags] #app{grid-template-rows:auto auto minmax(350px,1fr) auto}
+body[data-role=visual][data-view=flags] #blockFacts{display:block;min-height:44px;font-size:13px}
+body[data-role=visual][data-view=flags] .flag-panel{padding:18px}
 </style>
-<body data-role="__PAGE_ROLE__" data-view="curves">
+<body data-role="__PAGE_ROLE__" data-window-view="__WINDOW_VIEW__" data-view="curves">
 <div id="loading"><h2>正在装载全量位图观察</h2><p>只在本地解压，不请求第三方服务。</p></div>
 <main id="app">
  <header><div><div class="headline"><h1 id="title">全局数据流</h1><span class="pill" id="scale"></span><span class="pill amber" id="coverage"></span></div><p>在此屏操作和查看证据，将动画页拖到另一块屏幕。动画页点选核或块，会反向定位这里的详情。</p></div><div class="screen-actions"><a id="otherPage" target="_blank" rel="noopener">打开另一页 ↗</a><button id="fullscreen">全屏</button><button id="about">数据来源</button></div></header>
- <div class="sync-bar"><span id="syncStatus">正在建立双屏会话…</span><div class="view-tabs"><button id="showflow">流动网图</button><button id="showpackets">信包时序</button><button id="showcurves">完成度曲线</button><button id="showbandwidth">观测带宽</button></div><span id="viewState"></span></div>
+ <div class="sync-bar"><span id="syncStatus">正在建立多屏会话…</span><div class="view-tabs"><button id="showflow">流动网图</button><button id="showflags">到达位图</button><button id="showpackets">信包时序</button><button id="showcurves">完成度曲线</button><button id="showbandwidth">观测带宽</button></div><label class="visual-mode">本窗口<select id="windowMode" aria-label="动画窗口视图模式"><option value="fixed">独立视图</option><option value="follow">跟随控制页</option></select></label><span id="viewState"></span></div>
+ <nav class="window-launcher" aria-label="独立动画窗口"><b>打开独立动画页</b><a data-open-view="flow" target="_blank" rel="noopener">流动网图 ↗</a><a data-open-view="flags" target="_blank" rel="noopener">逐块到达位图 ↗</a><a data-open-view="packets" target="_blank" rel="noopener">信包时序 ↗</a><a data-open-view="curves" target="_blank" rel="noopener">完成度曲线 ↗</a><a data-open-view="bandwidth" target="_blank" rel="noopener">观测带宽 ↗</a><p>可重复打开任一页，拖到不同窗口或屏幕自由布局。各页独立选择视图，共享轮次、时间、筛选和所选任务。控制页上方标签用于切换设置与表格，并切换“跟随控制页”的动画窗口。</p></nav>
  <div class="controls">
   <label>轮次<select id="launch" aria-label="kernel launch"></select></label>
   <button class="primary" id="play">播放</button><button id="reset" title="回到开始">↤ 起点</button>
@@ -108,7 +123,7 @@ body[data-view=packets] #packetExpand{display:none}
  </section>
  <div class="details">
   <section><div class="detail-head"><h2>接收区域钻取</h2><span id="mini-status"></span></div><div class="picker"><label>rank <input id="rxRank" type="number" min="0" value="61" aria-label="接收 rank"></label><label>AIV <input id="rxCore" type="number" min="0" value="20" aria-label="接收 AIV"></label><button id="locate">定位</button></div><div class="picker"><select id="task" aria-label="来源专家任务"></select></div><div class="facts" id="flowFacts"></div><div style="display:flex;gap:6px;margin-top:7px"><button id="prev">← 上一观察</button><button id="next">下一观察 →</button></div></section>
-  <section class="flag-panel"><div class="detail-head"><h2 id="blockTitle">token slot × block</h2><div class="picker" style="margin:0"><button id="slotPrev" title="上一组 slot">‹</button><span id="slotPage" class="muted"></span><button id="slotNext" title="下一组 slot">›</button></div></div><p>列为 block 编号；行是接收 slot，不是源 tokenId。动画页点选一块可回看原始记录。</p><div class="block-picker"><label>slot <input id="blockSlot" type="number" min="0" value="0" aria-label="接收 slot"></label><label>block <input id="blockIndex" type="number" min="0" value="0" aria-label="块编号"></label><button id="selectBlock">查看此块</button></div><canvas id="blocks" aria-label="所选任务的逐块到达位图"></canvas><div id="blockFacts"></div></section>
+  <section class="flag-panel"><div class="detail-head"><h2 id="blockTitle">token slot × block</h2><div class="picker" style="margin:0"><button id="slotPrev" title="上一组 slot">‹</button><span id="slotPage" class="muted"></span><button id="slotNext" title="下一组 slot">›</button></div></div><p>列为 block 编号；行是接收 slot，不是源 tokenId。动画页点选一块可回看原始记录。</p><div class="flag-legend"><span>灰色：未观察</span><span style="color:#ad705a">浅橙：观察为 0</span><span style="color:#128e85">青色：观察为 1</span><span style="color:#154f68">深蓝：已复制</span><span style="color:#dd4e4e">红框：选中块</span></div><div class="flag-summary" id="flagSummary"></div><div class="block-picker"><label>slot <input id="blockSlot" type="number" min="0" value="0" aria-label="接收 slot"></label><label>block <input id="blockIndex" type="number" min="0" value="0" aria-label="块编号"></label><button id="selectBlock">查看此块</button></div><canvas id="blocks" aria-label="所选任务的逐块到达位图"></canvas><div id="blockFacts"></div></section>
   <section class="evidence"><h2>当前证据</h2><div id="evidence"></div></section>
  </div>
  <section class="control-guide"><h2>如何读这张网图</h2><p>动画屏左边是全部发送 rank 与 AIV，右边是全部接收对象。格子的填充表示接收侧观察到的数据块比例；底部展开所选来源任务的 slot × block 位图。</p><p>灰色：尚未观察；浅橙：已观察为 0；青色：已观察为 1；深蓝：已复制。空心核没有有效任务。连线汇总最近观察窗内的新增块，最多绘制 160 条，计数和位图仍使用全量数据。</p><p><b>时间边界：</b>按各接收 rank 最早 LW epoch 对齐，不是全局物理时间。发送核由源码推导；粒子运动只提示流向，不能据此推算网络延迟或带宽。</p><p id="sessionHelp"></p><details><summary>展开附件、源码与完整证据边界</summary><div id="inlineAbout"></div></details></section>
@@ -127,6 +142,10 @@ let M,L,t=0,duration=1,playing=false,lastFrame=0,events=[],cursor=0,taskObs=[],a
 const canvas=$('board'),ctx=canvas.getContext('2d'),bc=$('blocks'),bx=bc.getContext('2d');
 const motionReduced=matchMedia('(prefers-reduced-motion: reduce)').matches;
 const ROLE=document.body.dataset.role,SESSION=new URLSearchParams(location.search).get('session')||'latest';
+const VIEWS=['flow','flags','packets','curves','bandwidth'],VIEW_NAMES={flow:'流动网图',flags:'到达位图',packets:'信包时序',curves:'完成度曲线',bandwidth:'观测带宽'};
+let windowView=new URLSearchParams(location.search).get('view')||document.body.dataset.windowView||'follow';
+if(!VIEWS.includes(windowView))windowView='follow';
+function setWindowView(view){windowView=view;const url=new URL(location.href);url.searchParams.set('view',view);history.replaceState(null,'',url);if(shared)applyShared(shared);}
 let shared,session,syncReady=false,appliedLaunch=-1,appliedFilters='',appliedSelection='',raf=0;
 function pop(n){n=n-((n>>>1)&0x55555555);n=(n&0x33333333)+((n>>>2)&0x33333333);return (((n+(n>>>4))&0x0f0f0f0f)*0x01010101)>>>24}
 function color(g){return g<0?'#9a8b70':GROUP_COLORS[g%4]}
@@ -201,10 +220,12 @@ function pickCore(rank,core,redraw=true){selectedRank=rank;selectedCore=core;$('
 function taskState(id,time){const task=L.tasks[id],masks=new Uint32Array(task[4]),known=new Uint8Array(task[4]),copies=new Uint8Array(task[4]);let current=null;for(const o of taskObs[id]){if(o[2]>time)break;current=o;for(let i=0;i<o[5].length;i++){masks[o[4]+i]=o[5][i];known[o[4]+i]=1;if(o[3]&&o[3]<=time)copies[o[4]+i]=1}}return {masks,known,copies,current}}
 function updateDetail(){
  const evidence=$('evidence');evidence.replaceChildren();
- if(selectedTask<0){$('flowFacts').textContent='当前筛选内没有与选中核关联的 LW 来源任务。';$('blockTitle').textContent='无到达区域';$('blockFacts').textContent='无任务与缺失数据不同。';$('slotPage').textContent='无任务';for(const id of ['slotPrev','slotNext','prev','next'])$(id).disabled=true;let[w,h]=fit(bc);bx.clearRect(0,0,w,h);bc.dataset.ready='0';addText(evidence,'当前范围没有关联任务，不能视为等待未结束。');blockGeometry=null;return}
+ if(selectedTask<0){$('flowFacts').textContent='当前筛选内没有与选中核关联的 LW 来源任务。';$('blockTitle').textContent='无到达区域';$('blockFacts').textContent='无任务与缺失数据不同。';$('flagSummary').textContent='当前范围无任务';$('slotPage').textContent='无任务';for(const id of ['slotPrev','slotNext','prev','next'])$(id).disabled=true;let[w,h]=fit(bc);bx.clearRect(0,0,w,h);bc.dataset.ready='0';addText(evidence,'当前范围没有关联任务，不能视为等待未结束。');blockGeometry=null;return}
  const a=L.tasks[selectedTask],state=taskState(selectedTask,t),obs=state.current,ready=Array.from(state.masks).reduce((n,v)=>n+pop(v),0),total=a[4]*M.blocksPerToken;
+ const known=state.known.reduce((n,v)=>n+v*M.blocksPerToken,0),copied=state.copies.reduce((n,v)=>n+v*M.blocksPerToken,0);
+ $('flagSummary').textContent=`就绪 ${count(ready)} / ${count(total)} 块（${(total?ready/total*100:0).toFixed(1)}%） · 观察为 0 ${count(known-ready)} · 未观察 ${count(total-known)} · 已复制 ${count(copied)}`;
  $('flowFacts').innerHTML=`<b>R${a[0]} / AIV${a[5]<0?'未知':a[5]}</b> → <b>R${a[1]} / AIV${a[2]}</b><br>localExpert ${a[3]} · ${a[6]<0?'本机复制':'group '+a[6]} · 就绪 ${ready}/${total} 块<br><span class="muted">发送核：源码推导；接收核：日志实测</span>`;
- $('blockTitle').textContent=`到达区域 · ${a[4]} slot × ${M.blocksPerToken} 块`;$('prev').disabled=!taskObs[selectedTask].some(o=>o[2]<t);$('next').disabled=!taskObs[selectedTask].some(o=>o[2]>t);
+ $('blockTitle').textContent=(ROLE==='visual'?`R${a[0]} / AIV${a[5]<0?'未知':a[5]} → R${a[1]} / AIV${a[2]} · 专家 ${a[3]} · `:'到达区域 · ')+`${a[4]} slot × ${M.blocksPerToken} 块`;$('prev').disabled=!taskObs[selectedTask].some(o=>o[2]<t);$('next').disabled=!taskObs[selectedTask].some(o=>o[2]>t);
  if(!accepted[selectedTask])addText(evidence,'当前任务不在概览筛选范围中；详情仍保留。');
  if(obs){addText(evidence,`rank${a[1]}.log · L${obs[7]} · record ${obs[6]}`,'strong');addText(evidence,`检查区间 [${count(obs[1])}, ${count(obs[2])}] tick（接收 rank 相对起点）`);addText(evidence,`原始 end tick：${(BigInt(L.origins[a[1]])+BigInt(obs[2])).toString()}`);addText(evidence,obs[3]&&obs[3]<=t?`这批已复制：${count(obs[3])} tick`:'这条观察尚无已完成复制标记。');}
  else addText(evidence,a[4]?'此刻尚未检查这一来源任务；灰色不表示 flag=0。':'日志明确记录 tokenCount=0。');
@@ -212,12 +233,12 @@ function updateDetail(){
  drawBlocks(state);inspectBlock(selectedBlock,state);
 }
 function drawBlocks(state){
- let[w,h]=fit(bc);bx.clearRect(0,0,w,h);const a=L.tasks[selectedTask],pageSize=8,maxPage=Math.max(0,Math.ceil(a[4]/pageSize)-1);slotPage=Math.max(0,Math.min(slotPage,maxPage));let start=slotPage*pageSize,rows=Math.min(pageSize,a[4]-start),left=49,top=17,sw=(w-left-5)/M.blocksPerToken,sh=Math.min(18,(h-top-2)/Math.max(1,rows));
+ let[w,h]=fit(bc);bx.clearRect(0,0,w,h);const a=L.tasks[selectedTask],pageSize=8,maxPage=Math.max(0,Math.ceil(a[4]/pageSize)-1);slotPage=Math.max(0,Math.min(slotPage,maxPage));let start=slotPage*pageSize,rows=Math.min(pageSize,a[4]-start),left=49,top=17,sw=(w-left-5)/M.blocksPerToken,sh=Math.min(document.body.dataset.view==='flags'?56:18,(h-top-2)/Math.max(1,rows));
  $('slotPage').textContent=a[4]?`${start}–${start+rows-1} / ${a[4]}`:'0 slot';$('slotPrev').disabled=slotPage===0;$('slotNext').disabled=slotPage===maxPage;
  if(ROLE!=='visual')return;
  bx.font='10px ui-monospace,monospace';bx.textAlign='center';bx.fillStyle='#6e7d90';for(let b=0;b<M.blocksPerToken;b++)bx.fillText(b,left+(b+.5)*sw,12);bx.textAlign='left';
  for(let r=0;r<rows;r++){let slot=start+r;bx.fillStyle='#6e7d90';bx.fillText('slot '+slot,0,top+r*sh+sh*.7);for(let b=0;b<M.blocksPerToken;b++){let set=(state.masks[slot]>>>b)&1;bx.fillStyle=!state.known[slot]?'#e1e7ee':set?(state.copies[slot]?'#154f68':'#259f97'):'#f5d8cd';let x=left+b*sw+1,y=top+r*sh+1;bx.fillRect(x,y,sw-3,Math.max(2,sh-3));if(slot*M.blocksPerToken+b===selectedBlock){bx.strokeStyle='#dd4e4e';bx.lineWidth=2;bx.strokeRect(x,y,sw-3,Math.max(2,sh-3))}}}
- blockGeometry={left,top,sw,sh,start,rows};bc.dataset.ready=String(Array.from(state.masks).reduce((n,v)=>n+pop(v),0));
+ blockGeometry={left,top,sw,sh,start,rows};bc.dataset.ready=String(Array.from(state.masks).reduce((n,v)=>n+pop(v),0));bc.dataset.slotStart=start;bc.dataset.rows=rows;bc.dataset.task=selectedTask;bc.dataset.tick=Math.round(t);
 }
 function inspectBlock(index,state){const a=L.tasks[selectedTask];if(!a[4]){$('blockFacts').textContent='零 token 任务，没有 flag 块需要接收。';return}index=Math.max(0,Math.min(a[4]*M.blocksPerToken-1,index));selectedBlock=index;const slot=Math.floor(index/M.blocksPerToken),block=index%M.blocksPerToken;let first=null,lastZero=null;for(const o of taskObs[selectedTask]){if(o[2]>t)break;let k=slot-o[4];if(k<0||k>=o[5].length)continue;if((o[5][k]>>>block)&1){if(!first)first=o}else if(!first)lastZero=o}
  let text=`slot ${slot} / block ${block} · `;
@@ -253,7 +274,7 @@ function reduceState(previous,action,now){
   case 'clear': s.group=s.sourceRank=s.destRank='all';resetPacketFocus(s);reconcileFocus(s);break;
   case 'pairFocus': s.sourceRank=String(action.src);s.destRank=String(action.dst);resetPacketFocus(s);reconcileFocus(s);break;
   case 'packetSetting': if(['packetAxis','packetRows'].includes(action.field)){s[action.field]=action.value;s.packetPage=0;}break;
-  case 'packetPage': {const scope=PacketTimeline.scope(M.ranks,s.sourceRank,s.destRank),size=s.scene==='flow'?8:Number(s.packetRows)||8;s.packetPage=Math.max(0,Math.min(Math.ceil(scope.count/size)-1,(Number(s.packetPage)||0)+action.delta));break;}
+  case 'packetPage': {const scope=PacketTimeline.scope(M.ranks,s.sourceRank,s.destRank),size=action.size||Number(s.packetRows)||8;s.packetPage=Math.max(0,Math.min(Math.ceil(scope.count/size)-1,(action.page??(Number(s.packetPage)||0))+action.delta));break;}
   case 'packetZoom': s.packetFrom=action.from;s.packetTo=action.to;break;
   case 'packetListPage': s.packetListPage=Math.max(0,(Number(s.packetListPage)||0)+action.delta);break;
   case 'packetPick': s.packetPairSrc=action.src;s.packetPairDst=action.dst;s.packetPickFrom=action.from;s.packetPickTo=action.to;s.packetListPage=0;choosePacket(s,action.packet);break;
@@ -300,15 +321,17 @@ function renderSharedTime(){
  if(document.body.dataset.view==='curves')$('lineStatus').textContent='全程完成度阶梯曲线 · 每个块只计首次就绪 · 点击关键节点定位动画';
  if(document.body.dataset.view==='bandwidth')$('lineStatus').textContent='相邻观测差分 · 默认排除本机复制 · 原始包/tick 与配置换算值双屏同步';
  if(document.body.dataset.view==='packets')$('lineStatus').textContent='每点一个 task/slot/block · 首次就绪观测时间 · 灰色未来 / 绿色完成 · 未观测包不虚构时间';
+ if(document.body.dataset.view==='flags')$('lineStatus').textContent='每格一个 slot / block 的 flag · 状态严格截止共享游标 · 翻页查看全部位置，点块查看证据';
  if(document.activeElement!==$('blockSlot'))$('blockSlot').value=Math.floor(selectedBlock/M.blocksPerToken);
  if(document.activeElement!==$('blockIndex'))$('blockIndex').value=selectedBlock%M.blocksPerToken;
  $('blockSlot').max=selectedTask<0?0:Math.max(0,L.tasks[selectedTask][4]-1);$('blockIndex').max=M.blocksPerToken-1;
  for(const id of ['blockSlot','blockIndex','selectBlock'])$(id).disabled=selectedTask<0||!L.tasks[selectedTask][4];
- if(ROLE==='visual')$('blockTitle').textContent=selectedTask<0?'无到达区域':`R${L.tasks[selectedTask][0]} / AIV${L.tasks[selectedTask][5]} → R${selectedRank} / AIV${selectedCore} · 专家 ${L.tasks[selectedTask][3]} · ${L.tasks[selectedTask][4]} slot × ${M.blocksPerToken} 块`;
 }
 function applyShared(s){
  if(s.task>=0&&!PacketTimeline.matches(M.launches[s.launch].tasks[s.task],s)){s={...s};reconcileFocus(s);}shared=s;const changed=s.launch!==appliedLaunch;
- document.body.dataset.view=s.scene||'curves';for(const view of ['flow','curves','bandwidth','packets'])$('show'+view).classList.toggle('active',document.body.dataset.view===view);
+ document.body.dataset.view=ROLE==='visual'&&windowView!=='follow'?windowView:s.scene||'curves';for(const view of VIEWS)$('show'+view).classList.toggle('active',document.body.dataset.view===view);
+ $('windowMode').value=windowView==='follow'?'follow':'fixed';document.body.dataset.windowView=windowView;
+ if(ROLE==='visual')document.title=M.title+' · '+VIEW_NAMES[document.body.dataset.view];
  if(changed){$('launch').value=s.launch;buildRun(s.launch);appliedLaunch=s.launch;appliedFilters='';appliedSelection='';}
  $('speed').value=String(s.speed);
  const filters=[s.group,s.sourceRank,s.destRank].join('/');if(filters!==appliedFilters){for(const id of ['group','sourceRank','destRank'])$(id).value=s[id];filterTasks();appliedFilters=filters;appliedSelection='';}
@@ -316,7 +339,9 @@ function applyShared(s){
  cancelAnimationFrame(raf);renderSharedTime();if(playing){lastFrame=0;raf=requestAnimationFrame(frame);}
 }
 function frame(now){if(!shared||!playing)return;if(now-lastFrame>=32){lastFrame=now;renderSharedTime();}if(playing)raf=requestAnimationFrame(frame);}
-async function send(action){if(!session)return;try{await session.command(action)}catch(e){$('syncStatus').classList.add('warn');$('syncStatus').textContent='同步失败：'+e.message;}}
+async function send(action){if(action.type==='scene'&&ROLE==='visual'){setWindowView(action.value);return;}if(!session)return;try{await session.command(action)}catch(e){$('syncStatus').classList.add('warn');$('syncStatus').textContent='同步失败：'+e.message;}}
+$('showflags').onclick=()=>send({type:'scene',value:'flags'});
+$('windowMode').onchange=()=>setWindowView($('windowMode').value==='follow'?'follow':document.body.dataset.view);
 function hit(x,y){const g=geometry;if(!g)return null;let side=x>=g.pw+g.gap?1:x<=g.pw?0:-1;if(side<0||x<0||y<0||y>g.h)return null;const grid=g.sides[side],px=x-(side?g.pw+g.gap:0),col=Math.floor(px/grid.cw),row=Math.floor(y/grid.ch),rank=grid.ranks[row*grid.columns+col];if(rank===undefined)return null;let nearest=0,dist=Infinity;for(let c=0;c<M.cores;c++){const p=cell(side,rank,c),d=(p.x-x)**2+(p.y-y)**2;if(d<dist){dist=d;nearest=c}}return {side,rank,core:nearest}}
 canvas.addEventListener('mousemove',e=>{let r=canvas.getBoundingClientRect(),p=hit(e.clientX-r.left,e.clientY-r.top);if(!p)return;let idx=p.rank*M.cores+p.core,total=p.side?rxTotals[idx]:txTotals[idx],ready=p.side?rxReady[idx]:txReady[idx];$('hover').textContent=`${p.side?'接收':'发送'} R${p.rank} / AIV${p.core} · ${p.side?'观察就绪':'对端观察'} ${ready}/${total} 块`;$('hover').style.display='block';$('hover').style.left=Math.min(e.clientX-r.left+12,r.width-310)+'px';$('hover').style.top=Math.max(0,e.clientY-r.top-35)+'px'});
 canvas.addEventListener('mouseleave',()=>$('hover').style.display='none');
@@ -335,6 +360,7 @@ $('selectBlock').onclick=()=>send({type:'block',value:Number($('blockSlot').valu
 $('fullscreen').onclick=async()=>{try{if(document.fullscreenElement)await document.exitFullscreen();else await document.documentElement.requestFullscreen()}catch(e){$('syncStatus').textContent='此浏览器未开启页面全屏；可使用浏览器的全屏功能。'}};
 $('about').onclick=()=>$('modal').classList.add('open');$('closeAbout').onclick=()=>$('modal').classList.remove('open');document.addEventListener('keydown',e=>{if(e.key==='Escape')$('modal').classList.remove('open')});
 new ResizeObserver(()=>{if(shared)renderSharedTime();else if(M&&L){draw();updateDetail()}}).observe(canvas);
+new ResizeObserver(()=>{if(M&&L)updateDetail()}).observe(bc);
 (async()=>{try{
  const bin=Uint8Array.from(atob($('packed').textContent.trim()),c=>c.charCodeAt(0));const stream=new Blob([bin]).stream().pipeThrough(new DecompressionStream('gzip'));M=JSON.parse(await new Response(stream).text());document.title=M.title;$('title').textContent=M.title;$('scale').textContent=`${M.ranks} rank × ${M.cores} AIV / 侧`;$('coverage').textContent=`已有 ${M.launches.length}/${M.expectedLaunches} 轮`;
  $('leftCount').textContent=$('rightCount').textContent=`${count(M.ranks*M.cores)} 个核`;$('rxRank').max=M.ranks-1;$('rxCore').max=M.cores-1;$('rolesLabel').textContent=M.roles.filter(v=>v.name.includes('写核')).map(v=>`${v.end-v.begin} 个 ${v.name} AIV${v.begin}–${v.end-1}`).join('；');
@@ -345,12 +371,13 @@ new ResizeObserver(()=>{if(shared)renderSharedTime();else if(M&&L){draw();update
  if(ROLE==='control'){$('controlStats').append($('stats'));$('title').textContent=M.title+' · 控制台';$('lineStatus').textContent='完整网图与逐块填充请查看动画屏。';}
  document.title=M.title+(ROLE==='control'?' · 控制台':' · 动画屏');
  const other=new URL(ROLE==='control'?'visual.html':'control.html',location.href);other.searchParams.set('session',SESSION);$('otherPage').href=other.href;$('otherPage').textContent=ROLE==='control'?'打开动画屏 ↗':'打开控制台 ↗';
- $('sessionHelp').textContent=`会话：${SESSION}。使用同一浏览器和同一 localhost 地址打开两页，再将标签页拖到不同屏幕。播放、筛选、核与块选择双向联动；刷新和后打开的页面会接续当前进度。`;
+ for(const link of document.querySelectorAll('[data-open-view]')){const url=new URL('visual-'+link.dataset.openView+'.html',location.href);url.searchParams.set('session',SESSION);link.href=url.href;}
+ $('sessionHelp').textContent=`会话：${SESSION}。使用同一浏览器和同一 localhost 地址，可打开任意多个动画窗口。各窗口独立选择视图，播放、筛选、核与块选择双向联动；刷新和后打开的页面会接续当前进度。`;
  $('loading').remove();initProgress();initBandwidth();initPackets();buildRun(0);
  const initial={launch:0,tick:t,at:Date.now(),playing:false,speed:1,scene:'curves',curveAxis:'dst',curveGroup:'all',curveRank:'all',group:'all',sourceRank:'all',destRank:'all',rank:selectedRank,core:selectedCore,task:selectedTask,block:0,page:0,revision:0};
  try{
   session=await createPacketSession({key:'packet-flow.dual.v1:__MODEL_ID__:'+SESSION,role:ROLE,initial,reduce:reduceState,onState:applyShared,onPresence:peers=>{
-   const others=peers.filter(p=>p.role!==ROLE).length;$('syncStatus').classList.toggle('warn',!others);$('syncStatus').textContent=others?`双屏已联动 · ${SESSION}`:`会话 ${SESSION} · 等待${ROLE==='control'?'动画屏':'控制台'}连接（可接续当前进度）`;
+   const controls=peers.filter(p=>p.role==='control').length+(ROLE==='control'?1:0),visuals=peers.filter(p=>p.role==='visual').length+(ROLE==='visual'?1:0),connected=controls&&visuals;$('syncStatus').classList.toggle('warn',!connected);$('syncStatus').textContent=connected?`多屏已联动 · ${controls} 控制页 / ${visuals} 动画页 · ${SESSION}`:`会话 ${SESSION} · 等待${ROLE==='control'?'动画页':'控制页'}连接（可接续当前进度）`;
   }});
  }catch(e){applyShared(initial);session={command:async action=>applyShared({...reduceState(shared,action,Date.now()),revision:shared.revision+1})};$('syncStatus').classList.add('warn');$('syncStatus').textContent=e.message;}
  syncReady=true;$('app').dataset.loaded='true';

@@ -57,14 +57,16 @@ def render(model, output):
     template = template.replace('__PROGRESS_SCRIPT__', (assets / 'progress.js').read_text() + '\n' + (assets / 'charts.js').read_text())
     template = template.replace('__BANDWIDTH_SCRIPT__', (assets / 'bandwidth.js').read_text() + '\n' + (assets / 'bandwidth-view.js').read_text())
     template = template.replace('__PACKETS_SCRIPT__', (assets / 'packets.js').read_text() + '\n' + (assets / 'packets-view.js').read_text())
-    for role in ('control', 'visual'):
-        (output.parent / f'{role}.html').write_text(template.replace('__PAGE_ROLE__', role))
+    pages = [('control', 'control', 'follow'), ('visual', 'visual', 'follow')]
+    pages += [(f'visual-{view}', 'visual', view) for view in ('flow', 'flags', 'packets', 'curves', 'bandwidth')]
+    for name, role, view in pages:
+        (output.parent / f'{name}.html').write_text(template.replace('__PAGE_ROLE__', role).replace('__WINDOW_VIEW__', view))
     # 保留旧入口；两个实际页面都内嵌完整数据，移动文件时一起复制即可。
     if output.name not in ('control.html', 'visual.html'):
         output.write_text('''<!doctype html><html lang="zh-CN"><meta charset="utf-8">
 <title>全局数据流 · 双屏入口</title><script>location.replace('control.html'+location.search+location.hash)</script>
 <p><a href="control.html">打开控制页</a> · <a href="visual.html">打开动画页</a></p></html>''')
-    print(f'已生成 {output.parent}/control.html、visual.html；入口 {output.name}；模型 {len(data):,} 字节，压缩后 {len(packed):,} 字节')
+    print(f'已生成 {output.parent}/control.html、visual.html 与五种独立动画页；入口 {output.name}；模型 {len(data):,} 字节，压缩后 {len(packed):,} 字节')
 
 
 def self_test():
@@ -83,14 +85,17 @@ def self_test():
     with tempfile.TemporaryDirectory() as directory:
         output = Path(directory) / 'index.html'
         render(fixture, output)
-        for role in ('control', 'visual'):
-            page = (output.parent / f'{role}.html').read_text()
+        for name in ('control', 'visual', 'visual-flow', 'visual-flags', 'visual-packets', 'visual-curves', 'visual-bandwidth'):
+            role = 'control' if name == 'control' else 'visual'
+            page = (output.parent / f'{name}.html').read_text()
             assert f'data-role="{role}"' in page
-            assert not re.search(r'__(PACKED_MODEL|PAGE_ROLE|SYNC_SCRIPT|PROGRESS_SCRIPT|BANDWIDTH_SCRIPT|PACKETS_SCRIPT|MODEL_ID)__', page)
+            assert not re.search(r'__(PACKED_MODEL|PAGE_ROLE|WINDOW_VIEW|SYNC_SCRIPT|PROGRESS_SCRIPT|BANDWIDTH_SCRIPT|PACKETS_SCRIPT|MODEL_ID)__', page)
+            view = name[len('visual-'):] if name.startswith('visual-') else 'follow'
+            assert f'data-window-view="{view}"' in page
             encoded = re.search(r'<script id="packed"[^>]*>(.*?)</script>', page, re.S).group(1)
             assert json.loads(gzip.decompress(base64.b64decode(encoded))) == fixture
         assert 'location.search' in output.read_text()
-    print('自检通过：模型边界、双页生成、内嵌数据一致性、占位符与兼容入口')
+    print('自检通过：模型边界、控制与多动画页生成、内嵌数据一致性、独立视图、占位符与兼容入口')
 
 
 if __name__ == '__main__':

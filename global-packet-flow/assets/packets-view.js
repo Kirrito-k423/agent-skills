@@ -34,6 +34,7 @@ function drawPackets(){
  $('packetPrev').disabled=page===0;$('packetNext').disabled=page===pages-1;
  $('packetScope').textContent=scope.eligible?`${scope.sources.length} 来源 × ${scope.destinations.length} 目的 = ${scope.count} 组合 · ${o.axis==='src'?'发送端优先':'接收端优先'}排序 · 已完成 ${count(data.pairs.reduce((n,p)=>n+PacketTimeline.at(p.packets,t),0))} / ${count(data.expected)} 包 · 全日志缺少就绪时间 ${count(data.expected-data.observed)} 包`:`${scope.count} 组合超过 512，请筛选来源或目的 rank 后查看逐包时序。`;
  $('packetScope').dataset.pairs=scope.count;$('packetScope').dataset.expected=data.expected;$('packetScope').dataset.completed=data.pairs.reduce((n,p)=>n+PacketTimeline.at(p.packets,t),0);
+ packetTable();
  const c=$('packetCanvas'),rect=c.getBoundingClientRect();if(!rect.width||!rect.height)return;
  const [w,h]=fit(c),x=c.getContext('2d'),left=156,right=100,top=23,bottom=30,width=Math.max(1,w-left-right),height=Math.max(1,h-top-bottom),rowHeight=height/Math.max(1,visible.length),from=Math.min(o.from,duration-1),to=Math.max(from+1,Math.min(duration,o.to));
  packetGeometry={w,h,left,right,top,bottom,width,height,rowHeight,from,to,visible};packetDrawn=[];x.clearRect(0,0,w,h);
@@ -67,7 +68,8 @@ function packetHit(event){
 function initPackets(){
  $('showpackets').onclick=()=>send({type:'scene',value:'packets'});$('packetExpand').onclick=()=>send({type:'scene',value:'packets'});
  for(const [id,field]of [['packetAxis','packetAxis'],['packetRows','packetRows']])$(id).onchange=()=>send({type:'packetSetting',field,value:$(id).value});
- $('packetPrev').onclick=()=>send({type:'packetPage',delta:-1});$('packetNext').onclick=()=>send({type:'packetPage',delta:1});
+ const turnPage=delta=>{const o=packetOptions(),pages=Math.max(1,Math.ceil(packetScope().count/o.size));send({type:'packetPage',delta,size:o.size,page:Math.min(o.page,pages-1)});};
+ $('packetPrev').onclick=()=>turnPage(-1);$('packetNext').onclick=()=>turnPage(1);
  $('packetZoom').onclick=()=>send({type:'packetZoom',from:Math.max(0,t-1000),to:Math.min(duration,t+1000)});$('packetFull').onclick=()=>send({type:'packetZoom',from:0,to:0});
  $('packetListPrev').onclick=()=>send({type:'packetListPage',delta:-1});$('packetListNext').onclick=()=>send({type:'packetListPage',delta:1});
  const c=$('packetCanvas'),tip=$('packetTip');
