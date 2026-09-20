@@ -1,4 +1,4 @@
 interface:
-  display_name: "Paper Figure Supplement"
-  short_description: "为论文笔记补充逻辑图与实验图表"
-  default_prompt: "Use $paper-figure-supplement to add a logic figure and strongest evidence figure/table to this paper note."
+  display_name: "论文配图补充器"
+  short_description: "为论文笔记补充逻辑图和实验证据，全文独立审核后默认保留 Dev"
+  default_prompt: "使用 $paper-figure-supplement 为这篇笔记补充逻辑图和最有力的实验图表，完成全部修改后由独立子代理使用 $article-readability-check 审核最终全文，默认保留 Dev；通过不自动公开。"

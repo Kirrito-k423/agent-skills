@@ -35,6 +35,7 @@ posts/Work/Artificial Intelligence/AIInfra/Interactive-HTML-Article-Case.preview
 生产外层模板采用以下字段：
 
 ```yaml
+review_status: pending
 template: html-preview.html
 html_preview:
   src: posts/Work/Artificial Intelligence/AIInfra/Interactive-HTML-Article-Case.preview.html
@@ -45,6 +46,7 @@ html_preview:
 
 字段含义：
 
+- `review_status`：默认 `pending`，表示 Dev 内容；已有 `private` / `withdrawn` 则保留。独立可读性审核通过不会自动公开，按 [独立审核与 Dev 发布约定](../../hugo-tech-blog-writer/references/dev-review-contract.md) 处理。
 - `template`：选择方案 B 的 MkDocs 自定义页面模板。
 - `html_preview.src`：相对于 MkDocs `docs/` 根目录的静态 HTML 路径。
 - `html_preview.download_name`：浏览器下载时使用的文件名，只能是安全的 `.html` basename。
@@ -76,6 +78,6 @@ Markdown 载体继续使用 `archetypes/default.md` 的字段风格。如果包�
 
 生产模板位于 `overrides/html-preview.html`。它必须继承 Material for MkDocs 的站点外壳，读取 Blog 插件生成的 `page.parent`、`page.categories`、`tags`、`page.authors` 和 `page.config.readtime`，不得自行拼接首页、分类或标签 URL。
 
-构建后的主文章 URL 仍来自 `.md`，例如 `/1-agent-workflow/2026/09/01/Interactive-HTML-Article-Case/`。`.preview.html` 的静态资源 URL 只用于 iframe、单独打开和下载。首页、分类页、标签页以及搜索结果都应指向主文章 URL。
+构建后的主文章 URL 仍来自 `.md`，例如 `/1-agent-workflow/2026/09/01/Interactive-HTML-Article-Case/`。`.preview.html` 的静态资源 URL 只用于 iframe、单独打开和下载。Dev 的首页、分类页、标签页以及搜索结果都应指向主文章 URL；未经明确授权公开的文章与 HTML 附件不得进入 Public。
 
 线上经过 Cloudflare 时，平台可能在 HTML 响应的 `</body>` 前自动注入 `static.cloudflareinsights.com/beacon.min.js`。源文件仍须保持自包含；外层下载逻辑不能直接把响应 Blob 原样保存，必须先移除带 `Cloudflare Pages Analytics` 标记的注入脚本，再以 `text/html;charset=utf-8` 生成下载文件。不要宽泛删除页面自己的内联脚本。

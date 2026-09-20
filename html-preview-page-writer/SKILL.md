@@ -1,6 +1,6 @@
 ---
 name: html-preview-page-writer
-description: 为 hugoMinos 创建或更新参与首页、分类、标签和搜索索引的 HTML 正文文章；维护 Markdown 索引载体、同名 `.preview.html` 与方案 B 详情页接入。用户要求把文章、技术分析、数据报告、交互解释或 AI 生成内容制作成站内 HTML 文章时使用；独立落地页或普通 Markdown 写作不使用。
+description: 为 hugoMinos 创建或更新参与首页、分类、标签和搜索索引的 HTML 正文文章；维护 Markdown 索引载体、同名 `.preview.html` 与方案 B 详情页接入。用户要求把文章、技术分析、数据报告、交互解释或 AI 生成内容制作成站内 HTML 文章时使用；独立落地页或普通 Markdown 写作不使用。 默认 Dev，写完后必须由独立子代理使用 article-readability-check 审核最终正文；通过不自动转为 Public。
 ---
 
 # HTML 预览页写作器
@@ -20,6 +20,8 @@ description: 为 hugoMinos 创建或更新参与首页、分类、标签和搜�
 - 不越过 `iframe` 沙箱访问父页面。
 
 ## 开始前
+
+必须阅读并执行 [独立审核与 Dev 发布约定](../hugo-tech-blog-writer/references/dev-review-contract.md)。Markdown 载体默认设置 `review_status: pending`，保留已有 `private` / `withdrawn`；写完后由独立子代理使用 `$article-readability-check` 同时检查载体与实际 HTML 正文。通过也不自动转为 Public。
 
 1. 阅读仓库根目录的 `AGENTS.md`，遵守内容分类、命名和 Git 改动边界。
 2. 记录 `git status --short --branch`，保留用户已有改动。
@@ -71,7 +73,7 @@ description: 为 hugoMinos 创建或更新参与首页、分类、标签和搜�
 
 按照仓库契约命名 `.preview.html`，并让 Markdown 载体的 `template` 与 `html_preview` 字段指向它。
 
-- 更新已有文章时，保留原有 front matter，只添加或更新 HTML 预览相关字段。
+- 更新已有文章时，保留原有 front matter 的结构，添加或更新 HTML 预览字段，并按独立审核约定设置 Dev 状态；不沿用旧版本公开资格。
 - 创建新页面时，使用 `archetypes/default.md` 建立 Markdown 载体；必须保留 `summary`，并建议使用 `!!! abstract "导言"` 与紧随其后的 `<!-- more -->`，让首页和分类页生成可读摘要。导言不确定时，写一段简短的“问题—核心判断—页面用途”，不要编造背景。
 - `.md` 和 `.preview.html` 必须同名、同目录。详情页仍使用 `.md` 的 Blog URL，不把 `.preview.html` 当作对外主入口。
 - `overrides/html-preview.html` 是生产详情模板；不得用 `docs/prototypes/` 页面代替生产接入。
@@ -94,12 +96,13 @@ python3 skills/html-preview-page-writer/scripts/validate_html_preview.py <页面
 - 在带 `sandbox="allow-scripts allow-downloads"` 的 `iframe` 中仍可显示；
 - 下载后的单文件直接打开时主要内容和交互仍然可用。
 - 若线上经过 Cloudflare，确认下载文件已经移除平台自动注入的 Analytics beacon，并再次通过单文件校验器；不要把线上响应未经处理地直接保存为 Blob。
-- 构建后确认首页、目标分类页和每个目标标签页都链接到 `.md` 文章 URL；文章页的“笔记”、分类和标签链接能反向返回对应索引。
+- 在 Dev 构建中确认首页、目标分类页和每个目标标签页都链接到 `.md` 文章 URL；文章页的“笔记”、分类和标签链接能反向返回对应索引。同时检查 Public 的首页、搜索、标签、分类、归档、sitemap 与直接 URL 不暴露文章及 `.preview.html` 附件。
 
-最后运行 `git diff --check`，并只报告实际验证过的项目。
+正文、图表与交互完成后，必须按独立审核约定派发只读子代理并等待可读性结论；不能用单文件校验器通过代替阅读实际 HTML。修改后复审最终版本，默认仍保留 Dev。最后运行 `git diff --check`，并只报告实际验证过的项目。
 
 ## 交付边界
 
+- 交付独立可读性结论、受审版本及 Dev 默认状态；缺失审核或未通过时如实标注，不自动写入 Public 发布清单。
 - 不自动上传、部署、提交或推送。
 - 不把原型切换器、A/C 方案或测试占位文案带入生产页面。
 - 不为了视觉丰富而生成无来源数字、模拟基准结果或伪造引用。

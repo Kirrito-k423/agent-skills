@@ -1,4 +1,4 @@
 interface:
-  display_name: "Hugo Tech Blog Writer"
-  short_description: "Research questions into illustrated Hugo posts"
-  default_prompt: "Use $hugo-tech-blog-writer to research my question, answer it with evidence, create an illustrated Hugo post, upload its images, and publish the completed document."
+  display_name: "Hugo 技术博客写作器"
+  short_description: "调研并撰写有证据和必要配图的博客，独立审核后默认作为 Dev 内容"
+  default_prompt: "使用 $hugo-tech-blog-writer 调研并回答我的问题，写成配图适当的 Hugo 文章，安排独立子代理使用 $article-readability-check 审核最终全文，默认以 Dev 内容交付；通过不自动公开。"

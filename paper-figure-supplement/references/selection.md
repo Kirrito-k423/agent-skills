@@ -1,31 +1,31 @@
-# Figure Selection Guide
+# 论文选图指南
 
-Use this reference when several candidate paper figures or tables are available.
+有多张候选图或表时使用本指南。
 
-## Logic Figure Priority
+## 逻辑图优先级
 
-1. **Method overview**: the paper's central pipeline or architecture.
-2. **Problem framing**: a figure that explains why the method is needed.
-3. **Algorithm flow**: step-by-step procedure when the paper is algorithm-heavy.
-4. **Generated schematic**: use `ian-xiaohei-illustrations` when the paper has no clear logic figure or the article needs a simpler Chinese explanatory image.
+1. **方法概览**：论文核心流程或架构。
+2. **问题说明**：解释为什么需要该方法。
+3. **算法流程**：算法较复杂时展示关键步骤。
+4. **自绘示意**：原文没有清晰逻辑图，或文章需要更直观的中文图时使用 ian-xiaohei-illustrations。
 
-The logic figure should help a reader understand the method before reading formulas.
+逻辑图应帮助读者在进入公式前理解方法。
 
-## Evidence Figure Priority
+## 证据图优先级
 
-1. **Main benchmark table**: strongest head-to-head evidence for the paper's main claim.
-2. **Core ablation**: best proof that the proposed component matters.
-3. **Scaling or efficiency plot**: use when the claim is about cost, data, speed, sample efficiency, or scaling.
-4. **Qualitative comparison**: use only when the paper's claim is visual or when quantitative tables are weak.
+1. **主基准表**：最有力地直接比较论文主要主张。
+2. **核心消融**：展示所提组件的作用。
+3. **扩展性或效率图**：主张涉及成本、数据、速度、样本效率或规模时使用。
+4. **定性对照**：主张本身是视觉性的，或定量表解释力不足时使用。
 
-The evidence figure should answer: "What result would I show if I had only one slide to convince someone?"
+证据图应回答：如果只能展示一页，哪个结果最能支撑这里的判断？
 
-## Captions
+## 图注
 
-Use concise captions:
+图注简短，详细解释放在相邻正文。例如：
 
-- `来自论文 Figure 2，展示 Flow-OPD 的整体训练路径。`
-- `来自论文 Table 1，主实验显示 OPD 相比直接 RL 更稳定。`
-- `自绘示意图，用于解释 DiffusionOPD 的策略蒸馏逻辑。`
+- 来自论文 Figure 2，展示 Flow-OPD 的整体训练路径。
+- 来自论文 Table 1，主实验显示 OPD 相比直接 RL 更稳定。
+- 自绘示意图，用于解释 DiffusionOPD 的策略蒸馏逻辑。
 
-Avoid long captions; put detailed discussion in the surrounding paragraph.
+示例只展示图注格式，实际结论和图表编号必须核对原论文。

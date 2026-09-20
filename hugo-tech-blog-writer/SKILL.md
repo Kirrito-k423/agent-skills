@@ -1,364 +1,206 @@
 ---
 name: hugo-tech-blog-writer
-description: Research a user's question, give a source-backed answer, and turn the result into a polished illustrated Hugo Markdown document. Use when asked to investigate a technical or conceptual topic, research related papers or source code, create or update posts under content/Work, content/Thinking, or content/OutOfWork, add explanatory illustrations and paper evidence figures, upload images to cloud hosting, preserve Hugo front matter and summary markers, or complete an explicitly requested commit-and-push publishing workflow.
+description: 调研用户的问题，提供有来源的回答，并写成带必要配图的 Hugo Markdown 文章。用于研究技术或概念、阅读论文与源码、创建或更新 content/Work、content/Thinking、content/OutOfWork 中的博客、补充解释图与论文证据、上传图片及执行明确授权的提交推送。文章默认作为 Dev 内容；写完后必须由独立子代理使用 article-readability-check 审核，通过不自动转为 Public。
 ---
 
-# Hugo Tech Blog Writer
+# Hugo 技术博客写作器
 
-## Overview
+先调研用户真正的问题，形成有证据的直接回答，再沉淀为脱离会话仍可阅读的文章。已有文章承载同一主题时优先更新；只有独立主题才新建。
 
-Research the user's actual question before writing. Give a direct evidence-backed answer, then preserve the durable explanation as a self-contained Hugo post with useful illustrations, paper figures, citations, and an optional Git publish step.
+**开始前必须阅读并执行 [独立审核与 Dev 发布约定](references/dev-review-contract.md)。** 默认设置 `review_status: pending`，写完后由未参与写作的独立子代理使用 $article-readability-check 终审。可读性通过与 Public 发布授权分开处理。
 
-Prefer improving an existing article when it already owns the topic. Create a new post only when the topic needs an independent durable home.
+## 开始前
 
-## First Checks
+1. 阅读仓库 AGENTS.md，遵守 Markdown 规则。
+2. 新建文章前读取 archetypes/default.md，沿用 front matter 风格。
+3. 只检查主题相关的 content/ 文件；用户未要求整理目录时不大范围扫描。
+4. 涉及源码定位且仓库存在 .codegraph/ 时优先使用 CodeGraph；纯 Markdown 定位使用定向 rg。
+5. 记录 git status --short --branch，把已有改动视为无关内容，除非用户明确纳入范围。
 
-1. Read the repository's `AGENTS.md` when present and follow its Markdown writing rules.
-2. Read `archetypes/default.md` before creating a new post so front matter follows the local template.
-3. Inspect only the relevant part of `content/` needed for the task. Avoid broad scans unless the user asks for a cleanup or taxonomy pass.
-4. If a `.codegraph/` directory exists and the task involves locating code concepts, use CodeGraph before text search. For Markdown-only placement, use targeted `rg` or `find` in `content/`.
-5. Record `git status --short --branch` before editing. Treat all pre-existing changes as unrelated unless the user explicitly places them in scope.
+## 完整流程
 
-## End-to-End Workflow
+### 1. 明确问题
 
-### 1. Frame the question
+把请求收束成一个研究目标，明确用户需要的判断、机制、比较或解释，以及读者背景、技术深度、新建或更新位置、图片上传与 Git 发布授权。
 
-Restate the user's question as one concrete research objective. Identify:
+不影响长期范围的选择自行作合理假设。只有缺失信息会实质改变结论、落盘位置、隐私或公开范围时才询问；不要重复请求已经获得的授权。
 
-- the decision, mechanism, comparison, or explanation the user actually needs;
-- the expected technical depth and reader background;
-- whether the output should update an existing note or create a new durable article;
-- whether the request explicitly authorizes image upload, commit, and push.
+### 2. 先研究再写作
 
-Make reasonable assumptions when they do not change the article's long-term scope. Ask only when a missing choice would materially change the conclusion, document placement, privacy, or external publication.
+围绕问题收集足够的一手证据，不为填满模板搜集材料。来源优先级：
 
-### 2. Research before writing
+1. 本地源码和仓库文档，用于判断实现行为。
+2. 官方文档、规范、项目主页、发布说明和源码仓库，用于判断 API 与产品行为。
+3. 原始论文和正式会议资料，用于研究结论。
+4. 高质量二手来源，仅用于背景或一手材料缺失的情况。
 
-Gather enough primary evidence to answer the question rather than filling a template.
+用户要求调研、事实可能变化、引用的论文或网页尚未读取、把握不足时联网核实；技术研究优先一手来源，必要时使用机器已配置的代理。
 
-Use the strongest available source for each claim:
+内部维护简短证据账本：主张 → 来源 → 来源日期或版本 → 置信程度 → 文章位置。区分来源事实与推断，记录冲突和未验证处，核对关键数字、实验设置、模型版本与日期。不得编造引用、实验结果、代码路径或论文结论。
 
-1. **Local source code and repository documents** for implementation behavior.
-2. **Official documentation, specifications, project pages, release notes, and repositories** for APIs and product behavior.
-3. **Original papers and official proceedings** for research claims.
-4. **High-quality secondary sources** only for context or when primary material is unavailable.
+### 3. 先形成回答
 
-Browse the web whenever the user requests research, the fact may have changed, a paper/page is referenced but not locally available, or confidence is insufficient. For technical research, prefer primary sources. Use the machine's configured proxy when required.
+先给结论，再展开文章。交付必须回答原始问题，不能只报告创建了文件。按结论、机制或证据、必要条件与取舍、文档和发布结果组织回答。
 
-Maintain a compact evidence ledger while working:
+### 4. 写作与配图
 
-```text
-claim -> source -> source date/version -> confidence -> article section
-```
+按下文规则选择新建或更新，维护元数据，从直觉讲到证据。先写稳定的主线，再用少量高价值图像降低理解成本，不为每节强制配图。
 
-For every central claim:
+### 5. 自检、独立审核与发布
 
-- distinguish source facts from inference;
-- record uncertainty, conflicting evidence, and unverified gaps;
-- verify quoted numbers, benchmark settings, model versions, and dates against the original source;
-- never invent citations, experimental results, code paths, or paper conclusions.
+检查 Markdown、图片链接、引用和差异；完成全部内容后按共享约定派发独立子代理，等待真实可读性结论，修订后复审。默认保留 Dev，审核通过不会自动公开。仅在“Git 发布流程”允许的授权范围内提交和推送。
 
-### 3. Answer the user
+## 新建或更新
 
-Form the conclusion before expanding the article. The final response must directly answer the original question, not merely report that a Markdown file was created.
+优先更新：用户指定文件；已有文章讲相同概念、项目、论文、工具或工作流；请求补充笔记、例子、引用、修正或段落；拆成新文会割裂同一论点。
 
-Organize the answer around:
+适合新建：没有现成文章；主题的读者目标、抽象层次或长期系列不同；用户明确要求新文；加入现有文章会使其失焦或过长。
 
-1. the short conclusion;
-2. the mechanism or evidence that supports it;
-3. important boundaries, trade-offs, or uncertainty;
-4. the durable document and publication result.
+不确定时简短说明判断并继续；仅在落盘选择影响长期组织时询问。
 
-Make the Markdown article self-contained so it remains useful without the chat context.
+## 按主线选目录
 
-### 4. Write the document
+- content/Work/：技术、编程、AI、工程、论文、工作方法、业务学习和研究笔记。
+- content/Thinking/：认知、规划、方法论、价值判断和长期思考。
+- content/OutOfWork/：生活、健康、设备、娱乐、旅行和个人事务。
 
-Decide whether to update or create, place the article by its logical thesis, maintain front matter, and write from intuition to evidence. Draft the prose before generating images so each figure serves a settled argument rather than an unfinished outline.
+更深层目录表达文章的主要概念轴，例如 Work/Artificial Intelligence/ 对应模型、训练、推理和 Agent；Work/Programming/ 对应语言、工具和软件实践；Work/HPC/ 对应性能、系统、加速器、kernel 与并行计算。
 
-### 5. Add visual evidence
+尊重已有目录与系列命名，仅在能明确长期主题时增加层级。
 
-Use the visual workflow below only after the core article is coherent. Add images where they materially reduce explanation cost; do not illustrate every section.
+## 调研与引用
 
-### 6. Validate and publish
+- 引用贴近它支持的判断，指向官方文档、仓库、项目页、论文摘要或会议页面，不引用搜索结果页。
+- 关键论文结论尽量标明论文及 Figure、Table、章节或实验。
+- 源码结论标明可获得的仓库版本、文件、符号、PR 或提交。
+- 文末可设“参考资料”，但关键归因不能只藏在文末。
+- 优先转述，直接引文短而必要。
+- 自绘图标明“自绘示意图”，不能当作原始实验依据。
+- 跨来源综合推断需说明推断身份。
+- 来源冲突时解释分歧，优先采用最接近原始事实的证据。
 
-Validate the Markdown, image URLs, source attribution, and Git diff. Commit and push only under the authorization rules in **Git Publish Workflow**.
+涉及论文时，按方法、任务、数据集和机制检索，覆盖必要的奠基工作、直接相关的新研究及有意义的反例。优先正式发表版本，记录 arXiv 或会议 URL、年份与版本。阅读支持文章结论所需的方法、设置、结果、消融及限制，不只看摘要。区分论文证明了什么与本文推断了什么；只保留改变解释、证据或实践结论的论文，完成调研后再决定配图。
 
-## Decide Update Or Create
+## Front matter
 
-Prefer updating an existing post when:
+沿用 archetypes/default.md 的字段与风格：
 
-- The user names or selects a file.
-- A current article already covers the same concept, project, paper, tool, or workflow.
-- The request is to add notes, examples, references, corrections, or a section.
-- Creating a sibling article would split one logical argument into fragments.
+- title：简练英文关键词，不写完整句。
+- categories：少量稳定大类。
+- series：连续主题使用统一名称。
+- tags：可检索关键词，专名保留正确大小写。
+- summary：简洁并与导言一致。
+- review_status：新建或修改默认 pending，保留已有 private / withdrawn；按共享约定确保 Dev 隔离。
+- toc、date、hidden、comments、authors 等已有字段：除受本次内容修改影响或用户要求外保留。
 
-Create a new post when:
+修改既有文章时保持结构，只更新相关字段；元数据保全不意味着沿用旧版本的公开资格。
 
-- No existing article has a clear claim on the topic.
-- The requested topic has a different reader intent, abstraction level, or long-term series.
-- The user explicitly wants a new article.
-- The new content would make the existing article unfocused or too large.
+## 文章结构与风格
 
-When uncertain, briefly state the inferred choice and proceed with the safer path. Ask only when placement would materially affect the long-term organization.
+1. 使用导言块时以 `!!! abstract "导言"` 开头，其后紧跟 `<!-- more -->`。
+2. 先直觉与动机，再按需给定义、推导、例子或实现。
+3. 中文文章使用短而清楚的中文小节标题，层级通常不超过三层，不为层级而层级。
+4. 顺序、流程与优先级使用有序列表；并列观点、条件与取舍使用无序列表。
+5. 嵌套列表使用四个空格缩进；适量加粗关键判断、概念、结论与行动。
 
-## Place By Logical Thesis
+背景、核心概念、分析、实践、常见误区、总结与参考资料按主题需要选择，不强制套齐章节。默认中文写作，英文术语统一、混排留空格。偏技术与学术，但从直觉讲清，使用有解释力的例子、对比与反例，避免口号、表情、套话与装饰。必要时说明未验证判断和来源条件，不堆砌免责声明。
 
-Treat directories as an argument map, not just storage:
+## 技术密度
 
-- `content/Work/`: technical, programming, AI, engineering, papers, work methods, business learning, research notes.
-- `content/Thinking/`: cognition, planning, methodology, value judgments, long-term thinking.
-- `content/OutOfWork/`: life, health, devices, entertainment, travel, personal matters.
+工程文章每段应提供理解主线所需的事实、机制或判断依据，例如源码、API、配置、指标、约束、数据与控制流，或必要的验证方法。删除只表达“重要”“有前景”“值得研究”的空话。
 
-Use deeper folders to express the main conceptual axis. For example:
+PR 或源码分析围绕变更状态、关键执行路径、迁移影响及验证结论组织；文件清单、命令、排障过程与回滚信息只有帮助读者理解或操作时才保留。内部研究账本可以详尽，读者正文应提炼理念与效果。只在测量模板中使用“待测”，不能拿它替代结论。
 
-- `content/Work/Artificial Intelligence/` for AI concepts, model behavior, training, inference, agents, and papers.
-- `content/Work/Programming/` for language, tooling, debugging, and software practice.
-- `content/Work/HPC/` for performance, systems, accelerators, kernels, and parallel computing.
+## 源码证据
 
-Respect existing folder names and series conventions. Do not create a new directory level unless it clarifies the article's durable topic.
+重要结论依赖源码、PR、算子封装、模型补丁或运行分支时，提供最小有用片段：
 
-## Research And Citation Rules
+- 标明文件或函数、关键分支、tensor shape 或配置，以及最终 API 或算子调用。
+- 关键逻辑优先原始源码；适配草图与跨框架归一表达可用伪代码。
+- 通常截取 5 至 25 行，省略不改变语义的导入、注释和控制流。
+- 紧接着解释应观察什么：构造哪个 tensor、选择哪个分支、调用哪个算子，以及该处尚未处理什么。
+- 算子迁移文在资料可用时至少保留一个真实调用点，图、公式与概述不能代替调用证据。
+- 两阶段路径应展示两阶段，例如从 position_ids 构造 MRoPE 的 cos/sin，再调用 torch_npu.npu_rotary_mul 处理 q/k。
+- 关键片段附内联来源或脚注，不能只放入文末参考资料。
 
-Use citations close to the claims they support.
+## 公式、图与提示块
 
-- Link to official documentation, repositories, project pages, paper abstracts, or proceedings pages.
-- For critical paper claims, identify the paper and the relevant Figure, Table, section, or experiment when possible.
-- For code claims, identify the repository revision, file, symbol, PR, or commit when available.
-- Put detailed source lists in a final `参考资料` section, but do not rely on that section alone for critical attribution.
-- Paraphrase sources. Keep direct quotes short and necessary.
-- Do not cite search result pages when a direct source exists.
-- Label generated diagrams as `自绘示意图`; never present them as original experimental evidence.
-- State when a conclusion is an inference across multiple sources.
+先讲什么从哪里移动到哪里、哪个路径消费它、哪个字段决定行为，再按需给公式。
 
-When several sources disagree, explain the disagreement and prefer conclusions supported by the closest primary evidence.
+- 公式只用于消除歧义，附近定义全部符号，并配合 shape 例子、短伪代码、tip 或图。
+- 算子或 kernel 文章说明模型位置、运行路径和相关的并行上下文：替换哪个子路径、输入与控制 tensor、分组顺序、前反向行为，以及 DP/TP/EP/CP 中的通信位置。
+- 图与代码附近明确读者应注意什么，不让它们独自承担解释。
+- 出现 T_e、offset_e、W_e 等多组索引时补一个小例子，例如 token 如何进入 expert 桶、group_list 如何映射行与权重。
+- 使用 tip、example 和短表格解释直觉与必要条件，复杂公式放在直觉之后。
 
-### Paper research
+Material for MkDocs 提示块按用途选择：abstract 概览、note 补充、tip 实践、question 提问、warning 误区、example 例子、failure 反例。不连续堆叠，每个提示块服务一个清楚的目的。
 
-When the topic has a research literature:
+## 图像证据流程
 
-1. Search by the exact method, task, dataset, and mechanism rather than relying on one known title.
-2. Build a small relevant set that covers the foundational work, the strongest directly relevant recent work, and meaningful contradictory or limiting evidence when available.
-3. Prefer the published version over an older preprint; record the arXiv or proceedings URL, year, and version used.
-4. Read beyond the abstract. Inspect the method, experiment setup, main results, ablations, and limitations needed for the article's claims.
-5. Separate what the paper authors demonstrate from what the article infers or recommends.
-6. Include a paper only when it changes the explanation, evidence, boundary conditions, or practical conclusion.
+### 通用解释图
 
-Choose visual-treatment papers only after this research pass.
+核心机制、前后对比、失败模式、数据流、反馈、瓶颈或概念关系难以仅靠文字理解时，调用 $ian-xiaohei-illustrations，遵循其分镜和生成流程。
 
-## Front Matter
+选择少量高价值图，最终文件放入 `assets/<article-slug>-illustrations/`。保留生成原图与仓库副本一致，上传前用 shasum -a 256 核对。找不到原始生成文件时不要换工具重画冒充原图。
 
-Follow `archetypes/default.md` for field names and style. Maintain these fields carefully:
+### 论文证据图
 
-- `title`: use concise English keyword-style wording, not a full sentence.
-- `categories`: use a small number of stable broad classes.
-- `series`: use a consistent topic line when the article belongs to a continuing thread.
-- `tags`: use searchable keywords; keep proper nouns uppercase when appropriate.
-- `summary`: keep concise and aligned with the introduction.
-- Existing fields such as `toc`, `date`, `hidden`, `comments`, and `authors`: preserve unless the user asks otherwise.
+只为实质支撑主线的论文或概念调用 $paper-figure-supplement，补充一张解释方法、架构或流程的逻辑图，以及一张最有力的实验图或表。
 
-When editing existing articles, preserve front matter shape and update only fields affected by the content change.
+优先裁取论文原图。论文没有清楚可用的逻辑图或需要简化中文解释时才使用小黑自绘图；真实实验证据不得用生成图替代。阅读选图周边文字，解释测量对象、基线和控制条件，以及它支持的结论与必要边界。
 
-## Article Structure
+使用简短 `<figure markdown>` 图注，标明论文 Figure/Table 编号或“自绘”。
 
-Use a clear technical essay shape:
+### 上传与链接替换
 
-1. Start with `!!! abstract "导言"` when the article uses an introduction block.
-2. Keep `<!-- more -->` immediately after the introduction block.
-3. Explain the intuitive motivation first, then give stricter definitions, derivations, examples, or implementation notes.
-4. For Chinese articles, use concise and clear Chinese phrases for Markdown section headings.
-5. Keep heading hierarchy reasonable, usually around three levels; avoid both overly flat structure and excessive deep nesting.
-6. Use ordered lists for sequences, workflows, priorities, or procedures.
-7. Use unordered lists for parallel ideas, caveats, trade-offs, and design dimensions.
-8. Indent nested ordered and unordered list items with exactly four spaces.
-9. Use **bold** for key judgments, core terms, risks, conclusions, and action items.
+文章远程引用的最终生成图或裁图使用 $image-cloud-uploader：
 
-For technical posts, prefer sections such as:
+1. 以绝对路径上传仓库中的图片。
+2. 优先 PicGo/PicList，正常路径失败时才用该 Skill 的 R2 后备流程。
+3. 核对 success: true、文件与 URL 一一对应，以及公开 URL 可访问。
+4. 只替换目标链接，保留 alt text 与图注。
+5. 上传后保留本地图。
+6. 不显示、编辑或提交图床凭据。
 
-- Background
-- Core Concept
-- Method Or Analysis
-- Practical Notes
-- Common Pitfalls
-- Summary
-- References
+论文配图 Skill 已上传的图片不重复上传；其余图片可批量上传。替换后验证文章全部远程图片，不提交失败或私有上传链接。
 
-Adapt the headings to the article; do not force every section if it adds noise.
+## 修改既有文章
 
-## Writing Style
+1. 尽量保留作者声音与结构。
+2. 在最窄的合适位置补充，不把所有内容堆在文末。
+3. 仅在主题范围变化时更新标题、标签、系列或摘要；审核状态遵守 Dev 默认规则。
+4. 保留导言及 `<!-- more -->`。
+5. 除非文章逻辑失效或用户要求润色，避免大幅改写。
 
-Write in Chinese unless the user asks otherwise. Keep English technical terms stable and spaced naturally in Chinese prose.
+过时、不确定或冲突的内容优先简短更正或说明，不默默删除有效历史。独立审核提出越出修改授权范围的建议时，保留 Dev 并如实报告。
 
-Use a technical and mildly academic tone:
+## Git 发布流程
 
-- Explain complex ideas from intuition to rigor.
-- Prefer concrete examples, boundary cases, comparisons, and failure modes.
-- Avoid slogans, emoji, filler, and decorative writing.
-- Avoid over-layered outlines; preserve linear readability.
-- Mark unverified claims, generated notes, or source limitations when relevant.
+只有用户明确要求推送、发布或完整流程时才提交和推送；研究、回答、草稿或文档编辑本身不授权推送。**推送部署默认仍是 Dev，Public 需要明确授权与最终版本独立审核通过。**
 
-## Technical Density Rules
+提交前：
 
-For engineering posts, prefer dense technical notes over broad essay framing. Every paragraph should contain at least one of:
+1. 回看初始 git status。
+2. 审阅 `git diff -- <target-markdown> <intended-assets>`。
+3. 对目标文件运行 git diff --check。
+4. 执行可用的 Hugo/MkDocs 或 Markdown 验证，并按共享约定检查 Public/Dev 可见性。
+5. 确认没有私人临时路径、坏链接、凭据或未归因的关键论文图。
+6. 核对独立子代理审核针对最终版本；审核后内容或合并发生变化则重新审核。
+7. 只暂存文章和必要资源，不暂存无关改动。
 
-- a concrete source fact, code path, API, config field, command, metric, constraint, or failure mode;
-- a mechanism that explains how data, control flow, memory, communication, or computation moves;
-- an explicit validation method or rollback condition.
+提交信息简练，例如 `docs: add <topic>` 或 `docs: update <topic>`。向当前分支配置的 upstream 非强制推送；缺少 upstream、认证失败、远端拒绝或分叉无法安全处理时如实报告，不改写历史或扩大范围。
 
-Remove text that only says a topic is important, promising, worth studying, or part of a larger plan. Do not add generic "background / motivation / summary" sections unless they carry specific technical information. For PR or codebase analysis, lead with the commit/PR status, changed files, execution path, migration checklist, verification table, and known risks. Use "待测" only in measurement templates, not as a substitute for claims.
+推送后验证提交哈希与分支。报告文档路径、生成图与论文图数量、图片 URL 或上传摘要、实际验证、独立可读性结论、Dev/Public 状态、提交与分支，以及未解决的证据或渲染问题。
 
-## Source Code Evidence Rules
+## 完成检查
 
-When a technical claim depends on source code, PR diffs, operator wrappers, model patches, or runtime branches, include the smallest useful code excerpt instead of only describing it in prose.
-
-- Show the **key code path**: file/function, branch condition, tensor shape or config field, and the final API/operator call.
-- Prefer exact source excerpts for critical logic; use pseudocode only for adaptation sketches or cross-framework normalization.
-- Keep excerpts narrow: usually 5-25 lines, omitting imports, comments, and unrelated control flow unless they change behavior.
-- Immediately explain what the reader should notice in the snippet: which tensor is constructed, which branch is selected, which operator is called, and what is not handled there.
-- For operator migration posts, include at least one real call-site snippet when available. A diagram, formula, or prose paragraph is not a substitute for the call site.
-- If the implementation is a two-stage path, show both stages. Example: first construct MRoPE `cos/sin` from `position_ids`, then call `torch_npu.npu_rotary_mul` on q/k.
-- Attach a footnote or inline source reference to each critical snippet. Do not leave important code hidden only in references.
-
-## Formula And Diagram Rules
-
-For technical blog posts, avoid leading with dense formulas when the reader's first problem is understanding the mechanism or usage path.
-
-- Prefer **plain mechanism first**: describe what moves from where to where, which code path consumes it, and which tensor/control field decides the behavior.
-- Use formulas only when they remove ambiguity. Keep them short, name every symbol nearby, and pair them with one of: a concrete shape example, a small pseudo-code equivalent, a `!!! tip` explanation, or a figure/diagram.
-- For operator or kernel posts, always explain the operator at three levels before or alongside formulas:
-    - **model position**: which module/layer/subpath is replaced and which parts are not touched;
-    - **runtime path**: input tensors, control tensors, grouping/order assumptions, forward/backward behavior;
-    - **parallel context**: how the operator behaves under DP/TP/EP/CP when relevant, and where communication happens.
-- If a figure or code block is used to explain an operator, the nearby text must answer what the reader should notice in it. Do not rely on a diagram or shape block to explain itself.
-- If a formula spans multiple indexed symbols such as `T_e`, `offset_e`, or `W_e`, add a small numeric example. For example, show how tokens are permuted into expert buckets and how `group_list` maps rows to weights.
-- Prefer `!!! tip`, `!!! example`, and compact tables for intuition, edge cases, and usage constraints. Use complex equations only after the intuitive explanation is already in place.
-
-Use Material for MkDocs admonitions intentionally:
-
-- `abstract`: overview or core thesis.
-- `note`: background or supplemental context.
-- `tip`: practical advice.
-- `question`: framing question.
-- `warning`: risk, trap, or common misunderstanding.
-- `example`: concrete example, pseudo-code, or derivation.
-- `failure`: failed attempt, anti-pattern, or negative case.
-
-Do not stack many admonitions in a row. Each admonition must have a clear purpose.
-
-## Visual Evidence Workflow
-
-### General article illustrations
-
-Use `$ian-xiaohei-illustrations` for non-paper cognitive anchors such as:
-
-- a central mechanism that is hard to hold in working memory;
-- a before/after contrast or failure mode;
-- a data/control flow, feedback loop, bottleneck, or state transition;
-- a conceptual relationship that benefits from a memorable metaphor.
-
-Follow its shot-list and generation workflow. Default to a small set of high-value figures rather than illustrating every heading. Save final images under:
-
-```text
-assets/<article-slug>-illustrations/
-```
-
-Keep the original generated PNG and repository copy identical. Verify with `shasum -a 256` before upload. Do not redraw the image with another tool when the original generated artifact cannot be located.
-
-### Related papers
-
-Identify papers that materially support the article's central argument. Do not add two figures for every passing citation.
-
-For each paper or paper concept selected for visual treatment, use `$paper-figure-supplement` to add:
-
-1. **one logic figure** explaining the method, architecture, pipeline, or proposal;
-2. **one evidence figure or table** showing the strongest benchmark, ablation, scaling result, efficiency result, or qualitative evidence.
-
-Prefer figures cropped from the original paper. Use a generated 小黑 logic diagram only when the paper lacks a clear usable logic figure or the article needs a simpler Chinese explanation. Never replace real experimental evidence with a generated chart. Read the paper around the selected Figure or Table and explain:
-
-- what was measured;
-- the compared baselines and controlled conditions;
-- what the figure actually supports;
-- what it does not prove.
-
-Use concise `<figure markdown>` captions that identify the paper Figure/Table number or mark the image as self-drawn.
-
-### Upload and link replacement
-
-Use `$image-cloud-uploader` for all final generated or cropped images that the document will reference remotely.
-
-1. Upload repository image files by absolute path.
-2. Prefer PicGo/PicList; use its R2 fallback only when the normal path fails.
-3. Verify `success: true`, one returned URL per file, and public URL accessibility.
-4. Replace only the intended Markdown paths while preserving alt text and captions.
-5. Keep local images after upload.
-6. Never display, edit, or commit image-hosting credentials.
-
-If `$paper-figure-supplement` has already uploaded its two images, do not upload them again. Batch-upload only the remaining general article illustrations.
-
-After replacement, verify every remote image used by the changed document. Do not commit a Markdown link that points to a failed or private upload.
-
-## Editing Existing Posts
-
-When supplementing an article:
-
-1. Preserve the user's existing voice and structure where possible.
-2. Add content at the narrowest useful location instead of appending everything to the end.
-3. Update title, tags, series, or summary only when the new content changes the article's scope.
-4. Keep the introduction and `<!-- more -->` marker valid.
-5. Avoid large rewrites unless the article's logic is broken or the user requests polishing.
-
-If the article has obsolete, uncertain, or conflicting material, prefer adding a short correction or `warning`/`note` over silently deleting useful history.
-
-## Git Publish Workflow
-
-Treat Git publication as a separate external action.
-
-Commit and push only when the user explicitly asks to push, publish, ship, or run the complete end-to-end workflow. A request for research, an answer, a draft, or a document edit alone does not authorize pushing.
-
-Before committing:
-
-1. Re-read the initial `git status`.
-2. Inspect `git diff -- <target-markdown> <intended-assets>`.
-3. Run `git diff --check` on intended files.
-4. Run the repository's available Hugo or Markdown validation when practical.
-5. Verify the article contains no local temporary paths, broken cloud URLs, secrets, or uncited critical paper figures.
-6. Stage only the target Markdown and its intended image assets. Never stage unrelated dirty files.
-
-Use a concise commit message such as:
-
-```text
-docs: add <topic>
-docs: update <topic>
-```
-
-Push the current branch to its configured upstream without force. If there is no upstream, authentication fails, the remote rejects the update, or the branch has diverged, stop and report the exact state; do not rewrite history or broaden the change.
-
-After pushing, verify the pushed commit hash and branch. Report:
-
-- target document path;
-- generated and paper-derived image count;
-- cloud image URLs or an upload summary;
-- validation performed;
-- commit hash and pushed branch;
-- any unresolved evidence or rendering limitations.
-
-## Final Check
-
-Before finishing, verify:
-
-- The article directly answers the user's original question.
-- Central claims are traceable to primary sources or clearly labeled inference.
-- The file is under an appropriate `content/` subdirectory.
-- Front matter follows the local archetype style.
-- `title`, `categories`, `series`, and `tags` are semantically useful.
-- Any `!!! abstract "导言"` block is followed by `<!-- more -->`.
-- Chinese article section headings use concise Chinese phrases.
-- The heading hierarchy is reasonable, usually around three levels.
-- The article uses headings, lists, bold emphasis, and admonitions with restraint.
-- Nested ordered and unordered list items are indented with exactly four spaces.
-- No emoji or accidental decorative construction markers were introduced.
-- New or changed Markdown renders as valid Hugo/MkDocs-compatible Markdown.
-- General illustrations follow `$ian-xiaohei-illustrations` and are not decorative filler.
-- Each visually treated paper has one useful logic figure and one real evidence figure/table.
-- Every final image link comes from a verified `$image-cloud-uploader` result.
-- Generated diagrams and paper-original evidence are labeled accurately.
-- Git staging and push, when authorized, include only intended document and asset changes.
+- [ ] 文章直接回答用户的问题，关键结论有一手来源或明确标为推断。
+- [ ] 目录合适，元数据沿用模板，标题、分类、系列与标签有检索价值。
+- [ ] 导言之后保留 `<!-- more -->`，中文标题简洁，层级适当。
+- [ ] 列表、加粗和提示块克制，嵌套列表四空格缩进，无表情或装饰性施工标记。
+- [ ] Markdown 兼容 Hugo/MkDocs，新增内容可正确渲染。
+- [ ] 解释图解决阅读问题，选中的论文配有逻辑图和真实证据图或表。
+- [ ] 远程图片来自验证成功的上传结果，自绘与论文证据归因准确。
+- [ ] 最终正文经过独立子代理的 $article-readability-check，缺失或未通过时如实标为 Dev 草稿与未完成项。
+- [ ] 文章默认 Dev，不因审核通过或推送 main 自动公开。
+- [ ] 获得授权时，Git 暂存与推送仅包含本次文章和资源。

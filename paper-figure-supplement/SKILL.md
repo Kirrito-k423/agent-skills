@@ -1,97 +1,68 @@
 ---
 name: paper-figure-supplement
-description: "Supplement Chinese Hugo paper notes or technical Markdown articles with two source-backed images for a paper, paper section, or concept: (1) a logic/scheme figure explaining the concept or method, and (2) the strongest experimental evidence figure/table. Use when asked to add paper figures, crop figures from a paper PDF, illustrate a paper concept, update Markdown image links, upload paper-note images to cloud storage, or push the document update."
+description: 为中文 Hugo 论文笔记或技术 Markdown 文章补充两张有来源的图：解释方法的逻辑图，以及最有力的实验图或表。用户要求补论文图、裁取 PDF 图表、解释论文概念、更新图片链接、上传配图或推送文档时使用。修改后的文章默认保留 Dev，最终由独立子代理使用 article-readability-check 检查全文，通过不自动公开。
 ---
 
-# Paper Figure Supplement
+# 论文配图补充器
 
-## Overview
+为指定论文或概念补充两张有用的图：
 
-Use this skill to add exactly two useful images to a paper note:
+1. **逻辑图**：解释概念、方法流程、架构或核心提案。
+2. **证据图或表**：支撑文章主张的关键实验、消融、基准或定性结果。
 
-1. **Logic figure**: explains the concept logic, method pipeline, architecture, or paper proposal.
-2. **Evidence figure/table**: the most convincing experiment, ablation, benchmark table, or qualitative result supporting the paper's claim.
+优先截图或裁取论文原图；只有原逻辑图缺失、不清楚或简洁中文示意更适合文章时才使用 $ian-xiaohei-illustrations。最终图片用 $image-cloud-uploader 上传并更新链接，用户要求完整发布流程时再提交推送目标文档。
 
-Prefer screenshots or crops from the original paper. Use `ian-xiaohei-illustrations` only when the paper has no suitable logic figure, the original figure is unavailable/unclear, or a concise generated explanatory figure is more useful for the note. Upload final images with `image-cloud-uploader`, update the Markdown links, then commit and push the intended document changes when the user asks for the full workflow.
+**必须执行 [独立审核与 Dev 发布约定](../hugo-tech-blog-writer/references/dev-review-contract.md)。** 修改文章默认 `review_status: pending`，保留已有 private / withdrawn。单独调用本 Skill 时自行派发独立终审；作为写作子步骤时由最外层流程在全部内容完成后统一终审，不能用局部配图检查代替全文可读性审核。
 
-## Core Workflow
+## 工作流程
 
-### 1. Read The Target Note
+### 1. 阅读目标文章
 
-- Read the specified Markdown file and nearby sections only.
-- Identify the target paper, concept, or subsection.
-- Locate existing local/remote images so the update does not duplicate a figure already present.
-- Preserve front matter, `!!! abstract "导言"`, and `<!-- more -->` markers.
+- 阅读指定 Markdown、相关小节及仓库 AGENTS.md。
+- 确定论文、概念或目标章节。
+- 核对已有本地或远程图片，避免重复添加。
+- 保留 front matter 的结构、导言和 `<!-- more -->`，按共享约定设置 Dev 状态。
 
-### 2. Locate The Paper Source
+### 2. 定位论文原文
 
-- Prefer the paper PDF linked in the note, arXiv, official project pages, conference pages, or author repository assets.
-- If the note does not include a source link, search for the paper title or exact method name.
-- Save any downloaded PDFs or extracted crops under:
+优先使用文章已有 PDF 链接、arXiv、官方项目页、会议页或作者仓库；缺少来源时检索论文标题或准确方法名。
 
-```text
-assets/<article-slug>-paper-figures/
-```
+下载 PDF 与裁图放入 `assets/<article-slug>-paper-figures/`，逻辑图命名为 `01-logic-<paper-or-method>.png`，证据图命名为 `02-evidence-<paper-or-method>.png`。
 
-Use names such as:
+### 3. 选择两张图
 
-```text
-01-logic-<paper-or-method>.png
-02-evidence-<paper-or-method>.png
-```
+多图可选时阅读 [选图指南](references/selection.md)。
 
-### 3. Select Two Images
+- 逻辑图选择概览、架构、流程、算法或方法对比；论文缺少清楚图示时可用小黑自绘。
+- 证据图选择最直接支持主张的一张表或图，例如主基准、核心消融、扩展趋势或定性对照。
+- 每个指定论文或概念默认只加两张，用户明确要求时才增加。
 
-Read `references/selection.md` when deciding between multiple candidate figures/tables.
+### 4. 裁取或生成
 
-Choose:
+论文原图只裁需要的图表区域，必要时保留编号。避免整页截图，除非整页就是紧凑图表；在图注或附近说明来源。
 
-- **Logic image**: overview, architecture, pipeline, algorithm diagram, method comparison, or a generated 小黑 diagram if the paper lacks a clear one.
-- **Evidence image**: the single table/plot most directly proving the article's claim, usually main benchmark, core ablation, scaling trend, or qualitative before/after comparison.
+自绘逻辑图使用 $ian-xiaohei-illustrations，每张为独立 16:9 横图。没有可用实验证据图时不要生成数字图冒充实验；若使用补充示意图，应明确标为示意，并说明实验证据仍来自哪里或尚缺失。
 
-Do not add more than two images for one requested paper/concept unless the user explicitly asks.
+### 5. 上传与替换
 
-### 4. Crop Or Generate
+- 使用 $image-cloud-uploader 上传最终本地图。
+- 只替换指定 Markdown 图片链接，保留 alt text 和有效图注。
+- 新图优先用 `<figure markdown>` 包裹 Markdown 图片，并用 `<figcaption>` 简短说明，注明来自论文 Figure/Table X 或说明为自绘。
 
-For paper-original images:
+### 6. 验证、独立审核与发布
 
-- Crop only the necessary figure/table region, including its label when helpful.
-- Avoid full-page screenshots unless the page itself is a compact table/figure.
-- Keep source provenance in the figure caption or nearby sentence.
+- 核对只添加或替换了用户要求的图片，对修改 Markdown 运行 git diff --check。
+- 执行可用的 Markdown/Hugo 验证；没有运行条件则如实说明。
+- 图注和正文完成后，由未参与写作的独立子代理使用 $article-readability-check 检查最终全文与图文关系，等待结论；修订后复审。被上层写作流程调用时，交回最终文件并提醒它执行全文终审。
+- 按共享约定记录结论、受审版本和 Dev 默认状态。通过不更新 Public 发布清单，未通过或审核缺失时如实说明。
+- 只暂存目标 Markdown、需要保留的新图和本次明确修改的相关文件，不夹带无关内容。
+- 用户要求推送时才提交并向当前分支推送；默认部署为 Dev，Public 需要明确授权与独立审核通过。
 
-For generated fallback images:
+## 质量与边界
 
-- Use `ian-xiaohei-illustrations`.
-- Generate one standalone 16:9 horizontal article illustration per image.
-- Use generated images for the logic image by default; only generate the evidence image when no usable paper experiment figure/table is available.
-
-### 5. Upload And Replace Links
-
-- Use `image-cloud-uploader` to upload final local images.
-- Replace only the intended local Markdown image links with returned cloud URLs.
-- Keep alt text and useful captions.
-- If adding new figures, prefer:
-
-```markdown
-<figure markdown>
-  ![Short alt text](https://cloud-url/image.png){ width=90% }
-  <figcaption>简短说明，注明来自论文 Figure/Table X 或说明为自绘。</figcaption>
-</figure>
-```
-
-### 6. Verify, Commit, Push
-
-- Check the document has exactly the requested image additions or replacements.
-- Run `git diff --check` on modified Markdown.
-- If available, run the repository's Markdown/Hugo validation; otherwise state that it was unavailable.
-- Stage only intended files: target Markdown, newly added local image assets if they should remain in repo, and any skill files when creating/updating this skill.
-- Commit with a concise message and push the current branch when the user requested push.
-
-## Safety And Quality Rules
-
-- Do not expose PicGo, R2, S3, or paper-site credentials.
-- Do not delete local generated/cropped images after upload.
-- Do not silently rewrite unrelated document content.
-- Do not reproduce large portions of a copyrighted paper; crop only the figure/table needed for commentary and cite the source.
-- If a paper figure is low resolution but still readable, prefer it over a generated replacement for evidence.
-- If the evidence figure is generated rather than paper-original, label it clearly as a schematic and do not present it as experimental evidence.
+- 不泄露 PicGo、R2、S3 或论文站点凭据。
+- 上传后不删除本地生成图或裁图。
+- 不默默重写无关正文。
+- 不大篇幅复制受版权保护的论文，只裁取评论所需图表并引用来源。
+- 实验图分辨率不高但仍可读时，优先保留原图，不用生成图替换。
+- 所有生成图明确标为示意，不作为原始实验证据。
