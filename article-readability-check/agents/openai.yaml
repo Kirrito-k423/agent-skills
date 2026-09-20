@@ -1,0 +1,4 @@
+interface:
+  display_name: "文章可读性验证器"
+  short_description: "面向不耐烦的入门读者，压缩调试流水账，保留核心理念、实验发现与实际效果"
+  default_prompt: "使用 $article-readability-check 检查这篇文章是否适合想快速理解理念和效果的入门读者，指出最影响阅读的问题，并给出简短的改写建议。"
