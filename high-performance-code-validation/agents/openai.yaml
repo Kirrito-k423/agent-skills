@@ -1,0 +1,4 @@
+interface:
+  display_name: "高性能代码验证"
+  short_description: "量化模块计算量与并行度，验证串行改写、资源复用及低延迟高吞吐收益"
+  default_prompt: "使用 $high-performance-code-validation 验证指定模块的计算量、并行度、串行瓶颈和冗余计算，评估多进程、多线程及 SIMT 方案，并用正确性检查和性能测量判断收益；允许为性能牺牲代码可读性。"
