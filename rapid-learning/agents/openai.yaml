@@ -1,0 +1,4 @@
+interface:
+  display_name: "快速学习闭环"
+  short_description: "以多视角研究建立框架，聚焦核心知识，再用实践、测验与讲解验证掌握"
+  default_prompt: "使用 $rapid-learning 帮我学习一个新主题：先明确目标与基础，再建立框架、安排练习，并逐题检验理解。"
