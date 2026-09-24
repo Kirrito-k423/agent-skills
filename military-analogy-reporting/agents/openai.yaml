@@ -1,0 +1,4 @@
+interface:
+  display_name: "军旅类比汇报"
+  short_description: "将研发进展、风险和资源诉求转为易懂的军旅类比，保留事实与决策依据"
+  default_prompt: "使用 $military-analogy-reporting 将以下研发材料改写为面向上级的军旅类比汇报，保留关键事实，明确进展、风险、资源请求与验收标准。"
