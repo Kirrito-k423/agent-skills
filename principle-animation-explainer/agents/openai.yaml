@@ -1,0 +1,4 @@
+interface:
+  display_name: "原理动画解释"
+  short_description: "把复杂技术原理变成可逐步探索、数值可核对的交互动画和网页。"
+  default_prompt: "使用 $principle-animation-explainer 解释 MoE Dispatch 与 Combine，并制作可交互动画。"
