@@ -1,0 +1,4 @@
+interface:
+  display_name: "系统 SOP 可视化说明"
+  short_description: "依据当前实现梳理系统对象、全局及逐对象流程和时序，并生成可离线阅读的中文 HTML"
+  default_prompt: "使用 $system-sop-to-html 为当前项目生成系统 SOP 说明 HTML。"
