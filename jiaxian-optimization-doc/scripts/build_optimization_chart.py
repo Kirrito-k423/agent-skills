@@ -14,8 +14,8 @@ import unicodedata
 FIELDS = ['stage_id', 'stage', 'time_ms', 'config_id', 'evidence', 'source']
 DERIVED = ['step_saved_ms', 'cumulative_saved_ms', 'time_reduction_pct',
            'step_speedup', 'cumulative_speedup']
-STATUS = {'measured': '实测数据', 'reported': '原文报告，未独立复现',
-          'estimated': '理论估计，非实测结果'}
+STATUS = {'measured': '实测数据', 'reported': '原始报告数据',
+          'estimated': '理论估计'}
 
 
 class ChineseParser(argparse.ArgumentParser):
@@ -88,7 +88,7 @@ def wrap_display(value, columns):
     return lines or ['']
 
 
-def render(rows, title, statistic):
+def render(rows, title, statistic, audit_details=False):
     width = max(960, 160 * len(rows) + 160)
     left, right = 92, width - 45
     label_lines = [wrap_display(row['stage_id'] + ' ' + row['stage'], 18) for row in rows]
@@ -102,11 +102,16 @@ def render(rows, title, statistic):
     top2 = bottom1 + 100
     bottom2 = top2 + plot_h
     footer_y = bottom2 + 34 + 21 * max(map(len, label_lines))
-    footer_lines = wrap_display('可比配置：' + rows[0]['config_id'] + '；逐阶段来源与派生指标见 metrics.csv。', (width-100)//8)
+    footer_lines = (wrap_display('可比配置：' + rows[0]['config_id'] + '；逐阶段来源与派生指标见 metrics.csv。', (width-100)//8)
+                    if audit_details else [])
     height = footer_y + 35 + 23 * len(footer_lines)
+    chart_data = rows if audit_details else [
+        {key: row[key] for key in ('stage_id', 'stage', 'time_ms', 'cumulative_speedup')}
+        for row in rows
+    ]
     parts = [f'<svg xmlns="http://www.w3.org/2000/svg" width="{width}" height="{height}" viewBox="0 0 {width} {height}">',
              '<title>' + html.escape(title) + '</title>',
-             '<desc>' + html.escape(json.dumps({'statistic': statistic, 'stages': rows}, ensure_ascii=False)) + '</desc>',
+             '<desc>' + html.escape(json.dumps({'statistic': statistic, 'evidence': rows[0]['evidence'], 'stages': chart_data}, ensure_ascii=False)) + '</desc>',
              '<rect width="100%" height="100%" fill="#f8fafc"/>',
              '<g font-family="PingFang SC,Microsoft YaHei,Noto Sans CJK SC,sans-serif" fill="#172b4d">']
 
@@ -121,8 +126,8 @@ def render(rows, title, statistic):
         text(44, 42 + i*34, value, size=27)
     for i, value in enumerate(subtitle_lines):
         text(44, 49 + len(title_lines)*34 + i*23, value, color='#52657a')
-    text(left, top1-20, '绝对耗时 / ms（越低越好）', size=18)
-    text(left, top2-20, '累计加速比 / 倍（相对首阶段，越高越好）', size=18)
+    text(left, top1-20, '绝对耗时 / ms', size=18)
+    text(left, top2-20, '累计加速比 / 倍（相对初始基线）', size=18)
     max_time = max(row['time_ms'] for row in rows)
     max_speed = max(row['cumulative_speedup'] for row in rows)
     if not all(math.isfinite(value * 1.25) for value in (max_time, max_speed)):
@@ -170,12 +175,13 @@ def main():
     parser.add_argument('--output-dir', required=True, type=Path, metavar='输出目录', help='写入 optimization.svg 与 metrics.csv')
     parser.add_argument('--title', default='优化耗时与累计加速比', metavar='标题', help='图表中文标题')
     parser.add_argument('--statistic', required=True, metavar='统计口径', help='如重复实验中位数、样本数及测量范围')
+    parser.add_argument('--audit-details', action='store_true', help='在图面显示内部配置编号和来源文件提示，供核验使用')
     args = parser.parse_args()
     try:
         if not args.title.strip() or not args.statistic.strip():
             raise ValueError('标题与统计口径不能为空。')
         rows = read_stages(args.input)
-        svg = render(rows, args.title, args.statistic)
+        svg = render(rows, args.title, args.statistic, audit_details=args.audit_details)
         paths = [args.output_dir/'optimization.svg', args.output_dir/'metrics.csv']
         if args.input.resolve() in [path.resolve() for path in paths]:
             raise ValueError('输出路径与输入 CSV 冲突，请选择其他输出目录。')
