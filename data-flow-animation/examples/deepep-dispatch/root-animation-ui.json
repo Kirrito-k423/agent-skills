@@ -1,0 +1,45 @@
+{
+  "frame": {
+    "issue": 15,
+    "last": 25
+  },
+  "metrics": [
+    {
+      "viewport": [
+        1280,
+        720
+      ],
+      "background": "rgb(255, 255, 255)",
+      "rootScroll": [
+        1280,
+        720
+      ],
+      "step": 25,
+      "selected": "1:0",
+      "active": 0
+    },
+    {
+      "viewport": [
+        1280,
+        720
+      ],
+      "background": "rgb(255, 255, 255)",
+      "rootScroll": [
+        1280,
+        720
+      ],
+      "step": 25,
+      "selected": "1:0",
+      "active": 0
+    }
+  ],
+  "errors": [],
+  "checks": [
+    "actual viewport",
+    "white background",
+    "seek to issue and completed result",
+    "reverse token selection",
+    "hidden element 255",
+    "late reload state recovery"
+  ]
+}

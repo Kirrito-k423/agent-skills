@@ -1,0 +1,2124 @@
+{
+  "source_sha256": "3666da791943b16986c7a0258c52cc022361c1a07d364098e0713036bd412a25",
+  "functions": [
+    {
+      "id": "epi-fill-21",
+      "module_id": "padding",
+      "name": "fill_ubuf",
+      "start": 21,
+      "end": 30,
+      "summary": "用掩码向量store给32B对齐的UB整型区填入value。",
+      "inactive": false,
+      "inputs": [
+        "ptr",
+        "num_elems",
+        "value"
+      ],
+      "outputs": [
+        "ptr"
+      ],
+      "side_effects": [
+        "用掩码向量store给32B对齐的UB整型区填入value。"
+      ],
+      "review": {
+        "function_id": "epi-fill-21",
+        "revision": 4,
+        "draft_author": "walkthrough-agent",
+        "reviewer": "independent-review",
+        "source_sha256": "3666da791943b16986c7a0258c52cc022361c1a07d364098e0713036bd412a25",
+        "draft_sha256": "101b759f6f1580dee2f1dae07f9a9a8fbde17a0473d4236b45647a25d7b7873c",
+        "function_content_sha256": "28b0a5b1ab908b05c112417097b85d45b7ea41c85250720c3d0b36f4900317ec",
+        "line_range": [
+          21,
+          30
+        ],
+        "gaps": [],
+        "overlaps": [],
+        "unresolved": [],
+        "verdict": "PASS",
+        "status": "PASS",
+        "required_changes": [],
+        "verified": [
+          "重新读取完整定义与caller的输入前提/UB地址空间",
+          "line_notes每行含签名/注释/brace/空行；读写方向与SIMD纯输出寄存器逐项核对",
+          "segments连续且输入机制输出原因具体",
+          "公式、返回值、成员副作用与调用目标明确",
+          "此函数无独立allocator；UB/tensor来自主kernel与Context，owner已在memory模型独立核对"
+        ]
+      },
+      "segments": [
+        {
+          "start": 21,
+          "end": 30,
+          "title": "掩码填充UB整型区",
+          "detail": "asc_duplicate_scalar广播value；按kNumElemsPerVector步进，以asc_update_mask_b32仅写有效尾部。",
+          "kind": "output",
+          "input_state": [
+            "ptr指向32B对齐UB；num_elems是有效整型数"
+          ],
+          "mechanism": "asc_duplicate_scalar广播value；按kNumElemsPerVector步进，以asc_update_mask_b32仅写有效尾部。",
+          "output_state": [
+            "ptr[0:num_elems]均为value"
+          ],
+          "why": "初始化专家计数或补零向量时不能越过UB区尾部。",
+          "calls": [
+            {
+              "name": "asc_duplicate_scalar",
+              "line": 24,
+              "type": "external"
+            },
+            {
+              "name": "asc_storealign",
+              "line": 28,
+              "type": "external"
+            },
+            {
+              "name": "asc_update_mask_b32",
+              "line": 28,
+              "type": "external"
+            }
+          ],
+          "id": "epi-fill-21-s1"
+        }
+      ],
+      "line_notes": [
+        {
+          "line": 21,
+          "kind": "signature",
+          "explanation": "声明SIMD填充入口，ptr是UB目标，num_elems限制写入范围，value是计数或补零初值。",
+          "reads": [
+            "ptr",
+            "num_elems",
+            "value"
+          ],
+          "writes": []
+        },
+        {
+          "line": 22,
+          "kind": "declaration",
+          "explanation": "以单个vector_int32_t的字节数除sizeof(int)，得每次store可覆盖的整型元素数。",
+          "reads": [],
+          "writes": [
+            "kNumElemsPerVector"
+          ]
+        },
+        {
+          "line": 23,
+          "kind": "declaration",
+          "explanation": "分配value_vec向量寄存器，作为每次UB store的重复数据源。",
+          "reads": [],
+          "writes": [
+            "value_vec"
+          ]
+        },
+        {
+          "line": 24,
+          "kind": "call",
+          "explanation": "把标量value广播到value_vec所有lane，后续不必逐元素写零。",
+          "reads": [
+            "value"
+          ],
+          "writes": [
+            "value_vec"
+          ]
+        },
+        {
+          "line": 25,
+          "kind": "blank",
+          "explanation": "分隔value广播与尾部掩码计数remaining的初始化。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 26,
+          "kind": "declaration",
+          "explanation": "将num_elems转换成remaining；mask更新API用它推进并限制最后一次store。",
+          "reads": [
+            "num_elems"
+          ],
+          "writes": [
+            "remaining"
+          ]
+        },
+        {
+          "line": 27,
+          "kind": "loop",
+          "explanation": "按kNumElemsPerVector遍历ptr有效区，每次elem_offset定位一个向量宽度。",
+          "reads": [
+            "elem_offset",
+            "num_elems"
+          ],
+          "writes": [
+            "elem_offset"
+          ]
+        },
+        {
+          "line": 28,
+          "kind": "call",
+          "explanation": "asc_update_mask_b32更新remaining并屏蔽尾部无效lane，把value_vec写到ptr+elem_offset。",
+          "reads": [
+            "ptr",
+            "elem_offset",
+            "value_vec",
+            "remaining"
+          ],
+          "writes": [
+            "ptr",
+            "remaining"
+          ]
+        },
+        {
+          "line": 29,
+          "kind": "brace",
+          "explanation": "结束ptr整型区的向量填充循环，所有有效元素均已被发出store。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 30,
+          "kind": "brace",
+          "explanation": "结束fill_ubuf；调用者负责建立PIPE_V到消费管线的依赖。",
+          "reads": [],
+          "writes": []
+        }
+      ]
+    },
+    {
+      "id": "epi-histogram-37",
+      "module_id": "histogram",
+      "name": "histogram_accumulate_u32",
+      "start": 37,
+      "end": 101,
+      "summary": "提取相对offset的候选ID，统计256/512桶并累加到uint32；caller只消费真实本地专家桶。",
+      "inactive": false,
+      "inputs": [
+        "data",
+        "num_i64_elems",
+        "offset",
+        "acc"
+      ],
+      "outputs": [
+        "acc"
+      ],
+      "side_effects": [
+        "累加UB acc中256/512个候选桶；main只读取真实kNumExpertsPerRank桶"
+      ],
+      "review": {
+        "function_id": "epi-histogram-37",
+        "revision": 5,
+        "draft_author": "walkthrough-agent",
+        "reviewer": "independent-review",
+        "source_sha256": "3666da791943b16986c7a0258c52cc022361c1a07d364098e0713036bd412a25",
+        "draft_sha256": "dc01efb69a3429d1deae73490f57c535ea05bb5f6509f16613fce3dd9613ac6a",
+        "function_content_sha256": "5c8a1d8c0a15473523e7aa3adaa931a442304ba98c7dd7ff1d6501ab44b10423",
+        "line_range": [
+          37,
+          101
+        ],
+        "gaps": [],
+        "overlaps": [],
+        "unresolved": [],
+        "verdict": "PASS",
+        "status": "PASS",
+        "required_changes": [],
+        "verified": [
+          "重新读取完整定义与caller的输入前提/UB地址空间",
+          "line_notes每行含签名/注释/brace/空行；读写方向与SIMD纯输出寄存器逐项核对",
+          "segments连续且输入机制输出原因具体",
+          "候选桶padding与真实本地专家范围、uint16到uint32累加明确",
+          "此函数无独立allocator；UB/tensor来自主kernel与Context，owner已在memory模型独立核对",
+          "独立复审renderer整改：仅既有标识符周边空白，calls/notes/IO/ranges完全一致"
+        ],
+        "prior_function_content_sha256": "09e0cf0f89e8e7a96e9a2ecf19c3207b48e3279d96ad5fb385e9a470f270e5d5"
+      },
+      "segments": [
+        {
+          "start": 37,
+          "end": 54,
+          "title": "初始化分段直方图",
+          "detail": "kNumBins限制为256或512，hist按每向量128个uint16 bin清零， offset_vec 广播本Rank起点。",
+          "kind": "compute",
+          "input_state": [
+            "data是对齐后的Top-K int64块；offset是本Rank专家起点"
+          ],
+          "mechanism": "kNumBins限制为256或512，hist按每向量128个uint16 bin清零， offset_vec 广播本Rank起点。",
+          "output_state": [
+            "hist全零；remaining限定有效专家元素"
+          ],
+          "why": "SIMD频率统计用16位局部计数，最终才累加到32位acc。",
+          "calls": [
+            {
+              "name": "EP_STATIC_ASSERT",
+              "line": 39,
+              "type": "external"
+            },
+            {
+              "name": "asc_create_mask_b16",
+              "line": 42,
+              "type": "external"
+            },
+            {
+              "name": "asc_create_mask_b32",
+              "line": 43,
+              "type": "external"
+            },
+            {
+              "name": "asc_duplicate_scalar",
+              "line": 46,
+              "type": "external"
+            },
+            {
+              "name": "asc_duplicate_scalar",
+              "line": 51,
+              "type": "external"
+            }
+          ],
+          "id": "epi-histogram-37-s1"
+        },
+        {
+          "start": 55,
+          "end": 86,
+          "title": "低位拆分与高字节筛选",
+          "detail": " downsample 取int64中16位片段，deintlv保留低16位；减offset后拆为高低byte，高byte为0或1的lane分别计入256/512个bin。",
+          "kind": "compute",
+          "input_state": [
+            "data尚为int64专家ID；hist保存当前批次累计值"
+          ],
+          "mechanism": " downsample 取int64中16位片段，deintlv保留低16位；减offset后拆为高低byte，高byte为0或1的lane分别计入256/512个bin。",
+          "output_state": [
+            "hist得到相对offset的候选桶频次"
+          ],
+          "why": "相对offset的候选ID必须落在256/512个桶内；扩容桶可能计入邻Rank的ID，但主kernel只读取真实kNumExpertsPerRank个桶。",
+          "calls": [
+            {
+              "name": "asc_loadalign_downsample",
+              "line": 59,
+              "type": "external"
+            },
+            {
+              "name": "asc_loadalign_downsample",
+              "line": 60,
+              "type": "external"
+            },
+            {
+              "name": "asc_loadalign_downsample",
+              "line": 61,
+              "type": "external"
+            },
+            {
+              "name": "asc_loadalign_downsample",
+              "line": 62,
+              "type": "external"
+            },
+            {
+              "name": "asc_deintlv",
+              "line": 67,
+              "type": "external"
+            },
+            {
+              "name": "asc_deintlv",
+              "line": 68,
+              "type": "external"
+            },
+            {
+              "name": "asc_sub",
+              "line": 70,
+              "type": "external"
+            },
+            {
+              "name": "asc_sub",
+              "line": 71,
+              "type": "external"
+            },
+            {
+              "name": "asc_deintlv",
+              "line": 74,
+              "type": "external"
+            },
+            {
+              "name": "asc_update_mask_b8",
+              "line": 77,
+              "type": "external"
+            },
+            {
+              "name": "asc_eq_scalar",
+              "line": 78,
+              "type": "external"
+            },
+            {
+              "name": "asc_frequency_histogram_bin0",
+              "line": 79,
+              "type": "external"
+            },
+            {
+              "name": "asc_frequency_histogram_bin1",
+              "line": 80,
+              "type": "external"
+            },
+            {
+              "name": "asc_eq_scalar",
+              "line": 82,
+              "type": "external"
+            },
+            {
+              "name": "asc_frequency_histogram_bin0",
+              "line": 83,
+              "type": "external"
+            },
+            {
+              "name": "asc_frequency_histogram_bin1",
+              "line": 84,
+              "type": "external"
+            }
+          ],
+          "id": "epi-histogram-37-s2"
+        },
+        {
+          "start": 87,
+          "end": 101,
+          "title": "拓宽并累加专家计数",
+          "detail": "unpack拓宽，deintlv恢复次序，加载acc后逐lane相加并交错store。",
+          "kind": "output",
+          "input_state": [
+            " hist 是uint16频数；acc是此前批次uint32累加值"
+          ],
+          "mechanism": "unpack拓宽，deintlv恢复次序，加载acc后逐lane相加并交错store。",
+          "output_state": [
+            "acc增加本批有效Top-K命中次数"
+          ],
+          "why": "跨多个接收stage统计不能覆盖之前的专家计数。",
+          "calls": [
+            {
+              "name": "asc_unpack_lower",
+              "line": 93,
+              "type": "external"
+            },
+            {
+              "name": "asc_unpack_upper",
+              "line": 94,
+              "type": "external"
+            },
+            {
+              "name": "asc_deintlv",
+              "line": 95,
+              "type": "external"
+            },
+            {
+              "name": "asc_loadalign_deintlv",
+              "line": 96,
+              "type": "external"
+            },
+            {
+              "name": "asc_add",
+              "line": 97,
+              "type": "external"
+            },
+            {
+              "name": "asc_add",
+              "line": 98,
+              "type": "external"
+            },
+            {
+              "name": "asc_storealign_intlv",
+              "line": 99,
+              "type": "external"
+            }
+          ],
+          "id": "epi-histogram-37-s3"
+        }
+      ],
+      "line_notes": [
+        {
+          "line": 37,
+          "kind": "signature",
+          "explanation": "模板参数kNumBins决定本Rank直方图容量，实例只接受256或512。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 38,
+          "kind": "signature",
+          "explanation": "声明UB直方图累加入口：data保存int64 Top-K ID，offset把全局专家ID平移到本Rank。",
+          "reads": [
+            "data",
+            "acc",
+            "num_i64_elems",
+            "offset"
+          ],
+          "writes": []
+        },
+        {
+          "line": 39,
+          "kind": "statement",
+          "explanation": "限制kNumBins为硬件频率直方图所支持的256或512桶布局。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 40,
+          "kind": "declaration",
+          "explanation": "由vector_uint16_t宽度算每段hist承载的uint16桶数。",
+          "reads": [],
+          "writes": [
+            "kNumBinsPerHistogram"
+          ]
+        },
+        {
+          "line": 41,
+          "kind": "declaration",
+          "explanation": "以kNumBins除每段桶数，得到需分配的hist向量数量。",
+          "reads": [],
+          "writes": [
+            "kNumHistogramVectors"
+          ]
+        },
+        {
+          "line": 42,
+          "kind": "call",
+          "explanation": "建立全lane的16位掩码，供广播、ID减offset与桶初始化。",
+          "reads": [],
+          "writes": [
+            "mask_b16"
+          ]
+        },
+        {
+          "line": 43,
+          "kind": "call",
+          "explanation": "建立全lane的32位掩码，供最终acc累加。",
+          "reads": [],
+          "writes": [
+            "mask_b32"
+          ]
+        },
+        {
+          "line": 44,
+          "kind": "blank",
+          "explanation": "分隔掩码建立与专家ID基准offset_vec广播。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 45,
+          "kind": "declaration",
+          "explanation": "分配16位offset_vec寄存器保存本Rank全局专家起点。",
+          "reads": [],
+          "writes": [
+            "offset_vec"
+          ]
+        },
+        {
+          "line": 46,
+          "kind": "call",
+          "explanation": "在mask_b16下将offset广播，供后面value_0/value_1减去Rank起点。",
+          "reads": [
+            "offset",
+            "mask_b16"
+          ],
+          "writes": [
+            "offset_vec"
+          ]
+        },
+        {
+          "line": 47,
+          "kind": "blank",
+          "explanation": "分隔专家起点准备与临时hist的分配。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 48,
+          "kind": "declaration",
+          "explanation": "按kNumHistogramVectors分配uint16频次桶，尚未累加到acc。",
+          "reads": [],
+          "writes": [
+            "hist"
+          ]
+        },
+        {
+          "line": 49,
+          "kind": "preprocessor",
+          "explanation": "要求展开hist清零循环，桶数由模板固定。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 50,
+          "kind": "loop",
+          "explanation": "逐一访问所有hist向量，保证每个桶有零初值。",
+          "reads": [
+            "hist_idx"
+          ],
+          "writes": [
+            "hist_idx"
+          ]
+        },
+        {
+          "line": 51,
+          "kind": "call",
+          "explanation": "把当前hist向量全lane清零，避免复用寄存器留下旧计数。",
+          "reads": [
+            "hist_idx",
+            "mask_b16"
+          ],
+          "writes": [
+            "hist"
+          ]
+        },
+        {
+          "line": 52,
+          "kind": "blank",
+          "explanation": "分隔桶清零与int64批量读取步长推导。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 53,
+          "kind": "declaration",
+          "explanation": "计算一次downsample读取可代表的int64数量；两个16位向量字节宽度对应其原始int64字节量。",
+          "reads": [],
+          "writes": [
+            "kNumI64ElemsPerLoad"
+          ]
+        },
+        {
+          "line": 54,
+          "kind": "declaration",
+          "explanation": "初始化remaining，限制最后一批参与8位直方图的元素数量。",
+          "reads": [
+            "num_i64_elems"
+          ],
+          "writes": [
+            "remaining"
+          ]
+        },
+        {
+          "line": 55,
+          "kind": "loop",
+          "explanation": "每次处理四次downsample加载覆盖的int64块，elem_offset指向批次首元素。",
+          "reads": [
+            "elem_offset",
+            "num_i64_elems"
+          ],
+          "writes": [
+            "elem_offset"
+          ]
+        },
+        {
+          "line": 56,
+          "kind": "blank",
+          "explanation": "分隔批次循环入口与downsample载入说明。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 57,
+          "kind": "comment",
+          "explanation": "注释说明低位拆分与高字节筛选的实现意图（int64[N] = int16[N][4], downsample loads int16[N][0,2], which can save number of instructions）；downsample取int64中16位片段，deintlv保留低16位；减offset后拆为高低byte，高byte为0或1的lane分别计入256/512个bin。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 58,
+          "kind": "declaration",
+          "explanation": "分配四个sampled向量，分别接收四段data的稀疏16位片段。",
+          "reads": [],
+          "writes": [
+            "sampled_0",
+            "sampled_1",
+            "sampled_2",
+            "sampled_3"
+          ]
+        },
+        {
+          "line": 59,
+          "kind": "call",
+          "explanation": "从data+elem_offset读取第一个downsample片段组到sampled_0。",
+          "reads": [
+            "data",
+            "elem_offset"
+          ],
+          "writes": [
+            "sampled_0"
+          ]
+        },
+        {
+          "line": 60,
+          "kind": "call",
+          "explanation": "从当前批次加一个kNumI64ElemsPerLoad处读取sampled_1。",
+          "reads": [
+            "data",
+            "elem_offset"
+          ],
+          "writes": [
+            "sampled_1"
+          ]
+        },
+        {
+          "line": 61,
+          "kind": "call",
+          "explanation": "从当前批次加两个kNumI64ElemsPerLoad处读取sampled_2。",
+          "reads": [
+            "data",
+            "elem_offset"
+          ],
+          "writes": [
+            "sampled_2"
+          ]
+        },
+        {
+          "line": 62,
+          "kind": "call",
+          "explanation": "从当前批次加三个kNumI64ElemsPerLoad处读取sampled_3。",
+          "reads": [
+            "data",
+            "elem_offset"
+          ],
+          "writes": [
+            "sampled_3"
+          ]
+        },
+        {
+          "line": 63,
+          "kind": "blank",
+          "explanation": "分隔稀疏读取与低16位重排。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 64,
+          "kind": "comment",
+          "explanation": "注释说明低位拆分与高字节筛选的实现意图（deinterleave to separate int16[N][0,2] => (int16[N][0], int16[N][2]), then ignore int16[N][2]）；downsample取int64中16位片段，deintlv保留低16位；减offset后拆为高低byte，高byte为0或1的lane分别计入256/512个bin。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 65,
+          "kind": "declaration",
+          "explanation": "分配value_0/value_1保存两组专家ID低16位。",
+          "reads": [],
+          "writes": [
+            "value_0",
+            "value_1"
+          ]
+        },
+        {
+          "line": 66,
+          "kind": "declaration",
+          "explanation": "分配ignored_0/ignored_1接收弃用的高位片段。",
+          "reads": [],
+          "writes": [
+            "ignored_0",
+            "ignored_1"
+          ]
+        },
+        {
+          "line": 67,
+          "kind": "call",
+          "explanation": "将sampled_0/1去交错，把第0片段放到value_0、第2片段放到ignored_0。",
+          "reads": [
+            "sampled_0",
+            "sampled_1"
+          ],
+          "writes": [
+            "value_0",
+            "ignored_0"
+          ]
+        },
+        {
+          "line": 68,
+          "kind": "call",
+          "explanation": "将sampled_2/3去交错，把第0片段放到value_1、第2片段放到ignored_1。",
+          "reads": [
+            "sampled_2",
+            "sampled_3"
+          ],
+          "writes": [
+            "value_1",
+            "ignored_1"
+          ]
+        },
+        {
+          "line": 69,
+          "kind": "blank",
+          "explanation": "分隔低16位提取与本Rank专家编号平移。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 70,
+          "kind": "call",
+          "explanation": "从value_0逐lane减offset_vec，转成本Rank候选桶编号。",
+          "reads": [
+            "value_0",
+            "offset_vec",
+            "mask_b16"
+          ],
+          "writes": [
+            "value_0"
+          ]
+        },
+        {
+          "line": 71,
+          "kind": "call",
+          "explanation": "从value_1逐lane减offset_vec，第二组使用同一专家起点。",
+          "reads": [
+            "value_1",
+            "offset_vec",
+            "mask_b16"
+          ],
+          "writes": [
+            "value_1"
+          ]
+        },
+        {
+          "line": 72,
+          "kind": "blank",
+          "explanation": "分隔16位本地候选编号与byte级桶选择。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 73,
+          "kind": "declaration",
+          "explanation": "分配value_byte_0/1，分别保存候选编号低byte和高byte。",
+          "reads": [],
+          "writes": [
+            "value_byte_0",
+            "value_byte_1"
+          ]
+        },
+        {
+          "line": 74,
+          "kind": "call",
+          "explanation": "以8位视图去交错两组16位value，低byte选择桶，高byte判定所属256桶区间。",
+          "reads": [
+            "value_0",
+            "value_1"
+          ],
+          "writes": [
+            "value_byte_0",
+            "value_byte_1"
+          ]
+        },
+        {
+          "line": 75,
+          "kind": "blank",
+          "explanation": "分隔byte拆分与高byte过滤掩码。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 76,
+          "kind": "declaration",
+          "explanation": "分配hist_mask_0/1，控制第一和第二个256桶区间的有效lane。",
+          "reads": [],
+          "writes": [
+            "hist_mask_0",
+            "hist_mask_1"
+          ]
+        },
+        {
+          "line": 77,
+          "kind": "call",
+          "explanation": "asc_update_mask_b8推进remaining，保证尾批超出num_i64_elems的lane不参与频数。",
+          "reads": [
+            "remaining"
+          ],
+          "writes": [
+            "mask",
+            "remaining"
+          ]
+        },
+        {
+          "line": 78,
+          "kind": "call",
+          "explanation": "仅保留候选编号高byte等于0的lane，即相对offset的0至255范围。",
+          "reads": [
+            "value_byte_1",
+            "mask"
+          ],
+          "writes": [
+            "hist_mask_0"
+          ]
+        },
+        {
+          "line": 79,
+          "kind": "call",
+          "explanation": "把有效低byte的前128桶频数累加到hist[0]。",
+          "reads": [
+            "hist",
+            "value_byte_0",
+            "hist_mask_0"
+          ],
+          "writes": [
+            "hist"
+          ]
+        },
+        {
+          "line": 80,
+          "kind": "call",
+          "explanation": "把有效低byte的后128桶频数累加到hist[1]。",
+          "reads": [
+            "hist",
+            "value_byte_0",
+            "hist_mask_0"
+          ],
+          "writes": [
+            "hist"
+          ]
+        },
+        {
+          "line": 81,
+          "kind": "branch",
+          "explanation": "只有kNumBins为512时再统计相对offset的256至511编号。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 82,
+          "kind": "call",
+          "explanation": "筛选候选编号高byte为1的lane，生成第二个256桶区间掩码。",
+          "reads": [
+            "value_byte_1",
+            "mask"
+          ],
+          "writes": [
+            "hist_mask_1"
+          ]
+        },
+        {
+          "line": 83,
+          "kind": "call",
+          "explanation": "在hist_mask_1下把第二区间低byte前128桶累计到hist[2]。",
+          "reads": [
+            "hist",
+            "value_byte_0",
+            "hist_mask_1"
+          ],
+          "writes": [
+            "hist"
+          ]
+        },
+        {
+          "line": 84,
+          "kind": "call",
+          "explanation": "在hist_mask_1下把第二区间低byte后128桶累计到hist[3]。",
+          "reads": [
+            "hist",
+            "value_byte_0",
+            "hist_mask_1"
+          ],
+          "writes": [
+            "hist"
+          ]
+        },
+        {
+          "line": 85,
+          "kind": "brace",
+          "explanation": "结束512桶实例特有的高byte=1计数分支。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 86,
+          "kind": "brace",
+          "explanation": "结束data批量循环，此时hist汇总整个有效输入块。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 87,
+          "kind": "blank",
+          "explanation": "分隔本批16位hist统计与32位acc累加阶段。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 88,
+          "kind": "comment",
+          "explanation": "注释说明拓宽并累加专家计数的实现意图（Accumulate histogram into counters）；unpack拓宽，deintlv恢复次序，加载acc后逐lane相加并交错store。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 89,
+          "kind": "preprocessor",
+          "explanation": "展开hist到acc的固定向量数循环。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 90,
+          "kind": "loop",
+          "explanation": "逐段hist拓宽和累加，每段对应连续kNumBinsPerHistogram个桶。",
+          "reads": [
+            "hist_idx"
+          ],
+          "writes": [
+            "hist_idx"
+          ]
+        },
+        {
+          "line": 91,
+          "kind": "declaration",
+          "explanation": "用hist_idx定位acc中当前hist向量对应的桶组首址。",
+          "reads": [
+            "acc",
+            "hist_idx"
+          ],
+          "writes": [
+            "histogram_offset"
+          ]
+        },
+        {
+          "line": 92,
+          "kind": "declaration",
+          "explanation": "分配拓宽临时向量、去交错hist向量和旧acc向量。",
+          "reads": [],
+          "writes": [
+            "hist_p0",
+            "hist_p1",
+            "hist_0",
+            "hist_1",
+            "acc_0",
+            "acc_1"
+          ]
+        },
+        {
+          "line": 93,
+          "kind": "call",
+          "explanation": "把hist当前向量下半部分uint16频数拓宽为uint32 hist_p0。",
+          "reads": [
+            "hist",
+            "hist_idx"
+          ],
+          "writes": [
+            "hist_p0"
+          ]
+        },
+        {
+          "line": 94,
+          "kind": "call",
+          "explanation": "把hist当前向量上半部分uint16频数拓宽为uint32 hist_p1。",
+          "reads": [
+            "hist",
+            "hist_idx"
+          ],
+          "writes": [
+            "hist_p1"
+          ]
+        },
+        {
+          "line": 95,
+          "kind": "call",
+          "explanation": "将拓宽结果去交错成hist_0/1，匹配acc去交错加载顺序。",
+          "reads": [
+            "hist_p0",
+            "hist_p1"
+          ],
+          "writes": [
+            "hist_0",
+            "hist_1"
+          ]
+        },
+        {
+          "line": 96,
+          "kind": "call",
+          "explanation": "从histogram_offset读取已有32位计数，并拆成acc_0/1。",
+          "reads": [
+            "histogram_offset"
+          ],
+          "writes": [
+            "acc_0",
+            "acc_1"
+          ]
+        },
+        {
+          "line": 97,
+          "kind": "call",
+          "explanation": "将旧acc_0加入hist_0，保留此前接收stage的频数。",
+          "reads": [
+            "hist_0",
+            "acc_0",
+            "mask_b32"
+          ],
+          "writes": [
+            "hist_0"
+          ]
+        },
+        {
+          "line": 98,
+          "kind": "call",
+          "explanation": "将旧acc_1加入hist_1，另一交错部分同步累加。",
+          "reads": [
+            "hist_1",
+            "acc_1",
+            "mask_b32"
+          ],
+          "writes": [
+            "hist_1"
+          ]
+        },
+        {
+          "line": 99,
+          "kind": "call",
+          "explanation": "交错存回histogram_offset，恢复acc的自然桶编号顺序。",
+          "reads": [
+            "histogram_offset",
+            "hist_0",
+            "hist_1"
+          ],
+          "writes": [
+            "histogram_offset"
+          ]
+        },
+        {
+          "line": 100,
+          "kind": "brace",
+          "explanation": "结束所有hist向量到32位acc的合并循环。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 101,
+          "kind": "brace",
+          "explanation": "结束histogram_accumulate_u32；acc保留本次输入在offset相对桶范围内的命中数；主kernel仅消费真实本地专家桶。",
+          "reads": [],
+          "writes": []
+        }
+      ]
+    },
+    {
+      "id": "epi-init-slot-107",
+      "module_id": "helpers",
+      "name": "initialize_dst_slot_idx",
+      "start": 107,
+      "end": 128,
+      "summary": "把前序AIV的同专家计数加到对齐的专家全局起点，形成本AIV独占输出游标。",
+      "inactive": false,
+      "inputs": [
+        "dst_slot_idx",
+        "unaligned_expert_start_slot_idx"
+      ],
+      "outputs": [
+        "dst_slot_idx"
+      ],
+      "side_effects": [
+        "把前序AIV的同专家计数加到对齐的专家全局起点，形成本AIV独占输出游标。"
+      ],
+      "review": {
+        "function_id": "epi-init-slot-107",
+        "revision": 5,
+        "draft_author": "walkthrough-agent",
+        "reviewer": "independent-review",
+        "source_sha256": "3666da791943b16986c7a0258c52cc022361c1a07d364098e0713036bd412a25",
+        "draft_sha256": "dc01efb69a3429d1deae73490f57c535ea05bb5f6509f16613fce3dd9613ac6a",
+        "function_content_sha256": "49216fae715e20351ca043d2195b3152615829523d5e31841903588e1fcb0269",
+        "line_range": [
+          107,
+          128
+        ],
+        "gaps": [],
+        "overlaps": [],
+        "unresolved": [],
+        "verdict": "PASS",
+        "status": "PASS",
+        "required_changes": [],
+        "verified": [
+          "重新读取完整定义与caller的输入前提/UB地址空间",
+          "line_notes每行含签名/注释/brace/空行；读写方向与SIMD纯输出寄存器逐项核对",
+          "segments连续且输入机制输出原因具体",
+          "公式、返回值、成员副作用与调用目标明确",
+          "此函数无独立allocator；UB/tensor来自主kernel与Context，owner已在memory模型独立核对",
+          "独立复审renderer整改：仅既有标识符周边空白，calls/notes/IO/ranges完全一致"
+        ],
+        "prior_function_content_sha256": "f637ae6f108a883e67e0e66e1cc0f0a631105238ad173f874a7d0a188cddbe75"
+      },
+      "segments": [
+        {
+          "start": 107,
+          "end": 128,
+          "title": "专家起点对齐并加入核前缀",
+          "detail": "用(x+A-1)&(-A)实现向上对齐，逐向量加入本核专家计数前缀。",
+          "kind": "output",
+          "input_state": [
+            "dst_slot_idx是前序AIV计数； unaligned_expert_start_slot_idx 是前一专家有效终点"
+          ],
+          "mechanism": "用(x+A-1)&(-A)实现向上对齐，逐向量加入本核专家计数前缀。",
+          "output_state": [
+            "dst_slot_idx成为可递增的专家输出游标"
+          ],
+          "why": "每核输出范围由专家起点和核前缀确定，后续无须争抢全局原子槽位。",
+          "calls": [
+            {
+              "name": "EP_STATIC_ASSERT",
+              "line": 110,
+              "type": "external"
+            },
+            {
+              "name": "EP_STATIC_ASSERT",
+              "line": 111,
+              "type": "external"
+            },
+            {
+              "name": "asc_create_mask_b32",
+              "line": 112,
+              "type": "external"
+            },
+            {
+              "name": "asc_duplicate_scalar",
+              "line": 114,
+              "type": "external"
+            },
+            {
+              "name": "asc_loadalign",
+              "line": 121,
+              "type": "external"
+            },
+            {
+              "name": "asc_loadalign",
+              "line": 122,
+              "type": "external"
+            },
+            {
+              "name": "asc_add_scalar",
+              "line": 123,
+              "type": "external"
+            },
+            {
+              "name": "asc_and",
+              "line": 124,
+              "type": "external"
+            },
+            {
+              "name": "asc_add",
+              "line": 125,
+              "type": "external"
+            },
+            {
+              "name": "asc_storealign",
+              "line": 126,
+              "type": "external"
+            }
+          ],
+          "id": "epi-init-slot-107-s1"
+        }
+      ],
+      "line_notes": [
+        {
+          "line": 107,
+          "kind": "signature",
+          "explanation": "模板指定专家桶数kNumBins和输出专家分段对齐kExpertAlignment。",
+          "reads": [
+            "kExpertAlignment"
+          ],
+          "writes": []
+        },
+        {
+          "line": 108,
+          "kind": "signature",
+          "explanation": "声明SIMD槽位初始化入口，dst_slot_idx起初承载前序核的同专家计数。",
+          "reads": [
+            "dst_slot_idx"
+          ],
+          "writes": []
+        },
+        {
+          "line": 109,
+          "kind": "signature",
+          "explanation": "参数unaligned_expert_start_slot_idx提供前一专家有效终点，需向上对齐才是当前专家起点。",
+          "reads": [
+            "unaligned_expert_start_slot_idx"
+          ],
+          "writes": []
+        },
+        {
+          "line": 110,
+          "kind": "statement",
+          "explanation": "限定桶数与histogram_accumulate_u32的256/512布局一致。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 111,
+          "kind": "statement",
+          "explanation": "要求kExpertAlignment为2的幂，保证负alignment位掩码公式有效。",
+          "reads": [
+            "kExpertAlignment"
+          ],
+          "writes": []
+        },
+        {
+          "line": 112,
+          "kind": "call",
+          "explanation": "建立全32位lane掩码，统一更新整组专家槽位。",
+          "reads": [],
+          "writes": [
+            "mask_b32"
+          ]
+        },
+        {
+          "line": 113,
+          "kind": "declaration",
+          "explanation": "分配alignment_mask寄存器保存负对齐值的二进制掩码。",
+          "reads": [],
+          "writes": [
+            "alignment_mask"
+          ]
+        },
+        {
+          "line": 114,
+          "kind": "call",
+          "explanation": "广播-kExpertAlignment，用位与清除对齐边界以下位。",
+          "reads": [
+            "kExpertAlignment",
+            "mask_b32"
+          ],
+          "writes": [
+            "alignment_mask"
+          ]
+        },
+        {
+          "line": 115,
+          "kind": "blank",
+          "explanation": "分隔alignment_mask建立与逐专家向量处理。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 116,
+          "kind": "preprocessor",
+          "explanation": "展开固定kNumBins覆盖循环，减少SIMD循环控制。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 117,
+          "kind": "loop",
+          "explanation": "按vector_uint32_t宽度遍历dst_slot_idx与专家起点数组。",
+          "reads": [
+            "elem_offset"
+          ],
+          "writes": [
+            "elem_offset"
+          ]
+        },
+        {
+          "line": 118,
+          "kind": "declaration",
+          "explanation": "分配dst_slot_idx_vec，读取前序AIV同专家前缀数。",
+          "reads": [],
+          "writes": [
+            "dst_slot_idx_vec"
+          ]
+        },
+        {
+          "line": 119,
+          "kind": "declaration",
+          "explanation": "分配expert_start_slot_idx_vec，读取待对齐专家起点。",
+          "reads": [],
+          "writes": [
+            "expert_start_slot_idx_vec"
+          ]
+        },
+        {
+          "line": 120,
+          "kind": "comment",
+          "explanation": "注释说明专家起点对齐并加入核前缀的实现意图（dst_slot_idx[i] = dst_slot_idx[i] + (unaligned_expert_start_slot_idx[i] + (alignment - 1)) & (-alignment)）；用(x+A-1)&(-A)实现向上对齐，逐向量加入本核专家计数前缀。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 121,
+          "kind": "call",
+          "explanation": "加载dst_slot_idx当前专家组到向量寄存器。",
+          "reads": [
+            "dst_slot_idx",
+            "elem_offset"
+          ],
+          "writes": [
+            "dst_slot_idx_vec"
+          ]
+        },
+        {
+          "line": 122,
+          "kind": "call",
+          "explanation": "加载当前专家组的前一专家有效终点到expert_start_slot_idx_vec。",
+          "reads": [
+            "unaligned_expert_start_slot_idx",
+            "elem_offset"
+          ],
+          "writes": [
+            "expert_start_slot_idx_vec"
+          ]
+        },
+        {
+          "line": 123,
+          "kind": "call",
+          "explanation": "为专家起点加kExpertAlignment-1，准备向上对齐。",
+          "reads": [
+            "expert_start_slot_idx_vec",
+            "kExpertAlignment",
+            "mask_b32"
+          ],
+          "writes": [
+            "expert_start_slot_idx_vec"
+          ]
+        },
+        {
+          "line": 124,
+          "kind": "call",
+          "explanation": "用alignment_mask清除低位，得到当前专家对齐起点。",
+          "reads": [
+            "expert_start_slot_idx_vec",
+            "alignment_mask",
+            "mask_b32"
+          ],
+          "writes": [
+            "expert_start_slot_idx_vec"
+          ]
+        },
+        {
+          "line": 125,
+          "kind": "call",
+          "explanation": "将此前AIV的同专家计数加到对齐专家起点，形成当前AIV互不重叠的绝对写入起点。",
+          "reads": [
+            "dst_slot_idx_vec",
+            "expert_start_slot_idx_vec",
+            "mask_b32"
+          ],
+          "writes": [
+            "dst_slot_idx_vec"
+          ]
+        },
+        {
+          "line": 126,
+          "kind": "call",
+          "explanation": "将新的绝对输出槽位写回dst_slot_idx对应专家组。",
+          "reads": [
+            "dst_slot_idx",
+            "elem_offset",
+            "dst_slot_idx_vec",
+            "mask_b32"
+          ],
+          "writes": [
+            "dst_slot_idx"
+          ]
+        },
+        {
+          "line": 127,
+          "kind": "brace",
+          "explanation": "结束所有kNumBins专家游标的初始化循环。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 128,
+          "kind": "brace",
+          "explanation": "结束initialize_dst_slot_idx；Scalar随后递增这些UB游标分配输出。",
+          "reads": [],
+          "writes": []
+        }
+      ]
+    },
+    {
+      "id": "epi-iter-139",
+      "module_id": "helpers",
+      "name": "PSumIterator",
+      "start": 139,
+      "end": 148,
+      "summary": "构造接收流游标并定位token所在来源Rank。",
+      "inactive": false,
+      "inputs": [
+        "psum",
+        "token_idx",
+        "token_end_idx"
+      ],
+      "outputs": [
+        "psum",
+        "token_idx",
+        "token_end_idx",
+        "rank_idx",
+        "rank_start_idx",
+        "rank_end_idx"
+      ],
+      "side_effects": [
+        "构造接收流游标并定位token所在来源Rank。"
+      ],
+      "review": {
+        "function_id": "epi-iter-139",
+        "revision": 4,
+        "draft_author": "walkthrough-agent",
+        "reviewer": "independent-review",
+        "source_sha256": "3666da791943b16986c7a0258c52cc022361c1a07d364098e0713036bd412a25",
+        "draft_sha256": "101b759f6f1580dee2f1dae07f9a9a8fbde17a0473d4236b45647a25d7b7873c",
+        "function_content_sha256": "dda5e475844d4fef2f9350b9c7e762ada48483a5458e1e7f0557aa3a9c582902",
+        "line_range": [
+          139,
+          148
+        ],
+        "gaps": [],
+        "overlaps": [],
+        "unresolved": [],
+        "verdict": "PASS",
+        "status": "PASS",
+        "required_changes": [],
+        "verified": [
+          "重新读取完整定义与caller的输入前提/UB地址空间",
+          "line_notes每行含签名/注释/brace/空行；读写方向与SIMD纯输出寄存器逐项核对",
+          "segments连续且输入机制输出原因具体",
+          "公式、返回值、成员副作用与调用目标明确",
+          "此函数无独立allocator；UB/tensor来自主kernel与Context，owner已在memory模型独立核对"
+        ]
+      },
+      "segments": [
+        {
+          "start": 139,
+          "end": 148,
+          "title": "构造接收流游标并定位token所在来源Rank。",
+          "detail": "构造接收流游标并定位token所在来源Rank。 使用PSumIterator当前状态。",
+          "kind": "compute",
+          "input_state": [
+            "psum：来源Rank累计数量；token_idx：核区间起点；token_end_idx：排他终点"
+          ],
+          "mechanism": "从Rank0的[0,psum[0])开始，advance_to(token_idx)只向前跳过已结束和空Rank。",
+          "output_state": [
+            "rank_idx/rank_start_idx/rank_end_idx：定位初始token_idx的来源Rank"
+          ],
+          "why": "必须用来源Rank真实count定位GM切片，不能按M最大容量定位接收流。",
+          "calls": [
+            {
+              "name": "advance_to",
+              "line": 147,
+              "type": "internal",
+              "target": "epi-iter-154"
+            }
+          ],
+          "id": "epi-iter-139-s1"
+        }
+      ],
+      "line_notes": [
+        {
+          "line": 139,
+          "kind": "signature",
+          "explanation": "构造PSumIterator，psum是来源Rank累计接收数量，token区间限制本AIV消费范围。",
+          "reads": [
+            "psum",
+            "token_idx",
+            "token_end_idx"
+          ],
+          "writes": []
+        },
+        {
+          "line": 140,
+          "kind": "signature",
+          "explanation": "保存GM累计数组psum的只读地址，后面越过Rank边界时读取它。",
+          "reads": [
+            "psum"
+          ],
+          "writes": [
+            "psum"
+          ]
+        },
+        {
+          "line": 141,
+          "kind": "signature",
+          "explanation": "保存接收流全局起点token_idx，尚需定位其来源Rank。",
+          "reads": [
+            "token_idx"
+          ],
+          "writes": [
+            "token_idx"
+          ]
+        },
+        {
+          "line": 142,
+          "kind": "signature",
+          "explanation": "保存本AIV独占消费终点token_end_idx，后续finished与批次长度使用它。",
+          "reads": [
+            "token_end_idx"
+          ],
+          "writes": [
+            "token_end_idx"
+          ]
+        },
+        {
+          "line": 143,
+          "kind": "signature",
+          "explanation": "先从来源Rank0开始定位，空Rank通过advance_to跳过。",
+          "reads": [],
+          "writes": [
+            "rank_idx"
+          ]
+        },
+        {
+          "line": 144,
+          "kind": "signature",
+          "explanation": "将Rank0接收流起点设为0。",
+          "reads": [],
+          "writes": [
+            "rank_start_idx"
+          ]
+        },
+        {
+          "line": 145,
+          "kind": "signature",
+          "explanation": "将Rank0接收流终点初始化为psum[0]。",
+          "reads": [
+            "psum"
+          ],
+          "writes": [
+            "rank_end_idx"
+          ]
+        },
+        {
+          "line": 146,
+          "kind": "signature",
+          "explanation": "进入构造体，成员已建立初始来源Rank0区间。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 147,
+          "kind": "call",
+          "explanation": "调用advance_to，跳过token_idx之前的来源Rank和零长度Rank。",
+          "reads": [
+            "token_idx"
+          ],
+          "writes": []
+        },
+        {
+          "line": 148,
+          "kind": "brace",
+          "explanation": "结束构造，rank_start_idx/rank_end_idx夹住当前token或到最后Rank。",
+          "reads": [],
+          "writes": []
+        }
+      ]
+    },
+    {
+      "id": "epi-iter-150",
+      "module_id": "helpers",
+      "name": "advance",
+      "start": 150,
+      "end": 152,
+      "summary": "按消费数量前移接收流游标。",
+      "inactive": false,
+      "inputs": [
+        "num_tokens",
+        "token_idx",
+        "rank_idx",
+        "rank_end_idx",
+        "psum"
+      ],
+      "outputs": [
+        "token_idx",
+        "rank_idx",
+        "rank_start_idx",
+        "rank_end_idx"
+      ],
+      "side_effects": [
+        "advance_to前移token_idx，并在跨Rank时更新rank_idx/rank_start_idx/rank_end_idx"
+      ],
+      "review": {
+        "function_id": "epi-iter-150",
+        "revision": 4,
+        "draft_author": "walkthrough-agent",
+        "reviewer": "independent-review",
+        "source_sha256": "3666da791943b16986c7a0258c52cc022361c1a07d364098e0713036bd412a25",
+        "draft_sha256": "101b759f6f1580dee2f1dae07f9a9a8fbde17a0473d4236b45647a25d7b7873c",
+        "function_content_sha256": "ff41090d66e548ed16b288b413d7f1f5e267902fc5edcd49e7fb71488ef2ad20",
+        "line_range": [
+          150,
+          152
+        ],
+        "gaps": [],
+        "overlaps": [],
+        "unresolved": [],
+        "verdict": "PASS",
+        "status": "PASS",
+        "required_changes": [],
+        "verified": [
+          "重新读取完整定义与caller的输入前提/UB地址空间",
+          "line_notes每行含签名/注释/brace/空行；读写方向与SIMD纯输出寄存器逐项核对",
+          "segments连续且输入机制输出原因具体",
+          "公式、返回值、成员副作用与调用目标明确",
+          "此函数无独立allocator；UB/tensor来自主kernel与Context，owner已在memory模型独立核对"
+        ]
+      },
+      "segments": [
+        {
+          "start": 150,
+          "end": 152,
+          "title": "按消费数量前移接收流游标。",
+          "detail": "按消费数量前移接收流游标。 advance_to统一维护rank_idx。",
+          "kind": "compute",
+          "input_state": [
+            "token_idx：当前接收流位置；num_tokens：已issue的非负长度"
+          ],
+          "mechanism": "调用advance_to(token_idx+num_tokens)，同步前移token_idx和来源Rank边界。",
+          "output_state": [
+            "token_idx增加num_tokens，必要时rank_idx前移"
+          ],
+          "why": "MTE2 issue长度不得跨当前Rank，消费后可能正好进入下一个来源切片。",
+          "calls": [
+            {
+              "name": "advance_to",
+              "line": 151,
+              "type": "internal",
+              "target": "epi-iter-154"
+            }
+          ],
+          "id": "epi-iter-150-s1"
+        }
+      ],
+      "line_notes": [
+        {
+          "line": 150,
+          "kind": "signature",
+          "explanation": "声明按消费数前移的方法，num_tokens来自已加载的连续stage长度。",
+          "reads": [
+            "num_tokens"
+          ],
+          "writes": []
+        },
+        {
+          "line": 151,
+          "kind": "call",
+          "explanation": "把token_idx加num_tokens后交给advance_to，同时维护来源Rank边界。",
+          "reads": [
+            "token_idx",
+            "num_tokens"
+          ],
+          "writes": [
+            "token_idx"
+          ]
+        },
+        {
+          "line": 152,
+          "kind": "brace",
+          "explanation": "结束advance，所有游标成员由advance_to统一更新。",
+          "reads": [],
+          "writes": []
+        }
+      ]
+    },
+    {
+      "id": "epi-iter-154",
+      "module_id": "helpers",
+      "name": "advance_to",
+      "start": 154,
+      "end": 161,
+      "summary": "仅向前移动全局接收流游标，跳过来源Rank累计边界。",
+      "inactive": false,
+      "inputs": [
+        "target_token_idx",
+        "psum",
+        "rank_idx",
+        "rank_end_idx"
+      ],
+      "outputs": [
+        "token_idx",
+        "rank_idx",
+        "rank_start_idx",
+        "rank_end_idx"
+      ],
+      "side_effects": [
+        "移动全局token位置并跨越来源Rank累计边界。"
+      ],
+      "review": {
+        "function_id": "epi-iter-154",
+        "revision": 4,
+        "draft_author": "walkthrough-agent",
+        "reviewer": "independent-review",
+        "source_sha256": "3666da791943b16986c7a0258c52cc022361c1a07d364098e0713036bd412a25",
+        "draft_sha256": "101b759f6f1580dee2f1dae07f9a9a8fbde17a0473d4236b45647a25d7b7873c",
+        "function_content_sha256": "e13083ed469cdf7feb322d1ddb544b87e5de235f9af0862519019785f366dabf",
+        "line_range": [
+          154,
+          161
+        ],
+        "gaps": [],
+        "overlaps": [],
+        "unresolved": [],
+        "verdict": "PASS",
+        "status": "PASS",
+        "required_changes": [],
+        "verified": [
+          "重新读取完整定义与caller的输入前提/UB地址空间",
+          "line_notes每行含签名/注释/brace/空行；读写方向与SIMD纯输出寄存器逐项核对",
+          "segments连续且输入机制输出原因具体",
+          "公式、返回值、成员副作用与调用目标明确",
+          "此函数无独立allocator；UB/tensor来自主kernel与Context，owner已在memory模型独立核对"
+        ]
+      },
+      "segments": [
+        {
+          "start": 154,
+          "end": 161,
+          "title": "移动全局token位置并跨越来源Rank累计边界。",
+          "detail": "移动全局token位置并跨越来源Rank累计边界。 使用PSumIterator当前状态。",
+          "kind": "compute",
+          "input_state": [
+            "target_token_idx必须不小于原token_idx；psum单调非降"
+          ],
+          "mechanism": "更新token_idx；只要target>=rank_end_idx且有下一Rank，就把start=end并读psum[++rank_idx]。",
+          "output_state": [
+            "游标只能向前，新的Rank区间覆盖目标或停在最后Rank"
+          ],
+          "why": "不支持向后定位；单调issue/topk遍历保证调用前提，零count Rank可被跳过。",
+          "calls": [],
+          "id": "epi-iter-154-s1"
+        }
+      ],
+      "line_notes": [
+        {
+          "line": 154,
+          "kind": "signature",
+          "explanation": "声明仅向前的绝对位置推进；target_token_idx必须>=原token_idx，caller均以非负stage长度前移。",
+          "reads": [
+            "target_token_idx"
+          ],
+          "writes": []
+        },
+        {
+          "line": 155,
+          "kind": "statement",
+          "explanation": "更新token_idx为目标全局接收流位置。",
+          "reads": [
+            "target_token_idx"
+          ],
+          "writes": [
+            "token_idx"
+          ]
+        },
+        {
+          "line": 156,
+          "kind": "loop",
+          "explanation": "只要越过当前Rank终点且还存在下一Rank，就继续跳过边界，包括空Rank。",
+          "reads": [
+            "target_token_idx",
+            "rank_end_idx",
+            "rank_idx",
+            "kNumRanks"
+          ],
+          "writes": []
+        },
+        {
+          "line": 157,
+          "kind": "statement",
+          "explanation": "将旧rank_end_idx保存为下一Rank的接收流起点。",
+          "reads": [
+            "rank_end_idx"
+          ],
+          "writes": [
+            "rank_start_idx"
+          ]
+        },
+        {
+          "line": 158,
+          "kind": "statement",
+          "explanation": "前移rank_idx，保证其始终小于kNumRanks。",
+          "reads": [
+            "rank_idx"
+          ],
+          "writes": [
+            "rank_idx"
+          ]
+        },
+        {
+          "line": 159,
+          "kind": "statement",
+          "explanation": "从GM psum读取新Rank的累计终点，重新建立当前来源区间。",
+          "reads": [
+            "psum",
+            "rank_idx"
+          ],
+          "writes": [
+            "rank_end_idx"
+          ]
+        },
+        {
+          "line": 160,
+          "kind": "brace",
+          "explanation": "结束跨Rank跳转循环，目标已落入当前区间或到最终Rank。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 161,
+          "kind": "brace",
+          "explanation": "结束advance_to，local_idx可以由token_idx-rank_start_idx计算。",
+          "reads": [],
+          "writes": []
+        }
+      ]
+    },
+    {
+      "id": "epi-iter-163",
+      "module_id": "helpers",
+      "name": "get_local_idx",
+      "start": 163,
+      "end": 165,
+      "summary": "将接收流全局位置转换成来源Rank切片内token槽号。",
+      "inactive": false,
+      "inputs": [
+        "token_idx",
+        "rank_start_idx"
+      ],
+      "outputs": [],
+      "side_effects": [],
+      "review": {
+        "function_id": "epi-iter-163",
+        "revision": 4,
+        "draft_author": "walkthrough-agent",
+        "reviewer": "independent-review",
+        "source_sha256": "3666da791943b16986c7a0258c52cc022361c1a07d364098e0713036bd412a25",
+        "draft_sha256": "101b759f6f1580dee2f1dae07f9a9a8fbde17a0473d4236b45647a25d7b7873c",
+        "function_content_sha256": "6129102b1ea4a19815d130a4308079717f805ff4d767aba6bdc948cae8f95d7f",
+        "line_range": [
+          163,
+          165
+        ],
+        "gaps": [],
+        "overlaps": [],
+        "unresolved": [],
+        "verdict": "PASS",
+        "status": "PASS",
+        "required_changes": [],
+        "verified": [
+          "重新读取完整定义与caller的输入前提/UB地址空间",
+          "line_notes每行含签名/注释/brace/空行；读写方向与SIMD纯输出寄存器逐项核对",
+          "segments连续且输入机制输出原因具体",
+          "公式、返回值、成员副作用与调用目标明确",
+          "此函数无独立allocator；UB/tensor来自主kernel与Context，owner已在memory模型独立核对"
+        ]
+      },
+      "segments": [
+        {
+          "start": 163,
+          "end": 165,
+          "title": "将接收流全局位置转换成来源Rank切片内token槽号。",
+          "detail": "将接收流全局位置转换成来源Rank切片内token槽号。 使用PSumIterator当前状态。",
+          "kind": "compute",
+          "input_state": [
+            "token_idx：全局接收流位置；rank_start_idx：当前来源Rank全局起点"
+          ],
+          "mechanism": "返回token_idx-rank_start_idx。",
+          "output_state": [
+            "返回来源Rank GM切片内相对token槽；成员无修改"
+          ],
+          "why": "recv_buffer.get_rank_buffer选Rank后需要相对槽号，不能继续用全局接收流索引。",
+          "calls": [],
+          "id": "epi-iter-163-s1"
+        }
+      ],
+      "line_notes": [
+        {
+          "line": 163,
+          "kind": "signature",
+          "explanation": "声明只读槽号查询，用于recv_buffer.get_rank_buffer后的get_token_buffer。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 164,
+          "kind": "statement",
+          "explanation": "以全局token_idx减当前来源Rank累计起点，得到该Rank切片内相对槽号。",
+          "reads": [
+            "token_idx",
+            "rank_start_idx"
+          ],
+          "writes": []
+        },
+        {
+          "line": 165,
+          "kind": "brace",
+          "explanation": "结束get_local_idx，不修改接收流游标。",
+          "reads": [],
+          "writes": []
+        }
+      ]
+    },
+    {
+      "id": "epi-iter-167",
+      "module_id": "helpers",
+      "name": "get_contiguous_count",
+      "start": 167,
+      "end": 169,
+      "summary": "批次长度同时限制在来源Rank边界、AIV终点和stage容量内。",
+      "inactive": false,
+      "inputs": [
+        "rank_end_idx",
+        "token_idx",
+        "token_end_idx",
+        "max_tokens"
+      ],
+      "outputs": [],
+      "side_effects": [],
+      "review": {
+        "function_id": "epi-iter-167",
+        "revision": 5,
+        "draft_author": "walkthrough-agent",
+        "reviewer": "independent-review",
+        "source_sha256": "3666da791943b16986c7a0258c52cc022361c1a07d364098e0713036bd412a25",
+        "draft_sha256": "dc01efb69a3429d1deae73490f57c535ea05bb5f6509f16613fce3dd9613ac6a",
+        "function_content_sha256": "fb190026190bbb53fd770ab573d65f9c8402f067f05230e1742d56744a73e4a8",
+        "line_range": [
+          167,
+          169
+        ],
+        "gaps": [],
+        "overlaps": [],
+        "unresolved": [],
+        "verdict": "PASS",
+        "status": "PASS",
+        "required_changes": [],
+        "verified": [
+          "重新读取完整定义与caller的输入前提/UB地址空间",
+          "line_notes每行含签名/注释/brace/空行；读写方向与SIMD纯输出寄存器逐项核对",
+          "segments连续且输入机制输出原因具体",
+          "公式、返回值、成员副作用与调用目标明确",
+          "此函数无独立allocator；UB/tensor来自主kernel与Context，owner已在memory模型独立核对",
+          "独立复审renderer整改：仅既有标识符周边空白，calls/notes/IO/ranges完全一致；getter返回三种余量最小值说明扩写与168行公式一致"
+        ],
+        "prior_function_content_sha256": "0abe79695a0eff9c4953cfaca652d7ff72b46301c329942c8a340d9b9b688f65"
+      },
+      "segments": [
+        {
+          "start": 167,
+          "end": 169,
+          "title": "批次长度同时限制在来源Rank边界、AIV终点和stage容量内。",
+          "detail": "批次长度同时限制在来源Rank边界、AIV终点和stage容量内。 使用PSumIterator当前状态。",
+          "kind": "compute",
+          "input_state": [
+            "rank_end_idx-token_idx：当前来源剩余；token_end_idx-token_idx：当前AIV剩余；max_tokens：stage容量"
+          ],
+          "mechanism": "返回三种余量中的最小值，得到可连续读取的 token 数量。",
+          "output_state": [
+            "返回可连续读取的token数量；游标不前移"
+          ],
+          "why": "一次MTE2连续GM读取不能跨来源Rank切片或本AIV任务范围。",
+          "calls": [],
+          "id": "epi-iter-167-s1"
+        }
+      ],
+      "line_notes": [
+        {
+          "line": 167,
+          "kind": "signature",
+          "explanation": "声明连续批次长度查询，max_tokens是UB stage容量上限。",
+          "reads": [
+            "max_tokens"
+          ],
+          "writes": []
+        },
+        {
+          "line": 168,
+          "kind": "statement",
+          "explanation": "取当前Rank余量、本AIV余量与max_tokens的最小值，使一次MTE2不跨来源RankGM切片。",
+          "reads": [
+            "rank_end_idx",
+            "token_idx",
+            "token_end_idx",
+            "max_tokens"
+          ],
+          "writes": []
+        },
+        {
+          "line": 169,
+          "kind": "brace",
+          "explanation": "结束get_contiguous_count，返回值用于长度和后续advance。",
+          "reads": [],
+          "writes": []
+        }
+      ]
+    },
+    {
+      "id": "epi-iter-171",
+      "module_id": "helpers",
+      "name": "finished",
+      "start": 171,
+      "end": 173,
+      "summary": "判断本AIV接收流是否全部消费。",
+      "inactive": false,
+      "inputs": [
+        "token_idx",
+        "token_end_idx"
+      ],
+      "outputs": [],
+      "side_effects": [],
+      "review": {
+        "function_id": "epi-iter-171",
+        "revision": 4,
+        "draft_author": "walkthrough-agent",
+        "reviewer": "independent-review",
+        "source_sha256": "3666da791943b16986c7a0258c52cc022361c1a07d364098e0713036bd412a25",
+        "draft_sha256": "101b759f6f1580dee2f1dae07f9a9a8fbde17a0473d4236b45647a25d7b7873c",
+        "function_content_sha256": "0a04ebf3aeab0e971d71291d72a6f9a8de4bf7d37e11bda9f776499350eea188",
+        "line_range": [
+          171,
+          173
+        ],
+        "gaps": [],
+        "overlaps": [],
+        "unresolved": [],
+        "verdict": "PASS",
+        "status": "PASS",
+        "required_changes": [],
+        "verified": [
+          "重新读取完整定义与caller的输入前提/UB地址空间",
+          "line_notes每行含签名/注释/brace/空行；读写方向与SIMD纯输出寄存器逐项核对",
+          "segments连续且输入机制输出原因具体",
+          "公式、返回值、成员副作用与调用目标明确",
+          "此函数无独立allocator；UB/tensor来自主kernel与Context，owner已在memory模型独立核对"
+        ]
+      },
+      "segments": [
+        {
+          "start": 171,
+          "end": 173,
+          "title": "判断本AIV接收流是否全部消费。",
+          "detail": "判断本AIV接收流是否全部消费。 使用PSumIterator当前状态。",
+          "kind": "compute",
+          "input_state": [
+            "token_idx：当前位置；token_end_idx：AIV排他终点"
+          ],
+          "mechanism": "返回token_idx>=token_end_idx。",
+          "output_state": [
+            "返回bool完成状态；不修改成员"
+          ],
+          "why": "空核区间立即完成，issue_load据此不发零长度读取。",
+          "calls": [],
+          "id": "epi-iter-171-s1"
+        }
+      ],
+      "line_notes": [
+        {
+          "line": 171,
+          "kind": "signature",
+          "explanation": "声明只读完成判断，用于issue_load和Top-K扫描终止。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 172,
+          "kind": "statement",
+          "explanation": "token_idx达到或越过token_end_idx即无剩余token，空AIV区间也立即完成。",
+          "reads": [
+            "token_idx",
+            "token_end_idx"
+          ],
+          "writes": []
+        },
+        {
+          "line": 173,
+          "kind": "brace",
+          "explanation": "结束finished，调用者据此停止发出MTE2读取。",
+          "reads": [],
+          "writes": []
+        }
+      ]
+    }
+  ]
+}

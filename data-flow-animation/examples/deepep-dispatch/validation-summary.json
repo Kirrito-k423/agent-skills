@@ -1,0 +1,346 @@
+{
+  "status": "PASS",
+  "checked_at_utc": "2026-10-02T04:07:53.729092+00:00",
+  "source_revision": "3b25377d04b24fc6154698ded78a2bcb2c59afff",
+  "deep_jit_gitlink": "65f513952b8771408a19202f65e36398522db6db",
+  "walkthrough": {
+    "full_source_lines": 1490,
+    "unique_function_definitions": 14,
+    "independent_pass_functions": 14,
+    "includes_lambdas": 2,
+    "total_modules": 7,
+    "total_segments": 75,
+    "independent_pass_memory_models": 2,
+    "files": [
+      {
+        "name": "dispatch",
+        "source_sha256": "25244c66d5937e9e7521400792c2e0ddc974512971f582e95d19c4828c31b678",
+        "line_count": 867,
+        "modules": 3,
+        "functions": 3,
+        "segments": 42,
+        "memory_spaces": 5,
+        "memory_regions": 13,
+        "memory_transfers": 13,
+        "memory_paths": 4,
+        "memory_allocations": 4,
+        "analysis_sha256": "0c292817eaa5cc3cc53f7d5b202b01455db0138f02ff31a88b93fa5efe7eaf0f",
+        "html_sha256": "db62711ee70019b53d589ed4813ff37572d24489bd2e0e2dc8f5059ebcf491d7",
+        "reviewed_content_unchanged": true
+      },
+      {
+        "name": "dispatch_copy_epilogue",
+        "source_sha256": "3666da791943b16986c7a0258c52cc022361c1a07d364098e0713036bd412a25",
+        "line_count": 623,
+        "modules": 4,
+        "functions": 11,
+        "segments": 33,
+        "memory_spaces": 3,
+        "memory_regions": 12,
+        "memory_transfers": 15,
+        "memory_paths": 4,
+        "memory_allocations": 3,
+        "analysis_sha256": "08235a8bd5a5ebbb8d310c6cd2b34083e15491bc88fd787ab064b3621b7abb95",
+        "html_sha256": "30fa5b14e9e3f3b96c8faccd69fded4a1f95045cd121b05749e88cdce4a52736",
+        "reviewed_content_unchanged": true
+      }
+    ],
+    "ui_evidence": "root-walkthrough-ui.json"
+  },
+  "animation": {
+    "model_sha256": "567fc1e82f4c91dd09c481a05d7eee2b6ea850e6f155a541c1a3f1c95b633197",
+    "independent_oracle_presets": 9,
+    "model_test_output": [
+      "PASS mixed 26 frames / 21 rank copies / 29 expert hits",
+      "PASS concentrated 36 frames / 16 rank copies / 32 expert hits",
+      "PASS invalid 26 frames / 20 rank copies / 27 expert hits",
+      "PASS zero 26 frames / 21 rank copies / 29 expert hits",
+      "PASS fp8 26 frames / 21 rank copies / 29 expert hits",
+      "PASS cached 19 frames / 21 rank copies / 29 expert hits",
+      "PASS noWeights 26 frames / 21 rank copies / 29 expert hits",
+      "PASS uninitialized 26 frames / 21 rank copies / 29 expert hits",
+      "PASS empty 13 frames / 0 rank copies / 0 expert hits",
+      "20544 invariant/source/read-write assertions PASS"
+    ],
+    "browser_combinations": 2026,
+    "browser_errors": [],
+    "browser_failures": [],
+    "browser_viewports": [
+      [
+        1280,
+        720
+      ],
+      [
+        1440,
+        900
+      ],
+      [
+        1920,
+        1080
+      ]
+    ],
+    "root_independent_ui_evidence": "root-animation-ui.json",
+    "review_evidence": "review/animation-review.json",
+    "numeric_provenance": {
+      "independent_review": "PASS",
+      "review_evidence": "review/numeric-review.json",
+      "provenance_sha256": "6ac9d0f9ad90d2666d7d3d2ee639c570292ba0b9429a4b337d5d23e4f55befa8",
+      "root_ui_evidence": "root-numeric-ui.json",
+      "root_ui_checks": [
+        "screenshot 1: separate array elements, sentinel and valid expert zero",
+        "screenshot 2: each destination count has its own contributions and arithmetic",
+        "write-before zero differs from write-after count",
+        "historic and observed values retain actual production step",
+        "step changes discard stale tooltip",
+        "keyboard focus, Enter pin and Escape close",
+        "tooltip fits all three actual CSS viewports and does not cover its anchor"
+      ],
+      "root_object_ui_evidence": "root-numeric-object-ui.json",
+      "root_object_ui_checks": [
+        "full hidden element 255 has its own typed query; fixed modal tooltip closes by real click",
+        "SF pack explains its chosen raw bit pattern rather than a decoded scale",
+        "nested SQE field has exact operands; modal details are clickable and long explanation scrolls; first Escape preserves inspector",
+        "fixed numeric explanation opens its real source line in the complete frozen source page",
+        "newly published signal is red; retained same-value signal preserves its earlier producer and ordinary color",
+        "history row color distinguishes an untouched zero UB bucket from its newly incremented bucket",
+        "cached initial value exposes the prior Fresh-call operand scope in visible details",
+        "unwritten storage is explicitly explained as unknown rather than a zero",
+        "Fresh absent SF/weights and Cached omitted metadata fields are not described as inherited cached values",
+        "empty-input zero write has an explicit zero-contribution derivation"
+      ],
+      "independent_coverage": {
+        "presets": [
+          "mixed",
+          "concentrated",
+          "invalid",
+          "zero",
+          "fp8",
+          "cached",
+          "noWeights",
+          "uninitialized",
+          "empty"
+        ],
+        "ledger_object_kinds": 24,
+        "explicit_phase_leaf_queries": 629468,
+        "explicit_computed_values": 618112,
+        "operand_checks": 1230660,
+        "all_stage_auto_leaf_queries": 2135248,
+        "all_stage_computed_values": 2079109,
+        "all_stage_cases": [
+          {
+            "preset": "mixed",
+            "frames": 26,
+            "queries": 259852
+          },
+          {
+            "preset": "concentrated",
+            "frames": 36,
+            "queries": 374996
+          },
+          {
+            "preset": "invalid",
+            "frames": 26,
+            "queries": 248111
+          },
+          {
+            "preset": "zero",
+            "frames": 26,
+            "queries": 259852
+          },
+          {
+            "preset": "fp8",
+            "frames": 26,
+            "queries": 269378
+          },
+          {
+            "preset": "cached",
+            "frames": 19,
+            "queries": 199757
+          },
+          {
+            "preset": "noWeights",
+            "frames": 26,
+            "queries": 257356
+          },
+          {
+            "preset": "uninitialized",
+            "frames": 26,
+            "queries": 252202
+          },
+          {
+            "preset": "empty",
+            "frames": 13,
+            "queries": 13744
+          }
+        ],
+        "meta_config_shape_bytes_dtype_metric_queries": 14201,
+        "wrong_display_value_mutations_rejected": 1120,
+        "named_semantic_regressions": 20,
+        "distinct_value_source_references": 81,
+        "phases": [
+          "initial",
+          "read-before",
+          "write-before",
+          "write-after",
+          "history",
+          "observe",
+          "auto"
+        ],
+        "independent_equations": "reference仅从frame0输入与教学config构造rank去重、expert命中、两类前缀、slot/SGE索引、接收顺序、expert展开、copy源、padding和SQE地址/字节；不取model.counts/recvPlan/outputPlan/slots作为计算答案",
+        "manual_semantics": [
+          "R0.topk_idx[3]两lane分别为-1哨兵和有效expert0，不是区间",
+          "prefix step5 R0 rank总计[2,1,1,1]逐token过滤/floor/去重/加总，明确教学聚合身份",
+          "cached prefix从上次fresh等价输入贡献推导，未引用本轮UNKNOWN hist",
+          "copy真实读前源，权重不乘hidden，SF int16原始位模式不解码",
+          "真实copy0/GM sentinel -1/clear0有producer；UB未命中桶及无local目标-1保留初始化；signals保留字段追原生产步骤",
+          "inclusive rank prefix与exclusive AIV prefix以及expert aligned前段+raw当前末端分开",
+          "SGE source地址和大小、SQE字段/flags/64B WQEBB数量与per-SQE256B范围",
+          "optional noSF/noWeights/缓存省略字段是未传输分支，不能误宣称缓存继承",
+          "全部派生数值computed与真实操作数验证；中文逐贡献推导并非仅字符串非空"
+        ]
+      },
+      "author_browser_evidence": "animation/numeric-browser-results.json",
+      "author_visible_queries": 130224,
+      "author_browser_checks": 2880,
+      "author_numeric_test_evidence": "animation/numeric-test-results.json",
+      "author_numeric_queries": 2551866,
+      "delivered_hashes": {
+        "app.mjs": "bfc8c966eda1f13f49126f3e5aa04f0609658ee151437638aa4c131e7fe23af4",
+        "style.css": "94a4bf33a948915d7fa377c6be54e21059e7143ea76c39d30acae684096427e0",
+        "numeric-ui.mjs": "432726a01acec95d1881cc1842f9d352dbe98f018cfb1679d7bbbda6efe9a648",
+        "provenance.mjs": "6ac9d0f9ad90d2666d7d3d2ee639c570292ba0b9429a4b337d5d23e4f55befa8",
+        "model.mjs": "567fc1e82f4c91dd09c481a05d7eee2b6ea850e6f155a541c1a3f1c95b633197"
+      },
+      "skill_commit": "045c6678b5332b8399b63232b8536f17386da687",
+      "before_evidence": "numeric-before/browser-reproduction.json"
+    },
+    "terminology": {
+      "independent_review": "PASS",
+      "review_evidence": "review/terminology-review.json",
+      "independent_coverage": {
+        "presets": [
+          "mixed",
+          "concentrated",
+          "invalid",
+          "zero",
+          "fp8",
+          "cached",
+          "noWeights",
+          "uninitialized",
+          "empty"
+        ],
+        "ledger_object_kinds": 24,
+        "nested_field_kinds": 28,
+        "independent_source_files": 9,
+        "independent_source_lines": 3732,
+        "independent_source_bindings": 11871,
+        "independent_context_semantic_cases": 59,
+        "independent_parameter_queries": 72,
+        "independent_ledger_queries": 4398,
+        "independent_real_ui_checks": 13,
+        "author_explicit_field_queries": 6452,
+        "author_prose_inventory_entries": 88,
+        "author_registry": {
+          "terms": 1212,
+          "sourceDefinitions": 988,
+          "syntax": 55,
+          "sourceOverrides": 54
+        },
+        "author_browser": {
+          "typedTermQueries": 183864,
+          "frames": 672,
+          "surfaces": 1344,
+          "viewports": [
+            [
+              1280,
+              720
+            ],
+            [
+              1440,
+              900
+            ],
+            [
+              1920,
+              1080
+            ]
+          ],
+          "sourceLines": 3732
+        }
+      },
+      "root_ui_evidence": "root-terminology-ui.json",
+      "root_ui_checks": [
+        "real CSS viewport 1280x720 terminology geometry",
+        "real CSS viewport 1440x900 terminology geometry",
+        "real CSS viewport 1920x1080 terminology geometry",
+        "keyboard focus and Enter pin; related term uses one panel; Escape closes",
+        "complete source link retains caller empty preset and T=0 capacity context",
+        "all nine complete source pages preserve 3732 original lines and have zero unresolved variable bindings",
+        "source related recv_x clears original identifier and retains its own definition and source reference",
+        "modal source field term links to its own address arithmetic without recursively reopening the same term",
+        "source partition uses the general origin concept while typed SGE source retains its address-field meaning",
+        "step transition discards stale term tip; late join and refresh restore paired context"
+      ],
+      "root_ui_samples": 12,
+      "author_browser_evidence": "animation/terminology-browser-results.json",
+      "author_browser_checks": 6933,
+      "author_browser_coverage": {
+        "typedTermQueries": 183864,
+        "frames": 672,
+        "surfaces": 1344,
+        "viewports": [
+          [
+            1280,
+            720
+          ],
+          [
+            1440,
+            900
+          ],
+          [
+            1920,
+            1080
+          ]
+        ],
+        "sourceLines": 3732
+      },
+      "author_coverage_evidence": "animation/terminology-coverage.json",
+      "delivered_hashes": {
+        "app.mjs": "bfc8c966eda1f13f49126f3e5aa04f0609658ee151437638aa4c131e7fe23af4",
+        "control.html": "20fbb5c9284bcb531b40728b8951198f3cb429da1003fca4d3ca996a92e37200",
+        "visual.html": "ac9a8f47ee981ad9e2f2b65731f16a963c2f1b5b51d1becf4bf795c50003aba3",
+        "source.html": "5b43dcb574144d7e0840943320f2302823da38fc537ea07996ba59d10dce613a",
+        "source.mjs": "ada3c285a6fbe68dd8eaf809e6949b821813b2986c2abd54a9c89f8f7469e7c0",
+        "sources.json": "c190442268db99444caee5618deefaba96755956ba1216a903bd6c1b48e765f0",
+        "style.css": "94a4bf33a948915d7fa377c6be54e21059e7143ea76c39d30acae684096427e0",
+        "model.mjs": "567fc1e82f4c91dd09c481a05d7eee2b6ea850e6f155a541c1a3f1c95b633197",
+        "provenance.mjs": "6ac9d0f9ad90d2666d7d3d2ee639c570292ba0b9429a4b337d5d23e4f55befa8",
+        "sync.mjs": "7f862d5c8df29998fe6ab85ce8e2b1f3012c4d37291ccc9058aea1488d69819d",
+        "numeric-ui.mjs": "432726a01acec95d1881cc1842f9d352dbe98f018cfb1679d7bbbda6efe9a648",
+        "terminology.mjs": "ebc7810d7c739552b6ff5d82b665049308c889078a06f68f5ea41563f0f3d47c",
+        "terminology-source-extra.mjs": "28359f74131e5a53c95e80ae2f60a08637748ebab3b71f8636fbe592860d5f2b",
+        "terminology-source-evidence.mjs": "00b3af6a19b4b94996779a7c17d33b87c11752ae64e7fe070d2ef43d09c42171"
+      },
+      "skill_commit": "eb2740498eafa9dc92115f1ba4d39e154e92fa89",
+      "before_evidence": "terminology-before/browser-reproduction.json",
+      "unresolved_source_identifiers": 0,
+      "original_model_and_numeric_provenance_unchanged": true
+    }
+  },
+  "conditional_paths": [
+    "fresh and cached routing / slot metadata",
+    "BF16 and FP8 packed scale-factor metadata",
+    "optional weights and valid -1 routing sentinel",
+    "rank deduplication, local copy, remote write, SQ NOP and final WRITE completion",
+    "zero-input and empty ranks/AIVs, raw and aligned expert prefix counts",
+    "epilogue drain/barrier, expanded slots and optional padding initialization"
+  ],
+  "evidence_boundary": {
+    "source_inspection": true,
+    "cpu_teaching_model": true,
+    "browser_interactions": true,
+    "cann_compile": false,
+    "multi_rank_npu_precision": false,
+    "hardware_trace_or_performance": false
+  },
+  "token_usage": "Unavailable; no cost or token savings claim"
+}

@@ -1,0 +1,404 @@
+[
+  {
+    "function_id": "dispatch-simt-77",
+    "revision": 3,
+    "draft_author": "walkthrough-agent",
+    "reviewer": "independent-review",
+    "source_sha256": "25244c66d5937e9e7521400792c2e0ddc974512971f582e95d19c4828c31b678",
+    "draft_sha256": "fd881c72c9eef951063716d51c3c37c48aaa871f0a12a91487ca2ae7060fabf8",
+    "function_sha256": "1984b4c5274b15464501740fd8cbfe57c429aa100c8d16daf8eafdb609496fdb",
+    "line_range": [
+      77,
+      549
+    ],
+    "gaps": [],
+    "overlaps": [],
+    "unresolved": [],
+    "verdict": "REWORK",
+    "required_changes": [
+      {
+        "lines": [
+          221,
+          253,
+          323
+        ],
+        "issue": "*ptr写GM未列writes",
+        "change": "writes=[ptr]，真实RHS按行登记reads"
+      },
+      {
+        "lines": [
+          467,
+          488,
+          501,
+          540
+        ],
+        "issue": "thread_idx/idx索引误列writes",
+        "change": "索引只读，只有workspace_layout/host_workspace_layout目标存储列writes"
+      },
+      {
+        "line": 152,
+        "issue": "自赋值reduce漏max_gsge_idx读取",
+        "change": "同时read/write max_gsge_idx；同查+=与自赋值"
+      },
+      {
+        "lines": [
+          222,
+          224,
+          230,
+          460,
+          461
+        ],
+        "issue": "继承段文案两个warp半区和expert/E为错误描述",
+        "change": "同一warp先后处理AIV两段；owner=expert/(E/W)，同步segments/detail中的对应文案"
+      }
+    ],
+    "verified": [
+      "完整定义边界与template/lambda清单",
+      "fresh/cached路径、计数与同步因果",
+      "token/rank去重与专家展开区别",
+      "allocator所有权、GM/UB/remote边界另以memory模型复核"
+    ]
+  },
+  {
+    "function_id": "dispatch-impl-551",
+    "revision": 3,
+    "draft_author": "walkthrough-agent",
+    "reviewer": "independent-review",
+    "source_sha256": "25244c66d5937e9e7521400792c2e0ddc974512971f582e95d19c4828c31b678",
+    "draft_sha256": "d8f64dcb8d31763c38045e8a40856de3a3855272e33da5ed49d5cc975b199ced",
+    "function_sha256": "a2686aae46d18fd8916b9a21c3eb2f6c971c597212a2d18506eb5e6569aa908c",
+    "line_range": [
+      551,
+      865
+    ],
+    "gaps": [],
+    "overlaps": [],
+    "unresolved": [],
+    "verdict": "REWORK",
+    "required_changes": [
+      {
+        "lines": [
+          587,
+          589,
+          592,
+          594,
+          596,
+          600,
+          602,
+          603,
+          605,
+          619,
+          621,
+          622,
+          623,
+          628,
+          636,
+          638,
+          639,
+          658,
+          673,
+          674,
+          675,
+          676,
+          677,
+          678,
+          679,
+          680,
+          682,
+          683,
+          684,
+          692,
+          693,
+          699,
+          702,
+          721,
+          729,
+          730,
+          742,
+          760,
+          767,
+          787,
+          788,
+          789,
+          790,
+          791,
+          795,
+          804,
+          819,
+          820,
+          832,
+          833,
+          863,
+          864
+        ],
+        "issue": "默认fallback复述源码+通用段落仍覆盖实际地址/长度/控制/诊断，未逐行解释",
+        "change": "逐行人工说明当前操作数的源/目标、byte extent与stride单位、算式物理含义；字符串诊断/nop/continue/未初始化声明分别解释，不得套地址模板"
+      },
+      {
+        "lines": [
+          589,
+          592
+        ],
+        "issue": "诊断字符串value误列变量read",
+        "change": "reads=[]，解释编译失败诊断"
+      },
+      {
+        "line": 859,
+        "issue": "空行解释成benchmark注释",
+        "change": "说明分隔SQ commit与可选barrier"
+      },
+      {
+        "line": 862,
+        "issue": "split-template barrier漏calls",
+        "change": "登记真实external barrier调用862"
+      }
+    ],
+    "verified": [
+      "完整定义边界与template/lambda清单",
+      "fresh/cached路径、计数与同步因果",
+      "token/rank去重与专家展开区别",
+      "allocator所有权、GM/UB/remote边界另以memory模型复核"
+    ]
+  },
+  {
+    "function_id": "dispatch-preload-688",
+    "revision": 3,
+    "draft_author": "walkthrough-agent",
+    "reviewer": "independent-review",
+    "source_sha256": "25244c66d5937e9e7521400792c2e0ddc974512971f582e95d19c4828c31b678",
+    "draft_sha256": "d8f64dcb8d31763c38045e8a40856de3a3855272e33da5ed49d5cc975b199ced",
+    "function_sha256": "59507bd71d58022277536e72041430039ccc86c4eb6e8ca9d7258c89bb516cad",
+    "line_range": [
+      688,
+      753
+    ],
+    "gaps": [],
+    "overlaps": [],
+    "unresolved": [],
+    "verdict": "REWORK",
+    "required_changes": [
+      {
+        "lines": [
+          692,
+          693,
+          699,
+          702,
+          721,
+          729,
+          730,
+          742
+        ],
+        "issue": "默认fallback复述源码+通用段落仍覆盖实际地址/长度/控制/诊断，未逐行解释",
+        "change": "逐行人工说明当前操作数的源/目标、byte extent与stride单位、算式物理含义；字符串诊断/nop/continue/未初始化声明分别解释，不得套地址模板"
+      }
+    ],
+    "verified": [
+      "完整定义边界与template/lambda清单",
+      "fresh/cached路径、计数与同步因果",
+      "token/rank去重与专家展开区别",
+      "allocator所有权、GM/UB/remote边界另以memory模型复核"
+    ]
+  },
+  {
+    "function_id": "epi-impl-176",
+    "revision": 3,
+    "draft_author": "walkthrough-agent",
+    "reviewer": "independent-review",
+    "source_sha256": "3666da791943b16986c7a0258c52cc022361c1a07d364098e0713036bd412a25",
+    "draft_sha256": "da550db2d427bb195ca88371878878ea7fce02114b148fecdfb7be81f3e15062",
+    "function_sha256": "3170c002afb984980c34ac3655c3c4790db01c8b46c6fd06046db0f9e30355a8",
+    "line_range": [
+      176,
+      621
+    ],
+    "gaps": [],
+    "overlaps": [],
+    "unresolved": [],
+    "verdict": "REWORK",
+    "required_changes": [
+      {
+        "lines": [
+          201,
+          202,
+          241,
+          242,
+          243,
+          273,
+          274,
+          288,
+          297,
+          298,
+          300,
+          301,
+          302,
+          310,
+          311,
+          312,
+          336,
+          337,
+          338,
+          342,
+          353,
+          354,
+          358,
+          359,
+          364,
+          372,
+          373,
+          374,
+          379,
+          391,
+          392,
+          405,
+          406,
+          407,
+          408,
+          409,
+          419,
+          420,
+          421,
+          422,
+          432,
+          436,
+          462,
+          466,
+          467,
+          473,
+          474,
+          493,
+          494,
+          495,
+          496,
+          500,
+          501,
+          502,
+          503,
+          508,
+          509,
+          532,
+          533,
+          534,
+          563,
+          568,
+          569,
+          570,
+          571,
+          572,
+          578,
+          586,
+          589,
+          590,
+          591,
+          592,
+          598,
+          599,
+          600,
+          601,
+          608,
+          609,
+          610,
+          611,
+          612
+        ],
+        "issue": "默认fallback复述源码+通用段落仍覆盖实际地址/长度/控制/诊断，未逐行解释",
+        "change": "逐行人工说明当前操作数的源/目标、byte extent与stride单位、算式物理含义；字符串诊断/nop/continue/未初始化声明分别解释，不得套地址模板"
+      },
+      {
+        "line": 288,
+        "issue": "PSumIterator构造调用登记289空行",
+        "change": "calls line=288"
+      },
+      {
+        "lines": [
+          473,
+          474
+        ],
+        "issue": "未初始化局部变量被当读取",
+        "change": "声明没有旧值read，条件分支后才有值"
+      },
+      {
+        "lines": [
+          238,
+          256,
+          257,
+          267,
+          275,
+          289
+        ],
+        "issue": "manual overrides错位到邻行，分别为metadataPipelineBytes、ub_histogram、TokenLayout、single-expert条件、L2+stride、stage_num_tokens初始化",
+        "change": "重新逐行对照冻结源码，不能沿用错误行号；正确含义已发作者"
+      },
+      {
+        "lines": [
+          213,
+          215,
+          216,
+          217,
+          219,
+          220,
+          221,
+          222,
+          223,
+          224,
+          226,
+          227,
+          228,
+          231,
+          232,
+          233,
+          234,
+          237,
+          238,
+          240
+        ],
+        "issue": "预算常量只复述表达式+InitSocState通用摘要",
+        "change": "说明每个constexpr的物理/资源含义、字节或元素单位，以及约束后续哪一地址/阶段容量"
+      }
+    ],
+    "verified": [
+      "完整定义边界与template/lambda清单",
+      "fresh/cached路径、计数与同步因果",
+      "token/rank去重与专家展开区别",
+      "allocator所有权、GM/UB/remote边界另以memory模型复核"
+    ]
+  },
+  {
+    "function_id": "epi-issue-load-291",
+    "revision": 3,
+    "draft_author": "walkthrough-agent",
+    "reviewer": "independent-review",
+    "source_sha256": "3666da791943b16986c7a0258c52cc022361c1a07d364098e0713036bd412a25",
+    "draft_sha256": "da550db2d427bb195ca88371878878ea7fce02114b148fecdfb7be81f3e15062",
+    "function_sha256": "6655f848189870ef016e92fb45384391dfa750125013e6ea601998a851620196",
+    "line_range": [
+      291,
+      324
+    ],
+    "gaps": [],
+    "overlaps": [],
+    "unresolved": [],
+    "verdict": "REWORK",
+    "required_changes": [
+      {
+        "lines": [
+          297,
+          298,
+          300,
+          301,
+          302,
+          310,
+          311,
+          312
+        ],
+        "issue": "默认fallback复述源码+通用段落仍覆盖实际地址/长度/控制/诊断，未逐行解释",
+        "change": "逐行人工说明当前操作数的源/目标、byte extent与stride单位、算式物理含义；字符串诊断/nop/continue/未初始化声明分别解释，不得套地址模板"
+      }
+    ],
+    "verified": [
+      "完整定义边界与template/lambda清单",
+      "fresh/cached路径、计数与同步因果",
+      "token/rank去重与专家展开区别",
+      "allocator所有权、GM/UB/remote边界另以memory模型复核"
+    ]
+  }
+]

@@ -1,0 +1,135 @@
+{
+  "status": "PASS",
+  "revision": 4,
+  "reviewer": "independent-review",
+  "draft_author": "animation",
+  "reviewed_at": "2026-09-30T10:30:09.025440+00:00",
+  "source_commit": "3b25377d04b24fc6154698ded78a2bcb2c59afff",
+  "model_sha256": "567fc1e82f4c91dd09c481a05d7eee2b6ea850e6f155a541c1a3f1c95b633197",
+  "provenance_sha256": "6ac9d0f9ad90d2666d7d3d2ee639c570292ba0b9429a4b337d5d23e4f55befa8",
+  "scope": "独立数值身份、初始来源、生产时刻、操作数回溯、源码方程、逐步中文推导和来源证据审核；UI交互与几何另验",
+  "coverage": {
+    "presets": [
+      "mixed",
+      "concentrated",
+      "invalid",
+      "zero",
+      "fp8",
+      "cached",
+      "noWeights",
+      "uninitialized",
+      "empty"
+    ],
+    "ledger_object_kinds": 24,
+    "explicit_phase_leaf_queries": 629468,
+    "explicit_computed_values": 618112,
+    "operand_checks": 1230660,
+    "all_stage_auto_leaf_queries": 2135248,
+    "all_stage_computed_values": 2079109,
+    "all_stage_cases": [
+      {
+        "preset": "mixed",
+        "frames": 26,
+        "queries": 259852
+      },
+      {
+        "preset": "concentrated",
+        "frames": 36,
+        "queries": 374996
+      },
+      {
+        "preset": "invalid",
+        "frames": 26,
+        "queries": 248111
+      },
+      {
+        "preset": "zero",
+        "frames": 26,
+        "queries": 259852
+      },
+      {
+        "preset": "fp8",
+        "frames": 26,
+        "queries": 269378
+      },
+      {
+        "preset": "cached",
+        "frames": 19,
+        "queries": 199757
+      },
+      {
+        "preset": "noWeights",
+        "frames": 26,
+        "queries": 257356
+      },
+      {
+        "preset": "uninitialized",
+        "frames": 26,
+        "queries": 252202
+      },
+      {
+        "preset": "empty",
+        "frames": 13,
+        "queries": 13744
+      }
+    ],
+    "meta_config_shape_bytes_dtype_metric_queries": 14201,
+    "wrong_display_value_mutations_rejected": 1120,
+    "named_semantic_regressions": 20,
+    "distinct_value_source_references": 81,
+    "phases": [
+      "initial",
+      "read-before",
+      "write-before",
+      "write-after",
+      "history",
+      "observe",
+      "auto"
+    ],
+    "independent_equations": "reference仅从frame0输入与教学config构造rank去重、expert命中、两类前缀、slot/SGE索引、接收顺序、expert展开、copy源、padding和SQE地址/字节；不取model.counts/recvPlan/outputPlan/slots作为计算答案",
+    "manual_semantics": [
+      "R0.topk_idx[3]两lane分别为-1哨兵和有效expert0，不是区间",
+      "prefix step5 R0 rank总计[2,1,1,1]逐token过滤/floor/去重/加总，明确教学聚合身份",
+      "cached prefix从上次fresh等价输入贡献推导，未引用本轮UNKNOWN hist",
+      "copy真实读前源，权重不乘hidden，SF int16原始位模式不解码",
+      "真实copy0/GM sentinel -1/clear0有producer；UB未命中桶及无local目标-1保留初始化；signals保留字段追原生产步骤",
+      "inclusive rank prefix与exclusive AIV prefix以及expert aligned前段+raw当前末端分开",
+      "SGE source地址和大小、SQE字段/flags/64B WQEBB数量与per-SQE256B范围",
+      "optional noSF/noWeights/缓存省略字段是未传输分支，不能误宣称缓存继承",
+      "全部派生数值computed与真实操作数验证；中文逐贡献推导并非仅字符串非空"
+    ]
+  },
+  "gaps": [],
+  "required_changes": [],
+  "evidence_files": [
+    "numeric-oracle-final.json",
+    "numeric-meta-review.json",
+    "numeric-all-stages.json",
+    "numeric-semantic-cases.json",
+    "numeric-review-plan.json"
+  ],
+  "oracle_files": [
+    "numeric-oracle.mjs",
+    "numeric-reference.mjs",
+    "check-numeric.mjs",
+    "numeric-meta-cases.mjs",
+    "check-numeric-meta.mjs",
+    "check-numeric-observe.mjs",
+    "check-numeric-semantic.mjs"
+  ],
+  "ui_evidence": {
+    "status": "SEPARATE_ROOT_REVIEW",
+    "owner": "root",
+    "record": "root-numeric-ui.json",
+    "note": "本记录不将父代理浏览器截图/hover/键盘/modal几何结果冒充本reviewer亲自执行；UI PASS和最终UI哈希由root记录。",
+    "observed_source_hashes": {
+      "numeric-ui.mjs": "dad1cdcdf110b7b4afbc4c6dca2d7a38bd0dfc217029cfc3e1b86d8c430b3124",
+      "app.mjs": "faf29c5babd4907bb0311e5da02c226d19e5a9d5362cda8d11fb3d9a9b51219e"
+    }
+  },
+  "limits": [
+    "教学配置R4/E8/K2/H256/M4/C16及九预设；非任意规模模型证明",
+    "槽位与物理SQE是选定合法线性化，不承诺硬件确定顺序",
+    "不新增NPU精度、trace或性能证据；原模型hash未改，既有animation-review保持原记录"
+  ]
+}

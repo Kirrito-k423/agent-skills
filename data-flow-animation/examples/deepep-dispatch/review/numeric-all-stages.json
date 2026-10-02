@@ -1,0 +1,1345 @@
+{
+  "status": "PASS",
+  "reviewer": "independent-review",
+  "provenance_sha256": "6ac9d0f9ad90d2666d7d3d2ee639c570292ba0b9429a4b337d5d23e4f55befa8",
+  "queries": 2135248,
+  "computed": 2079109,
+  "cases": [
+    {
+      "preset": "mixed",
+      "frames": 26,
+      "queries": 259852
+    },
+    {
+      "preset": "concentrated",
+      "frames": 36,
+      "queries": 374996
+    },
+    {
+      "preset": "invalid",
+      "frames": 26,
+      "queries": 248111
+    },
+    {
+      "preset": "zero",
+      "frames": 26,
+      "queries": 259852
+    },
+    {
+      "preset": "fp8",
+      "frames": 26,
+      "queries": 269378
+    },
+    {
+      "preset": "cached",
+      "frames": 19,
+      "queries": 199757
+    },
+    {
+      "preset": "noWeights",
+      "frames": 26,
+      "queries": 257356
+    },
+    {
+      "preset": "uninitialized",
+      "frames": 26,
+      "queries": 252202
+    },
+    {
+      "preset": "empty",
+      "frames": 13,
+      "queries": 13744
+    }
+  ],
+  "sourceRefs": [
+    {
+      "file": "animation/model.mjs",
+      "line": 29,
+      "url": "model.mjs",
+      "fn": "buildModel::defs（教学账本声明）",
+      "commit": "3b25377d04b24fc6154698ded78a2bcb2c59afff",
+      "example": {
+        "preset": "mixed",
+        "objectId": "R0.rank_histogram_sum_view",
+        "elementPath": [
+          0
+        ],
+        "step": 0,
+        "phase": "auto"
+      }
+    },
+    {
+      "file": "animation/model.mjs",
+      "line": 30,
+      "url": "model.mjs",
+      "fn": "buildModel::defs（教学账本声明）",
+      "commit": "3b25377d04b24fc6154698ded78a2bcb2c59afff",
+      "example": {
+        "preset": "mixed",
+        "objectId": "R0.expert_histogram_sum_view",
+        "elementPath": [
+          0
+        ],
+        "step": 0,
+        "phase": "auto"
+      }
+    },
+    {
+      "commit": "3b25377d04b24fc6154698ded78a2bcb2c59afff",
+      "file": "csrc/buffers/ep.hpp",
+      "line": 207,
+      "fn": "EPBuffer::dispatch",
+      "url": "source.html?file=csrc%2Fbuffers%2Fep.hpp&line=207",
+      "example": {
+        "preset": "mixed",
+        "objectId": "R0.psum_num_recv_tokens_per_rank",
+        "elementPath": [],
+        "step": 0,
+        "phase": "auto"
+      }
+    },
+    {
+      "commit": "3b25377d04b24fc6154698ded78a2bcb2c59afff",
+      "file": "csrc/buffers/ep.hpp",
+      "line": 210,
+      "fn": "EPBuffer::dispatch",
+      "url": "source.html?file=csrc%2Fbuffers%2Fep.hpp&line=210",
+      "example": {
+        "preset": "mixed",
+        "objectId": "R0.psum_num_recv_tokens_per_expert",
+        "elementPath": [],
+        "step": 0,
+        "phase": "auto"
+      }
+    },
+    {
+      "commit": "3b25377d04b24fc6154698ded78a2bcb2c59afff",
+      "file": "csrc/buffers/ep.hpp",
+      "line": 213,
+      "fn": "EPBuffer::dispatch",
+      "url": "source.html?file=csrc%2Fbuffers%2Fep.hpp&line=213",
+      "example": {
+        "preset": "mixed",
+        "objectId": "R0.num_unaligned_recv_tokens_per_expert",
+        "elementPath": [],
+        "step": 0,
+        "phase": "auto"
+      }
+    },
+    {
+      "commit": "3b25377d04b24fc6154698ded78a2bcb2c59afff",
+      "file": "deep_ep/include/deep_ep/impls/ep/dispatch.hpp",
+      "line": 663,
+      "fn": "dispatch_impl",
+      "url": "source.html?file=deep_ep%2Finclude%2Fdeep_ep%2Fimpls%2Fep%2Fdispatch.hpp&line=663",
+      "example": {
+        "preset": "mixed",
+        "objectId": "R0.signals",
+        "elementPath": [
+          "metadata_ready"
+        ],
+        "step": 0,
+        "phase": "auto"
+      }
+    },
+    {
+      "commit": "3b25377d04b24fc6154698ded78a2bcb2c59afff",
+      "file": "deep_ep/include/deep_ep/impls/ep/dispatch.hpp",
+      "line": 662,
+      "fn": "dispatch_impl",
+      "url": "source.html?file=deep_ep%2Finclude%2Fdeep_ep%2Fimpls%2Fep%2Fdispatch.hpp&line=662",
+      "example": {
+        "preset": "mixed",
+        "objectId": "R0.signals",
+        "elementPath": [
+          "local_copy_ready"
+        ],
+        "step": 0,
+        "phase": "auto"
+      }
+    },
+    {
+      "file": "animation/model.mjs",
+      "line": 34,
+      "url": "model.mjs",
+      "fn": "buildModel::defs（教学账本声明）",
+      "commit": "3b25377d04b24fc6154698ded78a2bcb2c59afff",
+      "example": {
+        "preset": "mixed",
+        "objectId": "R0.signals",
+        "elementPath": [
+          "doorbell"
+        ],
+        "step": 0,
+        "phase": "auto"
+      }
+    },
+    {
+      "commit": "3b25377d04b24fc6154698ded78a2bcb2c59afff",
+      "file": "deep_ep/include/deep_ep/impls/ep/dispatch_copy_epilogue.hpp",
+      "line": 329,
+      "fn": "dispatch_copy_epilogue_impl",
+      "url": "source.html?file=deep_ep%2Finclude%2Fdeep_ep%2Fimpls%2Fep%2Fdispatch_copy_epilogue.hpp&line=329",
+      "example": {
+        "preset": "mixed",
+        "objectId": "R0.epilogue_expert_counter",
+        "elementPath": [],
+        "step": 0,
+        "phase": "auto"
+      }
+    },
+    {
+      "commit": "3b25377d04b24fc6154698ded78a2bcb2c59afff",
+      "file": "deep_ep/include/deep_ep/impls/ep/dispatch.hpp",
+      "line": 121,
+      "fn": "simt_persistent_worker",
+      "url": "source.html?file=deep_ep%2Finclude%2Fdeep_ep%2Fimpls%2Fep%2Fdispatch.hpp&line=121",
+      "example": {
+        "preset": "mixed",
+        "objectId": "R0.ub_expert_histogram[0]",
+        "elementPath": [
+          0
+        ],
+        "step": 0,
+        "phase": "auto"
+      }
+    },
+    {
+      "commit": "3b25377d04b24fc6154698ded78a2bcb2c59afff",
+      "file": "deep_ep/include/deep_ep/impls/ep/dispatch.hpp",
+      "line": 123,
+      "fn": "simt_persistent_worker",
+      "url": "source.html?file=deep_ep%2Finclude%2Fdeep_ep%2Fimpls%2Fep%2Fdispatch.hpp&line=123",
+      "example": {
+        "preset": "mixed",
+        "objectId": "R0.ub_rank_histogram[0]",
+        "elementPath": [
+          0
+        ],
+        "step": 0,
+        "phase": "auto"
+      }
+    },
+    {
+      "file": "animation/model.mjs",
+      "line": 36,
+      "url": "model.mjs",
+      "fn": "buildModel::defs（教学账本声明）",
+      "commit": "3b25377d04b24fc6154698ded78a2bcb2c59afff",
+      "example": {
+        "preset": "mixed",
+        "objectId": "R0.local_rank_histogram[0]",
+        "elementPath": [],
+        "step": 0,
+        "phase": "auto"
+      }
+    },
+    {
+      "commit": "3b25377d04b24fc6154698ded78a2bcb2c59afff",
+      "file": "animation/model.mjs",
+      "line": 14,
+      "fn": "buildModel（教学者选择输入）",
+      "url": "model.mjs",
+      "kind": "teaching-input",
+      "example": {
+        "preset": "mixed",
+        "objectId": "R0.x[0]",
+        "elementPath": [
+          0
+        ],
+        "step": 0,
+        "phase": "auto"
+      }
+    },
+    {
+      "commit": "3b25377d04b24fc6154698ded78a2bcb2c59afff",
+      "file": "animation/model.mjs",
+      "line": 5,
+      "fn": "buildModel（教学者选择输入）",
+      "url": "model.mjs",
+      "kind": "teaching-input",
+      "example": {
+        "preset": "mixed",
+        "objectId": "R0.topk_idx[0]",
+        "elementPath": [
+          0
+        ],
+        "step": 0,
+        "phase": "auto"
+      }
+    },
+    {
+      "commit": "3b25377d04b24fc6154698ded78a2bcb2c59afff",
+      "file": "animation/model.mjs",
+      "line": 15,
+      "fn": "buildModel（教学者选择输入）",
+      "url": "model.mjs",
+      "kind": "teaching-input",
+      "example": {
+        "preset": "mixed",
+        "objectId": "R0.topk_weights[0]",
+        "elementPath": [
+          0
+        ],
+        "step": 0,
+        "phase": "auto"
+      }
+    },
+    {
+      "commit": "3b25377d04b24fc6154698ded78a2bcb2c59afff",
+      "file": "csrc/buffers/ep.hpp",
+      "line": 216,
+      "fn": "EPBuffer::dispatch",
+      "url": "source.html?file=csrc%2Fbuffers%2Fep.hpp&line=216",
+      "example": {
+        "preset": "mixed",
+        "objectId": "R0.dst_buffer_slot_idx[0]",
+        "elementPath": [],
+        "step": 0,
+        "phase": "auto"
+      }
+    },
+    {
+      "commit": "3b25377d04b24fc6154698ded78a2bcb2c59afff",
+      "file": "csrc/buffers/ep.hpp",
+      "line": 219,
+      "fn": "EPBuffer::dispatch",
+      "url": "source.html?file=csrc%2Fbuffers%2Fep.hpp&line=219",
+      "example": {
+        "preset": "mixed",
+        "objectId": "R0.dst_gsge_idx[0]",
+        "elementPath": [],
+        "step": 0,
+        "phase": "auto"
+      }
+    },
+    {
+      "commit": "3b25377d04b24fc6154698ded78a2bcb2c59afff",
+      "file": "deep_ep/include/deep_ep/impls/ep/dispatch.hpp",
+      "line": 126,
+      "fn": "simt_persistent_worker",
+      "url": "source.html?file=deep_ep%2Finclude%2Fdeep_ep%2Fimpls%2Fep%2Fdispatch.hpp&line=126",
+      "example": {
+        "preset": "mixed",
+        "objectId": "R0.local_copy_dst_slot_idx[0]",
+        "elementPath": [],
+        "step": 0,
+        "phase": "auto"
+      }
+    },
+    {
+      "commit": "3b25377d04b24fc6154698ded78a2bcb2c59afff",
+      "file": "csrc/buffers/ep.hpp",
+      "line": 202,
+      "fn": "EPBuffer::dispatch",
+      "url": "source.html?file=csrc%2Fbuffers%2Fep.hpp&line=202",
+      "example": {
+        "preset": "mixed",
+        "objectId": "R0.metadata_send_buffer[0]",
+        "elementPath": [],
+        "step": 0,
+        "phase": "auto"
+      }
+    },
+    {
+      "commit": "3b25377d04b24fc6154698ded78a2bcb2c59afff",
+      "file": "deep_ep/include/deep_ep/impls/ep/dispatch.hpp",
+      "line": 331,
+      "fn": "simt_persistent_worker",
+      "url": "source.html?file=deep_ep%2Finclude%2Fdeep_ep%2Fimpls%2Fep%2Fdispatch.hpp&line=331",
+      "example": {
+        "preset": "mixed",
+        "objectId": "R0.SQE[0]",
+        "elementPath": [],
+        "step": 0,
+        "phase": "auto"
+      }
+    },
+    {
+      "commit": "3b25377d04b24fc6154698ded78a2bcb2c59afff",
+      "file": "deep_ep/include/deep_ep/impls/ep/dispatch_copy_epilogue.hpp",
+      "line": 199,
+      "fn": "dispatch_copy_epilogue_impl",
+      "url": "source.html?file=deep_ep%2Finclude%2Fdeep_ep%2Fimpls%2Fep%2Fdispatch_copy_epilogue.hpp&line=199",
+      "example": {
+        "preset": "mixed",
+        "objectId": "R0.recv_buffer[0,0]",
+        "elementPath": [],
+        "step": 0,
+        "phase": "auto"
+      }
+    },
+    {
+      "commit": "3b25377d04b24fc6154698ded78a2bcb2c59afff",
+      "file": "csrc/buffers/ep.hpp",
+      "line": 342,
+      "fn": "EPBuffer::dispatch",
+      "url": "source.html?file=csrc%2Fbuffers%2Fep.hpp&line=342",
+      "example": {
+        "preset": "mixed",
+        "objectId": "R0.recv_src_metadata[0]",
+        "elementPath": [],
+        "step": 0,
+        "phase": "auto"
+      }
+    },
+    {
+      "commit": "3b25377d04b24fc6154698ded78a2bcb2c59afff",
+      "file": "csrc/buffers/ep.hpp",
+      "line": 323,
+      "fn": "EPBuffer::dispatch",
+      "url": "source.html?file=csrc%2Fbuffers%2Fep.hpp&line=323",
+      "example": {
+        "preset": "mixed",
+        "objectId": "R0.recv_x[0]",
+        "elementPath": [],
+        "step": 0,
+        "phase": "auto"
+      }
+    },
+    {
+      "commit": "3b25377d04b24fc6154698ded78a2bcb2c59afff",
+      "file": "csrc/buffers/ep.hpp",
+      "line": 339,
+      "fn": "EPBuffer::dispatch",
+      "url": "source.html?file=csrc%2Fbuffers%2Fep.hpp&line=339",
+      "example": {
+        "preset": "mixed",
+        "objectId": "R0.recv_topk_weights[0]",
+        "elementPath": [],
+        "step": 0,
+        "phase": "auto"
+      }
+    },
+    {
+      "commit": "3b25377d04b24fc6154698ded78a2bcb2c59afff",
+      "file": "deep_ep/include/deep_ep/impls/ep/dispatch.hpp",
+      "line": 179,
+      "fn": "simt_persistent_worker",
+      "url": "source.html?file=deep_ep%2Finclude%2Fdeep_ep%2Fimpls%2Fep%2Fdispatch.hpp&line=179",
+      "example": {
+        "preset": "mixed",
+        "objectId": "R0.expert_histogram_sum_view",
+        "elementPath": [
+          0
+        ],
+        "step": 1,
+        "phase": "auto"
+      }
+    },
+    {
+      "commit": "3b25377d04b24fc6154698ded78a2bcb2c59afff",
+      "file": "deep_ep/include/deep_ep/impls/ep/dispatch.hpp",
+      "line": 186,
+      "fn": "simt_persistent_worker",
+      "url": "source.html?file=deep_ep%2Finclude%2Fdeep_ep%2Fimpls%2Fep%2Fdispatch.hpp&line=186",
+      "example": {
+        "preset": "mixed",
+        "objectId": "R0.ub_rank_histogram[0]",
+        "elementPath": [
+          0
+        ],
+        "step": 1,
+        "phase": "auto"
+      }
+    },
+    {
+      "commit": "3b25377d04b24fc6154698ded78a2bcb2c59afff",
+      "file": "deep_ep/include/deep_ep/impls/ep/dispatch.hpp",
+      "line": 221,
+      "fn": "simt_persistent_worker",
+      "url": "source.html?file=deep_ep%2Finclude%2Fdeep_ep%2Fimpls%2Fep%2Fdispatch.hpp&line=221",
+      "example": {
+        "preset": "mixed",
+        "objectId": "R0.local_rank_histogram[0]",
+        "elementPath": [
+          "arrival"
+        ],
+        "step": 1,
+        "phase": "auto"
+      }
+    },
+    {
+      "commit": "3b25377d04b24fc6154698ded78a2bcb2c59afff",
+      "file": "deep_ep/include/deep_ep/impls/ep/dispatch.hpp",
+      "line": 242,
+      "fn": "simt_persistent_worker",
+      "url": "source.html?file=deep_ep%2Finclude%2Fdeep_ep%2Fimpls%2Fep%2Fdispatch.hpp&line=242",
+      "example": {
+        "preset": "mixed",
+        "objectId": "R0.rank_histogram_sum_view",
+        "elementPath": [
+          0
+        ],
+        "step": 5,
+        "phase": "auto"
+      }
+    },
+    {
+      "commit": "3b25377d04b24fc6154698ded78a2bcb2c59afff",
+      "file": "deep_ep/include/deep_ep/impls/ep/dispatch.hpp",
+      "line": 244,
+      "fn": "simt_persistent_worker",
+      "url": "source.html?file=deep_ep%2Finclude%2Fdeep_ep%2Fimpls%2Fep%2Fdispatch.hpp&line=244",
+      "example": {
+        "preset": "mixed",
+        "objectId": "R0.ub_rank_histogram[0]",
+        "elementPath": [
+          0
+        ],
+        "step": 5,
+        "phase": "auto"
+      }
+    },
+    {
+      "commit": "3b25377d04b24fc6154698ded78a2bcb2c59afff",
+      "file": "deep_ep/include/deep_ep/impls/ep/dispatch.hpp",
+      "line": 298,
+      "fn": "simt_persistent_worker",
+      "url": "source.html?file=deep_ep%2Finclude%2Fdeep_ep%2Fimpls%2Fep%2Fdispatch.hpp&line=298",
+      "example": {
+        "preset": "mixed",
+        "objectId": "R0.signals",
+        "elementPath": [
+          "local_copy_ready"
+        ],
+        "step": 6,
+        "phase": "auto"
+      }
+    },
+    {
+      "commit": "3b25377d04b24fc6154698ded78a2bcb2c59afff",
+      "file": "deep_ep/include/deep_ep/impls/ep/dispatch.hpp",
+      "line": 253,
+      "fn": "simt_persistent_worker",
+      "url": "source.html?file=deep_ep%2Finclude%2Fdeep_ep%2Fimpls%2Fep%2Fdispatch.hpp&line=253",
+      "example": {
+        "preset": "mixed",
+        "objectId": "R0.local_rank_histogram[0]",
+        "elementPath": [],
+        "step": 6,
+        "phase": "auto"
+      }
+    },
+    {
+      "commit": "3b25377d04b24fc6154698ded78a2bcb2c59afff",
+      "file": "deep_ep/include/deep_ep/impls/ep/dispatch.hpp",
+      "line": 277,
+      "fn": "simt_persistent_worker",
+      "url": "source.html?file=deep_ep%2Finclude%2Fdeep_ep%2Fimpls%2Fep%2Fdispatch.hpp&line=277",
+      "example": {
+        "preset": "mixed",
+        "objectId": "R0.dst_buffer_slot_idx[0]",
+        "elementPath": [
+          0
+        ],
+        "step": 6,
+        "phase": "auto"
+      }
+    },
+    {
+      "commit": "3b25377d04b24fc6154698ded78a2bcb2c59afff",
+      "file": "deep_ep/include/deep_ep/impls/ep/dispatch.hpp",
+      "line": 281,
+      "fn": "simt_persistent_worker",
+      "url": "source.html?file=deep_ep%2Finclude%2Fdeep_ep%2Fimpls%2Fep%2Fdispatch.hpp&line=281",
+      "example": {
+        "preset": "mixed",
+        "objectId": "R0.dst_buffer_slot_idx[0]",
+        "elementPath": [
+          1
+        ],
+        "step": 6,
+        "phase": "auto"
+      }
+    },
+    {
+      "commit": "3b25377d04b24fc6154698ded78a2bcb2c59afff",
+      "file": "deep_ep/include/deep_ep/impls/ep/dispatch.hpp",
+      "line": 272,
+      "fn": "simt_persistent_worker",
+      "url": "source.html?file=deep_ep%2Finclude%2Fdeep_ep%2Fimpls%2Fep%2Fdispatch.hpp&line=272",
+      "example": {
+        "preset": "mixed",
+        "objectId": "R0.dst_buffer_slot_idx[1]",
+        "elementPath": [
+          0
+        ],
+        "step": 6,
+        "phase": "auto"
+      }
+    },
+    {
+      "commit": "3b25377d04b24fc6154698ded78a2bcb2c59afff",
+      "file": "deep_ep/include/deep_ep/impls/ep/dispatch.hpp",
+      "line": 274,
+      "fn": "simt_persistent_worker",
+      "url": "source.html?file=deep_ep%2Finclude%2Fdeep_ep%2Fimpls%2Fep%2Fdispatch.hpp&line=274",
+      "example": {
+        "preset": "mixed",
+        "objectId": "R0.dst_gsge_idx[1]",
+        "elementPath": [
+          0
+        ],
+        "step": 6,
+        "phase": "auto"
+      }
+    },
+    {
+      "commit": "3b25377d04b24fc6154698ded78a2bcb2c59afff",
+      "file": "deep_ep/include/deep_ep/impls/ep/dispatch.hpp",
+      "line": 697,
+      "fn": "dispatch_impl",
+      "url": "source.html?file=deep_ep%2Finclude%2Fdeep_ep%2Fimpls%2Fep%2Fdispatch.hpp&line=697",
+      "example": {
+        "preset": "mixed",
+        "objectId": "R0.metadata_send_buffer[0]",
+        "elementPath": [
+          "sf"
+        ],
+        "step": 7,
+        "phase": "auto"
+      }
+    },
+    {
+      "commit": "3b25377d04b24fc6154698ded78a2bcb2c59afff",
+      "file": "deep_ep/include/deep_ep/impls/ep/dispatch.hpp",
+      "line": 786,
+      "fn": "dispatch_impl",
+      "url": "source.html?file=deep_ep%2Finclude%2Fdeep_ep%2Fimpls%2Fep%2Fdispatch.hpp&line=786",
+      "example": {
+        "preset": "mixed",
+        "objectId": "R0.metadata_send_buffer[0]",
+        "elementPath": [
+          "topk",
+          0
+        ],
+        "step": 7,
+        "phase": "auto"
+      }
+    },
+    {
+      "commit": "3b25377d04b24fc6154698ded78a2bcb2c59afff",
+      "file": "deep_ep/include/deep_ep/impls/ep/dispatch.hpp",
+      "line": 779,
+      "fn": "dispatch_impl",
+      "url": "source.html?file=deep_ep%2Finclude%2Fdeep_ep%2Fimpls%2Fep%2Fdispatch.hpp&line=779",
+      "example": {
+        "preset": "mixed",
+        "objectId": "R0.metadata_send_buffer[0]",
+        "elementPath": [
+          "src_global_idx"
+        ],
+        "step": 7,
+        "phase": "auto"
+      }
+    },
+    {
+      "commit": "3b25377d04b24fc6154698ded78a2bcb2c59afff",
+      "file": "deep_ep/include/deep_ep/layout/ep/token.hpp",
+      "line": 36,
+      "fn": "TokenLayout::get_num_bytes",
+      "url": "source.html?file=deep_ep%2Finclude%2Fdeep_ep%2Flayout%2Fep%2Ftoken.hpp&line=36",
+      "example": {
+        "preset": "mixed",
+        "objectId": "R0.metadata_send_buffer[0]",
+        "elementPath": [
+          "padding"
+        ],
+        "step": 7,
+        "phase": "auto"
+      }
+    },
+    {
+      "commit": "3b25377d04b24fc6154698ded78a2bcb2c59afff",
+      "file": "deep_ep/include/deep_ep/impls/ep/dispatch.hpp",
+      "line": 801,
+      "fn": "dispatch_impl",
+      "url": "source.html?file=deep_ep%2Finclude%2Fdeep_ep%2Fimpls%2Fep%2Fdispatch.hpp&line=801",
+      "example": {
+        "preset": "mixed",
+        "objectId": "R0.signals",
+        "elementPath": [
+          "metadata_ready"
+        ],
+        "step": 11,
+        "phase": "auto"
+      }
+    },
+    {
+      "commit": "3b25377d04b24fc6154698ded78a2bcb2c59afff",
+      "file": "deep_ep/include/deep_ep/impls/ep/dispatch.hpp",
+      "line": 205,
+      "fn": "simt_persistent_worker",
+      "url": "source.html?file=deep_ep%2Finclude%2Fdeep_ep%2Fimpls%2Fep%2Fdispatch.hpp&line=205",
+      "example": {
+        "preset": "mixed",
+        "objectId": "R0.SQE[1]",
+        "elementPath": [
+          0,
+          "logicalSQE"
+        ],
+        "step": 12,
+        "phase": "auto"
+      }
+    },
+    {
+      "commit": "3b25377d04b24fc6154698ded78a2bcb2c59afff",
+      "file": "deep_ep/include/deep_ep/impls/ep/dispatch.hpp",
+      "line": 340,
+      "fn": "simt_persistent_worker",
+      "url": "source.html?file=deep_ep%2Finclude%2Fdeep_ep%2Fimpls%2Fep%2Fdispatch.hpp&line=340",
+      "example": {
+        "preset": "mixed",
+        "objectId": "R0.SQE[1]",
+        "elementPath": [
+          0,
+          "physicalSQE"
+        ],
+        "step": 12,
+        "phase": "auto"
+      }
+    },
+    {
+      "commit": "3b25377d04b24fc6154698ded78a2bcb2c59afff",
+      "file": "deep_ep/include/deep_ep/impls/ep/dispatch.hpp",
+      "line": 351,
+      "fn": "simt_persistent_worker",
+      "url": "source.html?file=deep_ep%2Finclude%2Fdeep_ep%2Fimpls%2Fep%2Fdispatch.hpp&line=351",
+      "example": {
+        "preset": "mixed",
+        "objectId": "R0.SQE[1]",
+        "elementPath": [
+          0,
+          "dst_rank"
+        ],
+        "step": 12,
+        "phase": "auto"
+      }
+    },
+    {
+      "commit": "3b25377d04b24fc6154698ded78a2bcb2c59afff",
+      "file": "deep_ep/include/deep_ep/impls/ep/dispatch.hpp",
+      "line": 352,
+      "fn": "simt_persistent_worker",
+      "url": "source.html?file=deep_ep%2Finclude%2Fdeep_ep%2Fimpls%2Fep%2Fdispatch.hpp&line=352",
+      "example": {
+        "preset": "mixed",
+        "objectId": "R0.SQE[1]",
+        "elementPath": [
+          0,
+          "dst_slot"
+        ],
+        "step": 12,
+        "phase": "auto"
+      }
+    },
+    {
+      "commit": "3b25377d04b24fc6154698ded78a2bcb2c59afff",
+      "file": "deep_ep/include/deep_ep/impls/ep/dispatch.hpp",
+      "line": 402,
+      "fn": "simt_persistent_worker",
+      "url": "source.html?file=deep_ep%2Finclude%2Fdeep_ep%2Fimpls%2Fep%2Fdispatch.hpp&line=402",
+      "example": {
+        "preset": "mixed",
+        "objectId": "R0.SQE[1]",
+        "elementPath": [
+          0,
+          "remote_offset"
+        ],
+        "step": 12,
+        "phase": "auto"
+      }
+    },
+    {
+      "commit": "3b25377d04b24fc6154698ded78a2bcb2c59afff",
+      "file": "deep_ep/include/deep_ep/impls/ep/dispatch.hpp",
+      "line": 409,
+      "fn": "simt_persistent_worker",
+      "url": "source.html?file=deep_ep%2Finclude%2Fdeep_ep%2Fimpls%2Fep%2Fdispatch.hpp&line=409",
+      "example": {
+        "preset": "mixed",
+        "objectId": "R0.SQE[1]",
+        "elementPath": [
+          0,
+          "SGEs",
+          0,
+          "source"
+        ],
+        "step": 12,
+        "phase": "auto"
+      }
+    },
+    {
+      "commit": "3b25377d04b24fc6154698ded78a2bcb2c59afff",
+      "file": "deep_ep/include/deep_ep/impls/ep/dispatch.hpp",
+      "line": 407,
+      "fn": "simt_persistent_worker",
+      "url": "source.html?file=deep_ep%2Finclude%2Fdeep_ep%2Fimpls%2Fep%2Fdispatch.hpp&line=407",
+      "example": {
+        "preset": "mixed",
+        "objectId": "R0.SQE[1]",
+        "elementPath": [
+          0,
+          "SGEs",
+          0,
+          "bytes"
+        ],
+        "step": 12,
+        "phase": "auto"
+      }
+    },
+    {
+      "commit": "3b25377d04b24fc6154698ded78a2bcb2c59afff",
+      "file": "deep_ep/include/deep_ep/impls/ep/dispatch.hpp",
+      "line": 413,
+      "fn": "simt_persistent_worker",
+      "url": "source.html?file=deep_ep%2Finclude%2Fdeep_ep%2Fimpls%2Fep%2Fdispatch.hpp&line=413",
+      "example": {
+        "preset": "mixed",
+        "objectId": "R0.SQE[1]",
+        "elementPath": [
+          0,
+          "SGEs",
+          1,
+          "source"
+        ],
+        "step": 12,
+        "phase": "auto"
+      }
+    },
+    {
+      "commit": "3b25377d04b24fc6154698ded78a2bcb2c59afff",
+      "file": "deep_ep/include/deep_ep/impls/ep/dispatch.hpp",
+      "line": 411,
+      "fn": "simt_persistent_worker",
+      "url": "source.html?file=deep_ep%2Finclude%2Fdeep_ep%2Fimpls%2Fep%2Fdispatch.hpp&line=411",
+      "example": {
+        "preset": "mixed",
+        "objectId": "R0.SQE[1]",
+        "elementPath": [
+          0,
+          "SGEs",
+          1,
+          "bytes"
+        ],
+        "step": 12,
+        "phase": "auto"
+      }
+    },
+    {
+      "commit": "3b25377d04b24fc6154698ded78a2bcb2c59afff",
+      "file": "deep_ep/include/deep_ep/impls/ep/dispatch.hpp",
+      "line": 372,
+      "fn": "simt_persistent_worker",
+      "url": "source.html?file=deep_ep%2Finclude%2Fdeep_ep%2Fimpls%2Fep%2Fdispatch.hpp&line=372",
+      "example": {
+        "preset": "mixed",
+        "objectId": "R0.SQE[1]",
+        "elementPath": [
+          0,
+          "num_sges"
+        ],
+        "step": 12,
+        "phase": "auto"
+      }
+    },
+    {
+      "commit": "3b25377d04b24fc6154698ded78a2bcb2c59afff",
+      "file": "deep_ep/include/deep_ep/impls/ep/dispatch.hpp",
+      "line": 373,
+      "fn": "simt_persistent_worker",
+      "url": "source.html?file=deep_ep%2Finclude%2Fdeep_ep%2Fimpls%2Fep%2Fdispatch.hpp&line=373",
+      "example": {
+        "preset": "mixed",
+        "objectId": "R0.SQE[1]",
+        "elementPath": [
+          0,
+          "validWQEBBs"
+        ],
+        "step": 12,
+        "phase": "auto"
+      }
+    },
+    {
+      "commit": "3b25377d04b24fc6154698ded78a2bcb2c59afff",
+      "file": "deep_ep/include/deep_ep/impls/ep/dispatch.hpp",
+      "line": 24,
+      "fn": "kNumWQEBBsPerSQESlot",
+      "url": "source.html?file=deep_ep%2Finclude%2Fdeep_ep%2Fimpls%2Fep%2Fdispatch.hpp&line=24",
+      "example": {
+        "preset": "mixed",
+        "objectId": "R0.SQE[1]",
+        "elementPath": [
+          0,
+          "reservedWQEBBs"
+        ],
+        "step": 12,
+        "phase": "auto"
+      }
+    },
+    {
+      "commit": "3b25377d04b24fc6154698ded78a2bcb2c59afff",
+      "file": "deep_ep/include/deep_ep/impls/ep/dispatch.hpp",
+      "line": 395,
+      "fn": "simt_persistent_worker",
+      "url": "source.html?file=deep_ep%2Finclude%2Fdeep_ep%2Fimpls%2Fep%2Fdispatch.hpp&line=395",
+      "example": {
+        "preset": "mixed",
+        "objectId": "R0.SQE[1]",
+        "elementPath": [
+          0,
+          "finalFlags"
+        ],
+        "step": 12,
+        "phase": "auto"
+      }
+    },
+    {
+      "commit": "3b25377d04b24fc6154698ded78a2bcb2c59afff",
+      "file": "deep_ep/include/deep_ep/impls/ep/dispatch_copy_epilogue.hpp",
+      "line": 200,
+      "fn": "dispatch_copy_epilogue_impl",
+      "url": "source.html?file=deep_ep%2Finclude%2Fdeep_ep%2Fimpls%2Fep%2Fdispatch_copy_epilogue.hpp&line=200",
+      "example": {
+        "preset": "mixed",
+        "objectId": "R0.recv_buffer[0,0]",
+        "elementPath": [
+          "key"
+        ],
+        "step": 13,
+        "phase": "auto"
+      }
+    },
+    {
+      "commit": "3b25377d04b24fc6154698ded78a2bcb2c59afff",
+      "file": "deep_ep/include/deep_ep/impls/ep/dispatch.hpp",
+      "line": 835,
+      "fn": "dispatch_impl",
+      "url": "source.html?file=deep_ep%2Finclude%2Fdeep_ep%2Fimpls%2Fep%2Fdispatch.hpp&line=835",
+      "example": {
+        "preset": "mixed",
+        "objectId": "R0.recv_buffer[0,0]",
+        "elementPath": [
+          "hidden",
+          0
+        ],
+        "step": 13,
+        "phase": "auto"
+      }
+    },
+    {
+      "commit": "3b25377d04b24fc6154698ded78a2bcb2c59afff",
+      "file": "deep_ep/include/deep_ep/impls/ep/dispatch.hpp",
+      "line": 444,
+      "fn": "simt_persistent_worker",
+      "url": "source.html?file=deep_ep%2Finclude%2Fdeep_ep%2Fimpls%2Fep%2Fdispatch.hpp&line=444",
+      "example": {
+        "preset": "mixed",
+        "objectId": "R0.recv_buffer[0,0]",
+        "elementPath": [
+          "metadata",
+          "topk",
+          0
+        ],
+        "step": 13,
+        "phase": "auto"
+      }
+    },
+    {
+      "commit": "3b25377d04b24fc6154698ded78a2bcb2c59afff",
+      "file": "deep_ep/include/deep_ep/impls/ep/dispatch.hpp",
+      "line": 538,
+      "fn": "simt_persistent_worker",
+      "url": "source.html?file=deep_ep%2Finclude%2Fdeep_ep%2Fimpls%2Fep%2Fdispatch.hpp&line=538",
+      "example": {
+        "preset": "mixed",
+        "objectId": "R0.psum_num_recv_tokens_per_rank",
+        "elementPath": [
+          0
+        ],
+        "step": 14,
+        "phase": "auto"
+      }
+    },
+    {
+      "commit": "3b25377d04b24fc6154698ded78a2bcb2c59afff",
+      "file": "deep_ep/include/deep_ep/impls/ep/dispatch.hpp",
+      "line": 519,
+      "fn": "simt_persistent_worker",
+      "url": "source.html?file=deep_ep%2Finclude%2Fdeep_ep%2Fimpls%2Fep%2Fdispatch.hpp&line=519",
+      "example": {
+        "preset": "mixed",
+        "objectId": "R0.psum_num_recv_tokens_per_expert",
+        "elementPath": [
+          0
+        ],
+        "step": 14,
+        "phase": "auto"
+      }
+    },
+    {
+      "commit": "3b25377d04b24fc6154698ded78a2bcb2c59afff",
+      "file": "deep_ep/include/deep_ep/impls/ep/dispatch.hpp",
+      "line": 482,
+      "fn": "simt_persistent_worker",
+      "url": "source.html?file=deep_ep%2Finclude%2Fdeep_ep%2Fimpls%2Fep%2Fdispatch.hpp&line=482",
+      "example": {
+        "preset": "mixed",
+        "objectId": "R0.num_unaligned_recv_tokens_per_expert",
+        "elementPath": [
+          0
+        ],
+        "step": 14,
+        "phase": "auto"
+      }
+    },
+    {
+      "commit": "3b25377d04b24fc6154698ded78a2bcb2c59afff",
+      "file": "deep_ep/include/deep_ep/impls/ep/dispatch.hpp",
+      "line": 857,
+      "fn": "dispatch_impl",
+      "url": "source.html?file=deep_ep%2Finclude%2Fdeep_ep%2Fimpls%2Fep%2Fdispatch.hpp&line=857",
+      "example": {
+        "preset": "mixed",
+        "objectId": "R0.signals",
+        "elementPath": [
+          "doorbell"
+        ],
+        "step": 15,
+        "phase": "auto"
+      }
+    },
+    {
+      "commit": "3b25377d04b24fc6154698ded78a2bcb2c59afff",
+      "file": "deep_ep/include/deep_ep/impls/ep/dispatch.hpp",
+      "line": 422,
+      "fn": "simt_persistent_worker",
+      "url": "source.html?file=deep_ep%2Finclude%2Fdeep_ep%2Fimpls%2Fep%2Fdispatch.hpp&line=422",
+      "example": {
+        "preset": "mixed",
+        "objectId": "R0.recv_buffer[1,0]",
+        "elementPath": [
+          "hidden",
+          0
+        ],
+        "step": 16,
+        "phase": "auto"
+      }
+    },
+    {
+      "commit": "3b25377d04b24fc6154698ded78a2bcb2c59afff",
+      "file": "deep_ep/include/deep_ep/impls/ep/dispatch_copy_epilogue.hpp",
+      "line": 404,
+      "fn": "dispatch_copy_epilogue_impl",
+      "url": "source.html?file=deep_ep%2Finclude%2Fdeep_ep%2Fimpls%2Fep%2Fdispatch_copy_epilogue.hpp&line=404",
+      "example": {
+        "preset": "mixed",
+        "objectId": "R0.epilogue_expert_counter",
+        "elementPath": [
+          0,
+          0
+        ],
+        "step": 17,
+        "phase": "auto"
+      }
+    },
+    {
+      "commit": "3b25377d04b24fc6154698ded78a2bcb2c59afff",
+      "file": "deep_ep/include/deep_ep/impls/ep/dispatch_copy_epilogue.hpp",
+      "line": 484,
+      "fn": "dispatch_copy_epilogue_impl",
+      "url": "source.html?file=deep_ep%2Finclude%2Fdeep_ep%2Fimpls%2Fep%2Fdispatch_copy_epilogue.hpp&line=484",
+      "example": {
+        "preset": "mixed",
+        "objectId": "R0.recv_src_metadata[0]",
+        "elementPath": [
+          0
+        ],
+        "step": 18,
+        "phase": "auto"
+      }
+    },
+    {
+      "commit": "3b25377d04b24fc6154698ded78a2bcb2c59afff",
+      "file": "deep_ep/include/deep_ep/impls/ep/dispatch_copy_epilogue.hpp",
+      "line": 520,
+      "fn": "dispatch_copy_epilogue_impl",
+      "url": "source.html?file=deep_ep%2Finclude%2Fdeep_ep%2Fimpls%2Fep%2Fdispatch_copy_epilogue.hpp&line=520",
+      "example": {
+        "preset": "mixed",
+        "objectId": "R0.recv_src_metadata[0]",
+        "elementPath": [
+          2
+        ],
+        "step": 18,
+        "phase": "auto"
+      }
+    },
+    {
+      "commit": "3b25377d04b24fc6154698ded78a2bcb2c59afff",
+      "file": "deep_ep/include/deep_ep/impls/ep/dispatch_copy_epilogue.hpp",
+      "line": 486,
+      "fn": "dispatch_copy_epilogue_impl",
+      "url": "source.html?file=deep_ep%2Finclude%2Fdeep_ep%2Fimpls%2Fep%2Fdispatch_copy_epilogue.hpp&line=486",
+      "example": {
+        "preset": "mixed",
+        "objectId": "R0.recv_src_metadata[0]",
+        "elementPath": [
+          3
+        ],
+        "step": 18,
+        "phase": "auto"
+      }
+    },
+    {
+      "commit": "3b25377d04b24fc6154698ded78a2bcb2c59afff",
+      "file": "deep_ep/include/deep_ep/impls/ep/dispatch_copy_epilogue.hpp",
+      "line": 492,
+      "fn": "dispatch_copy_epilogue_impl",
+      "url": "source.html?file=deep_ep%2Finclude%2Fdeep_ep%2Fimpls%2Fep%2Fdispatch_copy_epilogue.hpp&line=492",
+      "example": {
+        "preset": "mixed",
+        "objectId": "R0.recv_x[0]",
+        "elementPath": [
+          0
+        ],
+        "step": 18,
+        "phase": "auto"
+      }
+    },
+    {
+      "commit": "3b25377d04b24fc6154698ded78a2bcb2c59afff",
+      "file": "deep_ep/include/deep_ep/impls/ep/dispatch_copy_epilogue.hpp",
+      "line": 507,
+      "fn": "dispatch_copy_epilogue_impl",
+      "url": "source.html?file=deep_ep%2Finclude%2Fdeep_ep%2Fimpls%2Fep%2Fdispatch_copy_epilogue.hpp&line=507",
+      "example": {
+        "preset": "mixed",
+        "objectId": "R0.recv_topk_weights[0]",
+        "elementPath": [],
+        "step": 18,
+        "phase": "auto"
+      }
+    },
+    {
+      "commit": "3b25377d04b24fc6154698ded78a2bcb2c59afff",
+      "file": "deep_ep/include/deep_ep/impls/ep/dispatch_copy_epilogue.hpp",
+      "line": 479,
+      "fn": "dispatch_copy_epilogue_impl",
+      "url": "source.html?file=deep_ep%2Finclude%2Fdeep_ep%2Fimpls%2Fep%2Fdispatch_copy_epilogue.hpp&line=479",
+      "example": {
+        "preset": "mixed",
+        "objectId": "R2.recv_src_metadata[0]",
+        "elementPath": [
+          1
+        ],
+        "step": 18,
+        "phase": "auto"
+      }
+    },
+    {
+      "commit": "3b25377d04b24fc6154698ded78a2bcb2c59afff",
+      "file": "deep_ep/include/deep_ep/impls/ep/dispatch_copy_epilogue.hpp",
+      "line": 567,
+      "fn": "dispatch_copy_epilogue_impl",
+      "url": "source.html?file=deep_ep%2Finclude%2Fdeep_ep%2Fimpls%2Fep%2Fdispatch_copy_epilogue.hpp&line=567",
+      "example": {
+        "preset": "mixed",
+        "objectId": "R0.recv_x[6]",
+        "elementPath": [
+          0
+        ],
+        "step": 24,
+        "phase": "auto"
+      }
+    },
+    {
+      "commit": "3b25377d04b24fc6154698ded78a2bcb2c59afff",
+      "file": "deep_ep/include/deep_ep/impls/ep/dispatch_copy_epilogue.hpp",
+      "line": 580,
+      "fn": "dispatch_copy_epilogue_impl",
+      "url": "source.html?file=deep_ep%2Finclude%2Fdeep_ep%2Fimpls%2Fep%2Fdispatch_copy_epilogue.hpp&line=580",
+      "example": {
+        "preset": "mixed",
+        "objectId": "R0.recv_topk_weights[6]",
+        "elementPath": [],
+        "step": 24,
+        "phase": "auto"
+      }
+    },
+    {
+      "commit": "3b25377d04b24fc6154698ded78a2bcb2c59afff",
+      "file": "csrc/buffers/ep.hpp",
+      "line": 331,
+      "fn": "EPBuffer::dispatch",
+      "url": "source.html?file=csrc%2Fbuffers%2Fep.hpp&line=331",
+      "example": {
+        "preset": "fp8",
+        "objectId": "R0.recv_sf[0]",
+        "elementPath": [],
+        "step": 0,
+        "phase": "auto"
+      }
+    },
+    {
+      "commit": "3b25377d04b24fc6154698ded78a2bcb2c59afff",
+      "file": "deep_ep/include/deep_ep/impls/ep/dispatch_copy_epilogue.hpp",
+      "line": 499,
+      "fn": "dispatch_copy_epilogue_impl",
+      "url": "source.html?file=deep_ep%2Finclude%2Fdeep_ep%2Fimpls%2Fep%2Fdispatch_copy_epilogue.hpp&line=499",
+      "example": {
+        "preset": "fp8",
+        "objectId": "R0.recv_sf[0]",
+        "elementPath": [
+          0
+        ],
+        "step": 18,
+        "phase": "auto"
+      }
+    },
+    {
+      "commit": "3b25377d04b24fc6154698ded78a2bcb2c59afff",
+      "file": "deep_ep/include/deep_ep/impls/ep/dispatch_copy_epilogue.hpp",
+      "line": 588,
+      "fn": "dispatch_copy_epilogue_impl",
+      "url": "source.html?file=deep_ep%2Finclude%2Fdeep_ep%2Fimpls%2Fep%2Fdispatch_copy_epilogue.hpp&line=588",
+      "example": {
+        "preset": "fp8",
+        "objectId": "R0.recv_sf[6]",
+        "elementPath": [
+          0
+        ],
+        "step": 24,
+        "phase": "auto"
+      }
+    },
+    {
+      "commit": "3b25377d04b24fc6154698ded78a2bcb2c59afff",
+      "file": "deep_ep/include/deep_ep/impls/ep/dispatch.hpp",
+      "line": 155,
+      "fn": "simt_persistent_worker",
+      "url": "source.html?file=deep_ep%2Finclude%2Fdeep_ep%2Fimpls%2Fep%2Fdispatch.hpp&line=155",
+      "example": {
+        "preset": "cached",
+        "objectId": "R0.rank_histogram_sum_view",
+        "elementPath": [],
+        "step": 0,
+        "phase": "auto"
+      }
+    },
+    {
+      "commit": "3b25377d04b24fc6154698ded78a2bcb2c59afff",
+      "file": "csrc/buffers/ep.hpp",
+      "line": 205,
+      "fn": "EPBuffer::dispatch",
+      "url": "source.html?file=csrc%2Fbuffers%2Fep.hpp&line=205",
+      "example": {
+        "preset": "cached",
+        "objectId": "R0.psum_num_recv_tokens_per_rank",
+        "elementPath": [
+          0
+        ],
+        "step": 0,
+        "phase": "auto"
+      }
+    },
+    {
+      "commit": "3b25377d04b24fc6154698ded78a2bcb2c59afff",
+      "file": "csrc/buffers/ep.hpp",
+      "line": 208,
+      "fn": "EPBuffer::dispatch",
+      "url": "source.html?file=csrc%2Fbuffers%2Fep.hpp&line=208",
+      "example": {
+        "preset": "cached",
+        "objectId": "R0.psum_num_recv_tokens_per_expert",
+        "elementPath": [
+          0
+        ],
+        "step": 0,
+        "phase": "auto"
+      }
+    },
+    {
+      "commit": "3b25377d04b24fc6154698ded78a2bcb2c59afff",
+      "file": "csrc/buffers/ep.hpp",
+      "line": 211,
+      "fn": "EPBuffer::dispatch",
+      "url": "source.html?file=csrc%2Fbuffers%2Fep.hpp&line=211",
+      "example": {
+        "preset": "cached",
+        "objectId": "R0.num_unaligned_recv_tokens_per_expert",
+        "elementPath": [
+          0
+        ],
+        "step": 0,
+        "phase": "auto"
+      }
+    },
+    {
+      "commit": "3b25377d04b24fc6154698ded78a2bcb2c59afff",
+      "file": "deep_ep/include/deep_ep/impls/ep/dispatch.hpp",
+      "line": 140,
+      "fn": "simt_persistent_worker",
+      "url": "source.html?file=deep_ep%2Finclude%2Fdeep_ep%2Fimpls%2Fep%2Fdispatch.hpp&line=140",
+      "example": {
+        "preset": "cached",
+        "objectId": "R0.dst_buffer_slot_idx[0]",
+        "elementPath": [
+          0
+        ],
+        "step": 0,
+        "phase": "auto"
+      }
+    },
+    {
+      "commit": "3b25377d04b24fc6154698ded78a2bcb2c59afff",
+      "file": "csrc/buffers/ep.hpp",
+      "line": 340,
+      "fn": "EPBuffer::dispatch",
+      "url": "source.html?file=csrc%2Fbuffers%2Fep.hpp&line=340",
+      "example": {
+        "preset": "cached",
+        "objectId": "R0.recv_src_metadata[0]",
+        "elementPath": [
+          0
+        ],
+        "step": 0,
+        "phase": "auto"
+      }
+    },
+    {
+      "commit": "3b25377d04b24fc6154698ded78a2bcb2c59afff",
+      "file": "deep_ep/include/deep_ep/impls/ep/dispatch.hpp",
+      "line": 727,
+      "fn": "dispatch_impl",
+      "url": "source.html?file=deep_ep%2Finclude%2Fdeep_ep%2Fimpls%2Fep%2Fdispatch.hpp&line=727",
+      "example": {
+        "preset": "cached",
+        "objectId": "R0.metadata_send_buffer[0]",
+        "elementPath": [
+          "topk"
+        ],
+        "step": 2,
+        "phase": "auto"
+      }
+    },
+    {
+      "commit": "3b25377d04b24fc6154698ded78a2bcb2c59afff",
+      "file": "deep_ep/include/deep_ep/impls/ep/dispatch.hpp",
+      "line": 740,
+      "fn": "dispatch_impl",
+      "url": "source.html?file=deep_ep%2Finclude%2Fdeep_ep%2Fimpls%2Fep%2Fdispatch.hpp&line=740",
+      "example": {
+        "preset": "noWeights",
+        "objectId": "R0.metadata_send_buffer[0]",
+        "elementPath": [
+          "weights"
+        ],
+        "step": 7,
+        "phase": "auto"
+      }
+    }
+  ],
+  "issues": []
+}

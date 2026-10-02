@@ -1,0 +1,44 @@
+[
+  {
+    "model": "dispatch",
+    "status": "REWORK",
+    "reviewer": "independent-review",
+    "draft_author": "root-memory",
+    "revision": 2,
+    "draft_sha256": "533da008faed13882dc6c9836996053a779e7709eeedde7ea74be7386c15ebf9",
+    "required_changes": [
+      {
+        "path": "regions.*.evidence_lines + transfers.*.evidence_lines",
+        "issue": "上轮精确证据行号纠正尚未全部实际落盘；部分为空行/旁行/trace",
+        "change": "x改409/820；ub-meta635–640；ub-hidden814/818/831；remote-buffer402/681；db855/857；删除transfer remote-meta859、self-load828等无证据行"
+      }
+    ],
+    "unresolved": [],
+    "verified": [
+      "r1全部语义整改已对照源码确认",
+      "malloc/shared lifetime/cache/SQ/drain预算模型无新增问题",
+      "r2新增Scalar literal0/cached slot和expert-base输入已逐项对照"
+    ]
+  },
+  {
+    "model": "dispatch_copy_epilogue",
+    "status": "REWORK",
+    "reviewer": "independent-review",
+    "draft_author": "root-memory",
+    "revision": 2,
+    "draft_sha256": "533da008faed13882dc6c9836996053a779e7709eeedde7ea74be7386c15ebf9",
+    "required_changes": [
+      {
+        "path": "regions.*.evidence_lines + transfers.*.evidence_lines",
+        "issue": "上轮精确证据行号纠正尚未全部实际落盘；部分为空行/旁行/trace",
+        "change": "expert改253–256；metadata-ub260；zero261/436，依据冻结源码逐region校正"
+      }
+    ],
+    "unresolved": [],
+    "verified": [
+      "r1全部语义整改已对照源码确认",
+      "malloc/shared lifetime/cache/SQ/drain预算模型无新增问题",
+      "r2新增Scalar literal0/cached slot和expert-base输入已逐项对照"
+    ]
+  }
+]

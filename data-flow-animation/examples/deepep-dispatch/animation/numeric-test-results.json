@@ -1,0 +1,54 @@
+{
+  "hashes": {
+    "model.mjs": "567fc1e82f4c91dd09c481a05d7eee2b6ea850e6f155a541c1a3f1c95b633197",
+    "provenance.mjs": "6ac9d0f9ad90d2666d7d3d2ee639c570292ba0b9429a4b337d5d23e4f55befa8",
+    "numeric-ui.mjs": "432726a01acec95d1881cc1842f9d352dbe98f018cfb1679d7bbbda6efe9a648",
+    "app.mjs": "bfc8c966eda1f13f49126f3e5aa04f0609658ee151437638aa4c131e7fe23af4",
+    "style.css": "94a4bf33a948915d7fa377c6be54e21059e7143ea76c39d30acae684096427e0"
+  },
+  "queries": 2551866,
+  "assertions": 11510258,
+  "kinds": [
+    "rank_histogram_sum_view",
+    "expert_histogram_sum_view",
+    "psum_num_recv_tokens_per_rank",
+    "psum_num_recv_tokens_per_expert",
+    "num_unaligned_recv_tokens_per_expert",
+    "signals",
+    "epilogue_expert_counter",
+    "ub_expert_histogram",
+    "ub_rank_histogram",
+    "local_rank_histogram",
+    "x",
+    "topk_idx",
+    "topk_weights",
+    "dst_buffer_slot_idx",
+    "dst_gsge_idx",
+    "local_copy_dst_slot_idx",
+    "metadata_send_buffer",
+    "SQE",
+    "recv_buffer",
+    "recv_src_metadata",
+    "recv_x",
+    "recv_topk_weights",
+    "sf",
+    "recv_sf"
+  ],
+  "phases": [
+    "read-before",
+    "write-before",
+    "write-after"
+  ],
+  "presets": [
+    "mixed",
+    "concentrated",
+    "invalid",
+    "zero",
+    "fp8",
+    "cached",
+    "noWeights",
+    "uninitialized",
+    "empty"
+  ],
+  "note": "作者数值层覆盖与独立输入重算断言；独立review另存，不替代其结论"
+}

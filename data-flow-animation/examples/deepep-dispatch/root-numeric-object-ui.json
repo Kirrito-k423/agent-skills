@@ -1,0 +1,1302 @@
+{
+  "status": "PASS",
+  "checkedAt": "2026-10-02T03:45:33.399Z",
+  "deliveredHashes": {
+    "app.mjs": "bfc8c966eda1f13f49126f3e5aa04f0609658ee151437638aa4c131e7fe23af4",
+    "style.css": "94a4bf33a948915d7fa377c6be54e21059e7143ea76c39d30acae684096427e0",
+    "numeric-ui.mjs": "432726a01acec95d1881cc1842f9d352dbe98f018cfb1679d7bbbda6efe9a648",
+    "provenance.mjs": "6ac9d0f9ad90d2666d7d3d2ee639c570292ba0b9429a4b337d5d23e4f55befa8",
+    "model.mjs": "567fc1e82f4c91dd09c481a05d7eee2b6ea850e6f155a541c1a3f1c95b633197"
+  },
+  "viewport": [
+    1280,
+    720
+  ],
+  "checks": [
+    "full hidden element 255 has its own typed query; fixed modal tooltip closes by real click",
+    "SF pack explains its chosen raw bit pattern rather than a decoded scale",
+    "nested SQE field has exact operands; modal details are clickable and long explanation scrolls; first Escape preserves inspector",
+    "fixed numeric explanation opens its real source line in the complete frozen source page",
+    "newly published signal is red; retained same-value signal preserves its earlier producer and ordinary color",
+    "history row color distinguishes an untouched zero UB bucket from its newly incremented bucket",
+    "cached initial value exposes the prior Fresh-call operand scope in visible details",
+    "unwritten storage is explicitly explained as unknown rather than a zero",
+    "Fresh absent SF/weights and Cached omitted metadata fields are not described as inherited cached values",
+    "empty-input zero write has an explicit zero-contribution derivation"
+  ],
+  "samples": [
+    {
+      "name": "full inspector hidden element 255",
+      "record": {
+        "objectId": "R0.x[0]",
+        "elementPath": [
+          255
+        ],
+        "step": 0,
+        "displayPhase": "read-before",
+        "history": false,
+        "producerStep": -1,
+        "kind": "人为载荷",
+        "unit": "载荷元素",
+        "origin": "教学者选定的输入，非内核生成",
+        "operation": "人为选择输入",
+        "operands": [
+          {
+            "kind": "parameter",
+            "objectId": "@config.M",
+            "elementPath": [],
+            "value": 4,
+            "step": 0,
+            "phase": "initial",
+            "sourceRef": {
+              "commit": "3b25377d04b24fc6154698ded78a2bcb2c59afff",
+              "file": "deep_ep/include/deep_ep/layout/ep/token.hpp",
+              "line": 17,
+              "fn": "TokenLayout",
+              "url": "source.html?file=deep_ep%2Finclude%2Fdeep_ep%2Flayout%2Fep%2Ftoken.hpp&line=17"
+            }
+          },
+          {
+            "kind": "constant",
+            "name": "source rank",
+            "value": 0,
+            "sourceRef": {
+              "commit": "3b25377d04b24fc6154698ded78a2bcb2c59afff",
+              "file": "deep_ep/buffers/ep.py",
+              "line": 342,
+              "fn": "EPBuffer.dispatch",
+              "url": "source.html?file=deep_ep%2Fbuffers%2Fep.py&line=342"
+            }
+          },
+          {
+            "kind": "constant",
+            "name": "token index",
+            "value": 0,
+            "sourceRef": {
+              "commit": "3b25377d04b24fc6154698ded78a2bcb2c59afff",
+              "file": "deep_ep/buffers/ep.py",
+              "line": 342,
+              "fn": "EPBuffer.dispatch",
+              "url": "source.html?file=deep_ep%2Fbuffers%2Fep.py&line=342"
+            }
+          },
+          {
+            "kind": "constant",
+            "name": "hidden element index",
+            "value": 255,
+            "sourceRef": {
+              "commit": "3b25377d04b24fc6154698ded78a2bcb2c59afff",
+              "file": "deep_ep/buffers/ep.py",
+              "line": 342,
+              "fn": "EPBuffer.dispatch",
+              "url": "source.html?file=deep_ep%2Fbuffers%2Fep.py&line=342"
+            }
+          }
+        ],
+        "calculation": [
+          "本预设仅将R0 token0（global_idx=0）的完整hidden向量人为设为0，其他token按下述生成公式取值。该元素x[0,255]=0；有效0不是未写入。",
+          "此处只解释输入取值，不冒充内核计算或实测数据。",
+          "本步 读取前 值=0；生产事件仍是初始状态，不能使用本步写后值。"
+        ],
+        "result": 0,
+        "sourceRef": {
+          "commit": "3b25377d04b24fc6154698ded78a2bcb2c59afff",
+          "file": "animation/model.mjs",
+          "line": 14,
+          "fn": "buildModel（教学者选择输入）",
+          "url": "model.mjs",
+          "kind": "teaching-input"
+        },
+        "contributions": [],
+        "arrayMeaning": "逻辑 shape=[256]；元素路径 [255]。方括号表示数组元素列表，非数值区间。",
+        "computed": 0,
+        "derivation": {
+          "computed": 0,
+          "operation": "人为选择输入",
+          "operands": [
+            {
+              "kind": "parameter",
+              "objectId": "@config.M",
+              "elementPath": [],
+              "value": 4,
+              "step": 0,
+              "phase": "initial",
+              "sourceRef": {
+                "commit": "3b25377d04b24fc6154698ded78a2bcb2c59afff",
+                "file": "deep_ep/include/deep_ep/layout/ep/token.hpp",
+                "line": 17,
+                "fn": "TokenLayout",
+                "url": "source.html?file=deep_ep%2Finclude%2Fdeep_ep%2Flayout%2Fep%2Ftoken.hpp&line=17"
+              }
+            },
+            {
+              "kind": "constant",
+              "name": "source rank",
+              "value": 0,
+              "sourceRef": {
+                "commit": "3b25377d04b24fc6154698ded78a2bcb2c59afff",
+                "file": "deep_ep/buffers/ep.py",
+                "line": 342,
+                "fn": "EPBuffer.dispatch",
+                "url": "source.html?file=deep_ep%2Fbuffers%2Fep.py&line=342"
+              }
+            },
+            {
+              "kind": "constant",
+              "name": "token index",
+              "value": 0,
+              "sourceRef": {
+                "commit": "3b25377d04b24fc6154698ded78a2bcb2c59afff",
+                "file": "deep_ep/buffers/ep.py",
+                "line": 342,
+                "fn": "EPBuffer.dispatch",
+                "url": "source.html?file=deep_ep%2Fbuffers%2Fep.py&line=342"
+              }
+            },
+            {
+              "kind": "constant",
+              "name": "hidden element index",
+              "value": 255,
+              "sourceRef": {
+                "commit": "3b25377d04b24fc6154698ded78a2bcb2c59afff",
+                "file": "deep_ep/buffers/ep.py",
+                "line": 342,
+                "fn": "EPBuffer.dispatch",
+                "url": "source.html?file=deep_ep%2Fbuffers%2Fep.py&line=342"
+              }
+            }
+          ]
+        },
+        "implementationRef": {
+          "commit": "3b25377d04b24fc6154698ded78a2bcb2c59afff",
+          "file": "deep_ep/buffers/ep.py",
+          "line": 342,
+          "fn": "EPBuffer.dispatch",
+          "url": "source.html?file=deep_ep%2Fbuffers%2Fep.py&line=342"
+        },
+        "actor": "教学输入 / 源码初始化"
+      },
+      "text": "R0.x[0][255] = 0\n×\n\n人为载荷 · 单位：载荷元素 · read-before\n\n逻辑 shape=[256]；元素路径 [255]。方括号表示数组元素列表，非数值区间。\n\n来源：教学者选定的输入，非内核生成。生产：初始状态；教学输入 / 源码初始化。\n\n人为选择输入\n\n本预设仅将R0 token0（global_idx=0）的完整hidden向量人为设为0，其他token按下述生成公式取值。该元素x[0,255]=0；有效0不是未写入。\n\n此处只解释输入取值，不冒充内核计算或实测数据。\n\n本步 读取前 值=0；生产事件仍是初始状态，不能使用本步写后值。\n\n实际操作数 / 身份\n\nanimation/model.mjs:14 · buildModel（教学者选择输入）\n\n悬浮 / 聚焦查看；点击或 Enter 固定；Esc关闭"
+    },
+    {
+      "name": "FP8 SF pack 7 raw bits",
+      "record": {
+        "objectId": "R0.sf[0]",
+        "elementPath": [
+          7
+        ],
+        "step": 0,
+        "displayPhase": "observe",
+        "history": false,
+        "producerStep": -1,
+        "kind": "数值",
+        "unit": "int16 pack位模式",
+        "origin": "人为选择的SF pack原始位模式",
+        "operation": "人为位模式输入",
+        "operands": [
+          {
+            "kind": "constant",
+            "name": "人工SF基位模式0x3c00",
+            "value": 15360,
+            "sourceRef": {
+              "commit": "3b25377d04b24fc6154698ded78a2bcb2c59afff",
+              "file": "deep_ep/include/deep_ep/impls/ep/dispatch.hpp",
+              "line": 701,
+              "fn": "dispatch_impl",
+              "url": "source.html?file=deep_ep%2Finclude%2Fdeep_ep%2Fimpls%2Fep%2Fdispatch.hpp&line=701"
+            }
+          },
+          {
+            "kind": "constant",
+            "name": "pack index",
+            "value": 7,
+            "sourceRef": {
+              "commit": "3b25377d04b24fc6154698ded78a2bcb2c59afff",
+              "file": "deep_ep/include/deep_ep/impls/ep/dispatch.hpp",
+              "line": 701,
+              "fn": "dispatch_impl",
+              "url": "source.html?file=deep_ep%2Finclude%2Fdeep_ep%2Fimpls%2Fep%2Fdispatch.hpp&line=701"
+            }
+          }
+        ],
+        "calculation": [
+          "SF[7]=0x3c00+7；0x3c00=3×4096+12×256=15360；15360+7=15367（0x3c07）。仅按sf_pack_t=int16搬运，未解码scale。"
+        ],
+        "result": 15367,
+        "sourceRef": {
+          "commit": "3b25377d04b24fc6154698ded78a2bcb2c59afff",
+          "file": "animation/model.mjs",
+          "line": 15,
+          "fn": "buildModel（教学者选择输入）",
+          "url": "model.mjs",
+          "kind": "teaching-input"
+        },
+        "contributions": [],
+        "arrayMeaning": "逻辑 shape=[8]；元素路径 [7]。方括号表示数组元素列表，非数值区间。",
+        "computed": 15367,
+        "derivation": {
+          "computed": 15367,
+          "operation": "人为位模式输入",
+          "operands": [
+            {
+              "kind": "constant",
+              "name": "人工SF基位模式0x3c00",
+              "value": 15360,
+              "sourceRef": {
+                "commit": "3b25377d04b24fc6154698ded78a2bcb2c59afff",
+                "file": "deep_ep/include/deep_ep/impls/ep/dispatch.hpp",
+                "line": 701,
+                "fn": "dispatch_impl",
+                "url": "source.html?file=deep_ep%2Finclude%2Fdeep_ep%2Fimpls%2Fep%2Fdispatch.hpp&line=701"
+              }
+            },
+            {
+              "kind": "constant",
+              "name": "pack index",
+              "value": 7,
+              "sourceRef": {
+                "commit": "3b25377d04b24fc6154698ded78a2bcb2c59afff",
+                "file": "deep_ep/include/deep_ep/impls/ep/dispatch.hpp",
+                "line": 701,
+                "fn": "dispatch_impl",
+                "url": "source.html?file=deep_ep%2Finclude%2Fdeep_ep%2Fimpls%2Fep%2Fdispatch.hpp&line=701"
+              }
+            }
+          ]
+        },
+        "implementationRef": {
+          "commit": "3b25377d04b24fc6154698ded78a2bcb2c59afff",
+          "file": "deep_ep/include/deep_ep/impls/ep/dispatch.hpp",
+          "line": 701,
+          "fn": "dispatch_impl",
+          "url": "source.html?file=deep_ep%2Finclude%2Fdeep_ep%2Fimpls%2Fep%2Fdispatch.hpp&line=701"
+        },
+        "actor": "教学输入 / 源码初始化"
+      },
+      "text": "R0.sf[0][7] = 15367\n×\n\n数值 · 单位：int16 pack位模式 · observe\n\n逻辑 shape=[8]；元素路径 [7]。方括号表示数组元素列表，非数值区间。\n\n来源：人为选择的SF pack原始位模式。生产：初始状态；教学输入 / 源码初始化。\n\n人为位模式输入\n\nSF[7]=0x3c00+7；0x3c00=3×4096+12×256=15360；15360+7=15367（0x3c07）。仅按sf_pack_t=int16搬运，未解码scale。\n\n实际操作数 / 身份\n\nanimation/model.mjs:15 · buildModel（教学者选择输入）\n\n悬浮 / 聚焦查看；点击或 Enter 固定；Esc关闭"
+    },
+    {
+      "name": "nested SQE hidden SGE bytes",
+      "record": {
+        "objectId": "R0.SQE[2]",
+        "elementPath": [
+          0,
+          "SGEs",
+          0,
+          "bytes"
+        ],
+        "step": 12,
+        "displayPhase": "write-after",
+        "history": false,
+        "producerStep": 12,
+        "kind": "URMA命令字段",
+        "unit": "字节",
+        "origin": "本轮源码生产事件",
+        "operation": "构造SQE/SGE字段",
+        "operands": [
+          {
+            "objectId": "R0.topk_idx[0]",
+            "elementPath": [],
+            "value": [
+              0,
+              1
+            ],
+            "step": 12,
+            "phase": "source-before-producer",
+            "scope": "current-call"
+          },
+          {
+            "objectId": "R0.topk_idx[1]",
+            "elementPath": [],
+            "value": [
+              2,
+              3
+            ],
+            "step": 12,
+            "phase": "source-before-producer",
+            "scope": "current-call"
+          },
+          {
+            "objectId": "R0.topk_idx[2]",
+            "elementPath": [],
+            "value": [
+              4,
+              6
+            ],
+            "step": 12,
+            "phase": "source-before-producer",
+            "scope": "current-call"
+          },
+          {
+            "kind": "parameter",
+            "objectId": "@config.M",
+            "elementPath": [],
+            "value": 4,
+            "step": 0,
+            "phase": "initial",
+            "sourceRef": {
+              "commit": "3b25377d04b24fc6154698ded78a2bcb2c59afff",
+              "file": "deep_ep/include/deep_ep/layout/ep/token.hpp",
+              "line": 17,
+              "fn": "TokenLayout",
+              "url": "source.html?file=deep_ep%2Finclude%2Fdeep_ep%2Flayout%2Fep%2Ftoken.hpp&line=17"
+            }
+          },
+          {
+            "kind": "parameter",
+            "objectId": "@config.tokenBytes",
+            "elementPath": [],
+            "value": 352,
+            "step": 0,
+            "phase": "initial",
+            "sourceRef": {
+              "commit": "3b25377d04b24fc6154698ded78a2bcb2c59afff",
+              "file": "deep_ep/include/deep_ep/layout/ep/token.hpp",
+              "line": 17,
+              "fn": "TokenLayout",
+              "url": "source.html?file=deep_ep%2Finclude%2Fdeep_ep%2Flayout%2Fep%2Ftoken.hpp&line=17"
+            }
+          },
+          {
+            "kind": "parameter",
+            "objectId": "@config.hiddenBytes",
+            "elementPath": [],
+            "value": 256,
+            "step": 0,
+            "phase": "initial",
+            "sourceRef": {
+              "commit": "3b25377d04b24fc6154698ded78a2bcb2c59afff",
+              "file": "deep_ep/include/deep_ep/layout/ep/token.hpp",
+              "line": 17,
+              "fn": "TokenLayout",
+              "url": "source.html?file=deep_ep%2Finclude%2Fdeep_ep%2Flayout%2Fep%2Ftoken.hpp&line=17"
+            }
+          },
+          {
+            "kind": "parameter",
+            "objectId": "@config.metadataBytes",
+            "elementPath": [],
+            "value": 96,
+            "step": 0,
+            "phase": "initial",
+            "sourceRef": {
+              "commit": "3b25377d04b24fc6154698ded78a2bcb2c59afff",
+              "file": "deep_ep/include/deep_ep/layout/ep/token.hpp",
+              "line": 17,
+              "fn": "TokenLayout",
+              "url": "source.html?file=deep_ep%2Finclude%2Fdeep_ep%2Flayout%2Fep%2Ftoken.hpp&line=17"
+            }
+          },
+          {
+            "kind": "constant",
+            "name": "SQE header bytes",
+            "value": 48,
+            "sourceRef": {
+              "commit": "3b25377d04b24fc6154698ded78a2bcb2c59afff",
+              "file": "deep_ep/include/deep_ep/impls/ep/dispatch.hpp",
+              "line": 407,
+              "fn": "simt_persistent_worker",
+              "url": "source.html?file=deep_ep%2Finclude%2Fdeep_ep%2Fimpls%2Fep%2Fdispatch.hpp&line=407"
+            }
+          },
+          {
+            "kind": "constant",
+            "name": "SGE bytes",
+            "value": 16,
+            "sourceRef": {
+              "commit": "3b25377d04b24fc6154698ded78a2bcb2c59afff",
+              "file": "deep_ep/include/deep_ep/impls/ep/dispatch.hpp",
+              "line": 407,
+              "fn": "simt_persistent_worker",
+              "url": "source.html?file=deep_ep%2Finclude%2Fdeep_ep%2Fimpls%2Fep%2Fdispatch.hpp&line=407"
+            }
+          },
+          {
+            "kind": "constant",
+            "name": "WQEBB bytes",
+            "value": 64,
+            "sourceRef": {
+              "commit": "3b25377d04b24fc6154698ded78a2bcb2c59afff",
+              "file": "deep_ep/include/deep_ep/impls/ep/dispatch.hpp",
+              "line": 407,
+              "fn": "simt_persistent_worker",
+              "url": "source.html?file=deep_ep%2Finclude%2Fdeep_ep%2Fimpls%2Fep%2Fdispatch.hpp&line=407"
+            }
+          },
+          {
+            "kind": "constant",
+            "name": "reserved WQEBBs",
+            "value": 4,
+            "sourceRef": {
+              "commit": "3b25377d04b24fc6154698ded78a2bcb2c59afff",
+              "file": "deep_ep/include/deep_ep/impls/ep/dispatch.hpp",
+              "line": 407,
+              "fn": "simt_persistent_worker",
+              "url": "source.html?file=deep_ep%2Finclude%2Fdeep_ep%2Fimpls%2Fep%2Fdispatch.hpp&line=407"
+            }
+          },
+          {
+            "kind": "constant",
+            "name": "physical SQE chosen linearization",
+            "value": 0,
+            "sourceRef": {
+              "commit": "3b25377d04b24fc6154698ded78a2bcb2c59afff",
+              "file": "deep_ep/include/deep_ep/impls/ep/dispatch.hpp",
+              "line": 407,
+              "fn": "simt_persistent_worker",
+              "url": "source.html?file=deep_ep%2Finclude%2Fdeep_ep%2Fimpls%2Fep%2Fdispatch.hpp&line=407"
+            }
+          }
+        ],
+        "calculation": [
+          "hidden_bytes=H×element_size=256×1=256B。"
+        ],
+        "result": 256,
+        "sourceRef": {
+          "commit": "3b25377d04b24fc6154698ded78a2bcb2c59afff",
+          "file": "deep_ep/include/deep_ep/impls/ep/dispatch.hpp",
+          "line": 407,
+          "fn": "simt_persistent_worker",
+          "url": "source.html?file=deep_ep%2Finclude%2Fdeep_ep%2Fimpls%2Fep%2Fdispatch.hpp&line=407"
+        },
+        "contributions": [],
+        "arrayMeaning": "逻辑 shape=[4]；元素路径 [0,\"SGEs\",0,\"bytes\"]。方括号表示数组元素列表，非数值区间。",
+        "computed": 256,
+        "derivation": {
+          "computed": 256,
+          "operation": "构造SQE/SGE字段",
+          "operands": [
+            {
+              "objectId": "R0.topk_idx[0]",
+              "elementPath": [],
+              "value": [
+                0,
+                1
+              ],
+              "step": 12,
+              "phase": "source-before-producer",
+              "scope": "current-call"
+            },
+            {
+              "objectId": "R0.topk_idx[1]",
+              "elementPath": [],
+              "value": [
+                2,
+                3
+              ],
+              "step": 12,
+              "phase": "source-before-producer",
+              "scope": "current-call"
+            },
+            {
+              "objectId": "R0.topk_idx[2]",
+              "elementPath": [],
+              "value": [
+                4,
+                6
+              ],
+              "step": 12,
+              "phase": "source-before-producer",
+              "scope": "current-call"
+            },
+            {
+              "kind": "parameter",
+              "objectId": "@config.M",
+              "elementPath": [],
+              "value": 4,
+              "step": 0,
+              "phase": "initial",
+              "sourceRef": {
+                "commit": "3b25377d04b24fc6154698ded78a2bcb2c59afff",
+                "file": "deep_ep/include/deep_ep/layout/ep/token.hpp",
+                "line": 17,
+                "fn": "TokenLayout",
+                "url": "source.html?file=deep_ep%2Finclude%2Fdeep_ep%2Flayout%2Fep%2Ftoken.hpp&line=17"
+              }
+            },
+            {
+              "kind": "parameter",
+              "objectId": "@config.tokenBytes",
+              "elementPath": [],
+              "value": 352,
+              "step": 0,
+              "phase": "initial",
+              "sourceRef": {
+                "commit": "3b25377d04b24fc6154698ded78a2bcb2c59afff",
+                "file": "deep_ep/include/deep_ep/layout/ep/token.hpp",
+                "line": 17,
+                "fn": "TokenLayout",
+                "url": "source.html?file=deep_ep%2Finclude%2Fdeep_ep%2Flayout%2Fep%2Ftoken.hpp&line=17"
+              }
+            },
+            {
+              "kind": "parameter",
+              "objectId": "@config.hiddenBytes",
+              "elementPath": [],
+              "value": 256,
+              "step": 0,
+              "phase": "initial",
+              "sourceRef": {
+                "commit": "3b25377d04b24fc6154698ded78a2bcb2c59afff",
+                "file": "deep_ep/include/deep_ep/layout/ep/token.hpp",
+                "line": 17,
+                "fn": "TokenLayout",
+                "url": "source.html?file=deep_ep%2Finclude%2Fdeep_ep%2Flayout%2Fep%2Ftoken.hpp&line=17"
+              }
+            },
+            {
+              "kind": "parameter",
+              "objectId": "@config.metadataBytes",
+              "elementPath": [],
+              "value": 96,
+              "step": 0,
+              "phase": "initial",
+              "sourceRef": {
+                "commit": "3b25377d04b24fc6154698ded78a2bcb2c59afff",
+                "file": "deep_ep/include/deep_ep/layout/ep/token.hpp",
+                "line": 17,
+                "fn": "TokenLayout",
+                "url": "source.html?file=deep_ep%2Finclude%2Fdeep_ep%2Flayout%2Fep%2Ftoken.hpp&line=17"
+              }
+            },
+            {
+              "kind": "constant",
+              "name": "SQE header bytes",
+              "value": 48,
+              "sourceRef": {
+                "commit": "3b25377d04b24fc6154698ded78a2bcb2c59afff",
+                "file": "deep_ep/include/deep_ep/impls/ep/dispatch.hpp",
+                "line": 407,
+                "fn": "simt_persistent_worker",
+                "url": "source.html?file=deep_ep%2Finclude%2Fdeep_ep%2Fimpls%2Fep%2Fdispatch.hpp&line=407"
+              }
+            },
+            {
+              "kind": "constant",
+              "name": "SGE bytes",
+              "value": 16,
+              "sourceRef": {
+                "commit": "3b25377d04b24fc6154698ded78a2bcb2c59afff",
+                "file": "deep_ep/include/deep_ep/impls/ep/dispatch.hpp",
+                "line": 407,
+                "fn": "simt_persistent_worker",
+                "url": "source.html?file=deep_ep%2Finclude%2Fdeep_ep%2Fimpls%2Fep%2Fdispatch.hpp&line=407"
+              }
+            },
+            {
+              "kind": "constant",
+              "name": "WQEBB bytes",
+              "value": 64,
+              "sourceRef": {
+                "commit": "3b25377d04b24fc6154698ded78a2bcb2c59afff",
+                "file": "deep_ep/include/deep_ep/impls/ep/dispatch.hpp",
+                "line": 407,
+                "fn": "simt_persistent_worker",
+                "url": "source.html?file=deep_ep%2Finclude%2Fdeep_ep%2Fimpls%2Fep%2Fdispatch.hpp&line=407"
+              }
+            },
+            {
+              "kind": "constant",
+              "name": "reserved WQEBBs",
+              "value": 4,
+              "sourceRef": {
+                "commit": "3b25377d04b24fc6154698ded78a2bcb2c59afff",
+                "file": "deep_ep/include/deep_ep/impls/ep/dispatch.hpp",
+                "line": 407,
+                "fn": "simt_persistent_worker",
+                "url": "source.html?file=deep_ep%2Finclude%2Fdeep_ep%2Fimpls%2Fep%2Fdispatch.hpp&line=407"
+              }
+            },
+            {
+              "kind": "constant",
+              "name": "physical SQE chosen linearization",
+              "value": 0,
+              "sourceRef": {
+                "commit": "3b25377d04b24fc6154698ded78a2bcb2c59afff",
+                "file": "deep_ep/include/deep_ep/impls/ep/dispatch.hpp",
+                "line": 407,
+                "fn": "simt_persistent_worker",
+                "url": "source.html?file=deep_ep%2Finclude%2Fdeep_ep%2Fimpls%2Fep%2Fdispatch.hpp&line=407"
+              }
+            }
+          ]
+        },
+        "before": "未写入",
+        "after": 256,
+        "transition": "\"未写入\" → 256",
+        "actor": "R0–R3 / AIV 0–3 / warp lanes"
+      },
+      "text": "R0.SQE[2][0].SGEs[0].bytes = 256\n×\n\nURMA命令字段 · 单位：字节 · write-after\n\n逻辑 shape=[4]；元素路径 [0,\"SGEs\",0,\"bytes\"]。方括号表示数组元素列表，非数值区间。\n\n来源：本轮源码生产事件。生产：步骤 12；R0–R3 / AIV 0–3 / warp lanes。\n\n构造SQE/SGE字段 · \"未写入\" → 256\n\nhidden_bytes=H×element_size=256×1=256B。\n\n实际操作数 / 身份\n\ndeep_ep/include/deep_ep/impls/ep/dispatch.hpp:407 · simt_persistent_worker\n\n悬浮 / 聚焦查看；点击或 Enter 固定；Esc关闭"
+    },
+    {
+      "name": "new metadata ready signal",
+      "record": {
+        "objectId": "R0.signals",
+        "elementPath": [
+          "metadata_ready"
+        ],
+        "step": 11,
+        "displayPhase": "write-after",
+        "history": false,
+        "producerStep": 11,
+        "kind": "同步/提交状态",
+        "unit": "状态码",
+        "origin": "本轮源码生产事件",
+        "operation": "条件发布 / 状态转移",
+        "operands": [
+          {
+            "kind": "constant",
+            "name": "ready发布值",
+            "value": 1,
+            "sourceRef": {
+              "commit": "3b25377d04b24fc6154698ded78a2bcb2c59afff",
+              "file": "deep_ep/include/deep_ep/impls/ep/dispatch.hpp",
+              "line": 801,
+              "fn": "dispatch_impl",
+              "url": "source.html?file=deep_ep%2Finclude%2Fdeep_ep%2Fimpls%2Fep%2Fdispatch.hpp&line=801"
+            }
+          },
+          {
+            "kind": "event",
+            "name": "生产条件",
+            "value": "metadata_ready 发布：所有metadata已写GM",
+            "step": 11,
+            "sourceRef": {
+              "commit": "3b25377d04b24fc6154698ded78a2bcb2c59afff",
+              "file": "deep_ep/include/deep_ep/impls/ep/dispatch.hpp",
+              "line": 801,
+              "fn": "dispatch_impl",
+              "url": "source.html?file=deep_ep%2Finclude%2Fdeep_ep%2Fimpls%2Fep%2Fdispatch.hpp&line=801"
+            }
+          }
+        ],
+        "calculation": [
+          "metadata_ready=1：MTE3 metadata flush完成后MTE2→S汇合，发布可供SIMT读取。"
+        ],
+        "result": 1,
+        "sourceRef": {
+          "commit": "3b25377d04b24fc6154698ded78a2bcb2c59afff",
+          "file": "deep_ep/include/deep_ep/impls/ep/dispatch.hpp",
+          "line": 801,
+          "fn": "dispatch_impl",
+          "url": "source.html?file=deep_ep%2Finclude%2Fdeep_ep%2Fimpls%2Fep%2Fdispatch.hpp&line=801"
+        },
+        "contributions": [],
+        "arrayMeaning": "标量字段",
+        "computed": 1,
+        "derivation": {
+          "computed": 1,
+          "operation": "条件发布 / 状态转移",
+          "operands": [
+            {
+              "kind": "constant",
+              "name": "ready发布值",
+              "value": 1,
+              "sourceRef": {
+                "commit": "3b25377d04b24fc6154698ded78a2bcb2c59afff",
+                "file": "deep_ep/include/deep_ep/impls/ep/dispatch.hpp",
+                "line": 801,
+                "fn": "dispatch_impl",
+                "url": "source.html?file=deep_ep%2Finclude%2Fdeep_ep%2Fimpls%2Fep%2Fdispatch.hpp&line=801"
+              }
+            },
+            {
+              "kind": "event",
+              "name": "生产条件",
+              "value": "metadata_ready 发布：所有metadata已写GM",
+              "step": 11,
+              "sourceRef": {
+                "commit": "3b25377d04b24fc6154698ded78a2bcb2c59afff",
+                "file": "deep_ep/include/deep_ep/impls/ep/dispatch.hpp",
+                "line": 801,
+                "fn": "dispatch_impl",
+                "url": "source.html?file=deep_ep%2Finclude%2Fdeep_ep%2Fimpls%2Fep%2Fdispatch.hpp&line=801"
+              }
+            }
+          ]
+        },
+        "before": 0,
+        "after": 1,
+        "transition": "0 → 1",
+        "actor": "R0–R3 / 每个AIV scalar"
+      },
+      "text": "R0.signals.metadata_ready = 1\n×\n\n同步/提交状态 · 单位：状态码 · write-after\n\n标量字段\n\n来源：本轮源码生产事件。生产：步骤 11；R0–R3 / 每个AIV scalar。\n\n条件发布 / 状态转移 · 0 → 1\n\nmetadata_ready=1：MTE3 metadata flush完成后MTE2→S汇合，发布可供SIMT读取。\n\n实际操作数 / 身份\n\ndeep_ep/include/deep_ep/impls/ep/dispatch.hpp:801 · dispatch_impl\n\n悬浮 / 聚焦查看；点击或 Enter 固定；Esc关闭"
+    },
+    {
+      "name": "retained local ready signal",
+      "record": {
+        "objectId": "R0.signals",
+        "elementPath": [
+          "local_copy_ready"
+        ],
+        "step": 11,
+        "displayPhase": "write-after",
+        "history": false,
+        "producerStep": 6,
+        "kind": "同步/提交状态",
+        "unit": "状态码",
+        "origin": "本轮源码生产事件",
+        "operation": "保留字段；非本步写操作",
+        "operands": [
+          {
+            "kind": "constant",
+            "name": "ready发布值",
+            "value": 1,
+            "sourceRef": {
+              "commit": "3b25377d04b24fc6154698ded78a2bcb2c59afff",
+              "file": "deep_ep/include/deep_ep/impls/ep/dispatch.hpp",
+              "line": 298,
+              "fn": "simt_persistent_worker",
+              "url": "source.html?file=deep_ep%2Finclude%2Fdeep_ep%2Fimpls%2Fep%2Fdispatch.hpp&line=298"
+            }
+          },
+          {
+            "kind": "event",
+            "name": "生产条件",
+            "value": "分配 dst_buffer_slot_idx / dst_gsge_idx",
+            "step": 6,
+            "sourceRef": {
+              "commit": "3b25377d04b24fc6154698ded78a2bcb2c59afff",
+              "file": "deep_ep/include/deep_ep/impls/ep/dispatch.hpp",
+              "line": 298,
+              "fn": "simt_persistent_worker",
+              "url": "source.html?file=deep_ep%2Finclude%2Fdeep_ep%2Fimpls%2Fep%2Fdispatch.hpp&line=298"
+            }
+          }
+        ],
+        "calculation": [
+          "local_copy_ready=1：SIMT槽位计算完成后发布；scalar等待1才读local slot。",
+          "本帧只替换聚合对象其他字段；此字段沿用真正生产步骤，不伪称同值写入。"
+        ],
+        "result": 1,
+        "sourceRef": {
+          "commit": "3b25377d04b24fc6154698ded78a2bcb2c59afff",
+          "file": "deep_ep/include/deep_ep/impls/ep/dispatch.hpp",
+          "line": 298,
+          "fn": "simt_persistent_worker",
+          "url": "source.html?file=deep_ep%2Finclude%2Fdeep_ep%2Fimpls%2Fep%2Fdispatch.hpp&line=298"
+        },
+        "contributions": [],
+        "arrayMeaning": "标量字段",
+        "computed": 1,
+        "derivation": {
+          "computed": 1,
+          "operation": "条件发布 / 状态转移",
+          "operands": [
+            {
+              "kind": "constant",
+              "name": "ready发布值",
+              "value": 1,
+              "sourceRef": {
+                "commit": "3b25377d04b24fc6154698ded78a2bcb2c59afff",
+                "file": "deep_ep/include/deep_ep/impls/ep/dispatch.hpp",
+                "line": 298,
+                "fn": "simt_persistent_worker",
+                "url": "source.html?file=deep_ep%2Finclude%2Fdeep_ep%2Fimpls%2Fep%2Fdispatch.hpp&line=298"
+              }
+            },
+            {
+              "kind": "event",
+              "name": "生产条件",
+              "value": "分配 dst_buffer_slot_idx / dst_gsge_idx",
+              "step": 6,
+              "sourceRef": {
+                "commit": "3b25377d04b24fc6154698ded78a2bcb2c59afff",
+                "file": "deep_ep/include/deep_ep/impls/ep/dispatch.hpp",
+                "line": 298,
+                "fn": "simt_persistent_worker",
+                "url": "source.html?file=deep_ep%2Finclude%2Fdeep_ep%2Fimpls%2Fep%2Fdispatch.hpp&line=298"
+              }
+            }
+          ]
+        },
+        "before": 1,
+        "after": 1,
+        "transition": "1 → 1",
+        "actor": "R0–R3 / AIV 0–3"
+      },
+      "text": "R0.signals.local_copy_ready = 1\n×\n\n同步/提交状态 · 单位：状态码 · write-after\n\n标量字段\n\n来源：本轮源码生产事件。生产：步骤 6；R0–R3 / AIV 0–3。\n\n保留字段；非本步写操作 · 1 → 1\n\nlocal_copy_ready=1：SIMT槽位计算完成后发布；scalar等待1才读local slot。\n\n本帧只替换聚合对象其他字段；此字段沿用真正生产步骤，不伪称同值写入。\n\n实际操作数 / 身份\n\ndeep_ep/include/deep_ep/impls/ep/dispatch.hpp:298 · simt_persistent_worker\n\n悬浮 / 聚焦查看；点击或 Enter 固定；Esc关闭"
+    },
+    {
+      "name": "unhit UB bucket in current history row",
+      "record": {
+        "objectId": "R0.ub_rank_histogram[0]",
+        "elementPath": [
+          3
+        ],
+        "step": 1,
+        "displayPhase": "write-after",
+        "history": true,
+        "producerStep": -1,
+        "kind": "数值",
+        "unit": "状态或计数",
+        "origin": "源码初始化 / workspace初始清零",
+        "operation": "保留初始化；本步未对该元素写入",
+        "operands": [],
+        "calculation": [
+          "初始值 0：计数器尚未计入任何token。没有加法贡献事件。",
+          "该UB bucket本步无匹配贡献，没有原子写操作；沿用初始化0，模型整数组统计记录不代表真实同值写0。"
+        ],
+        "result": 0,
+        "sourceRef": {
+          "commit": "3b25377d04b24fc6154698ded78a2bcb2c59afff",
+          "file": "deep_ep/include/deep_ep/impls/ep/dispatch.hpp",
+          "line": 123,
+          "fn": "simt_persistent_worker",
+          "url": "source.html?file=deep_ep%2Finclude%2Fdeep_ep%2Fimpls%2Fep%2Fdispatch.hpp&line=123"
+        },
+        "contributions": [],
+        "arrayMeaning": "逻辑 shape=[4]；元素路径 [3]。方括号表示数组元素列表，非数值区间。",
+        "computed": 0,
+        "derivation": {
+          "computed": 0,
+          "operation": "源码/教学初始化",
+          "operands": []
+        },
+        "before": 0,
+        "after": 0,
+        "transition": "0 → 0",
+        "actor": "教学输入 / 源码初始化"
+      },
+      "text": "R0.ub_rank_histogram[0][3] = 0\n×\n\n数值 · 单位：状态或计数 · write-after · 历史时刻\n\n逻辑 shape=[4]；元素路径 [3]。方括号表示数组元素列表，非数值区间。\n\n来源：源码初始化 / workspace初始清零。生产：初始状态；教学输入 / 源码初始化。\n\n保留初始化；本步未对该元素写入 · 0 → 0\n\n初始值 0：计数器尚未计入任何token。没有加法贡献事件。\n\n该UB bucket本步无匹配贡献，没有原子写操作；沿用初始化0，模型整数组统计记录不代表真实同值写0。\n\ndeep_ep/include/deep_ep/impls/ep/dispatch.hpp:123 · simt_persistent_worker\n\n悬浮 / 聚焦查看；点击或 Enter 固定；Esc关闭"
+    },
+    {
+      "name": "cached initial prefix",
+      "record": {
+        "objectId": "R0.psum_num_recv_tokens_per_rank",
+        "elementPath": [
+          0
+        ],
+        "step": 0,
+        "displayPhase": "observe",
+        "history": false,
+        "producerStep": -1,
+        "kind": "数值",
+        "unit": "接收记录条数",
+        "origin": "前一次 fresh 调用的 handle 缓存继承；路由/容量/核数保持不变",
+        "operation": "缓存继承；复用上次fresh布局",
+        "operands": [
+          {
+            "objectId": "R0.topk_idx[0]",
+            "elementPath": [],
+            "value": [
+              0,
+              1
+            ],
+            "step": 0,
+            "phase": "previous-fresh-input",
+            "scope": "previous-fresh"
+          },
+          {
+            "objectId": "R0.topk_idx[1]",
+            "elementPath": [],
+            "value": [
+              2,
+              3
+            ],
+            "step": 0,
+            "phase": "previous-fresh-input",
+            "scope": "previous-fresh"
+          },
+          {
+            "objectId": "R0.topk_idx[2]",
+            "elementPath": [],
+            "value": [
+              4,
+              6
+            ],
+            "step": 0,
+            "phase": "previous-fresh-input",
+            "scope": "previous-fresh"
+          },
+          {
+            "objectId": "R0.topk_idx[3]",
+            "elementPath": [],
+            "value": [
+              -1,
+              0
+            ],
+            "step": 0,
+            "phase": "previous-fresh-input",
+            "scope": "previous-fresh"
+          }
+        ],
+        "calculation": [
+          "以下推导是上次fresh生产该缓存的依据，本轮不重新执行路由/count/slot计算。",
+          "来源R0 → 目的R0，上次fresh逐token贡献：",
+          "每 Rank 专家数 E÷R = 8÷4 = 2。目的 Rank = floor(expert_id÷2)。",
+          "token 0: topk=[0,1]；过滤 -1 → [0,1]；floor(0÷2)=0，floor(1÷2)=0；目标去重 → {R0}；对 R0 贡献 1。",
+          "token 1: topk=[2,3]；过滤 -1 → [2,3]；floor(2÷2)=1，floor(3÷2)=1；目标去重 → {R1}；对 R0 贡献 0。",
+          "token 2: topk=[4,6]；过滤 -1 → [4,6]；floor(4÷2)=2，floor(6÷2)=3；目标去重 → {R2,R3}；对 R0 贡献 0。",
+          "token 3: topk=[-1,0]；过滤 -1 → [0]；floor(0÷2)=0；目标去重 → {R0}；对 R0 贡献 1。",
+          "R0 计数 = 0 + 1 + 0 + 0 + 1 = 2。",
+          "2 = 2。包含来源rank 0 自己；来源分区物理容量仍各有M=4槽。"
+        ],
+        "result": 2,
+        "sourceRef": {
+          "commit": "3b25377d04b24fc6154698ded78a2bcb2c59afff",
+          "file": "csrc/buffers/ep.hpp",
+          "line": 205,
+          "fn": "EPBuffer::dispatch",
+          "url": "source.html?file=csrc%2Fbuffers%2Fep.hpp&line=205"
+        },
+        "contributions": [],
+        "arrayMeaning": "逻辑 shape=[4]；元素路径 [0]。方括号表示数组元素列表，非数值区间。",
+        "computed": 2,
+        "derivation": {
+          "computed": 2,
+          "operation": "包含式来源rank前缀",
+          "operands": [
+            {
+              "objectId": "R0.topk_idx[0]",
+              "elementPath": [],
+              "value": [
+                0,
+                1
+              ],
+              "step": 0,
+              "phase": "previous-fresh-input",
+              "scope": "previous-fresh"
+            },
+            {
+              "objectId": "R0.topk_idx[1]",
+              "elementPath": [],
+              "value": [
+                2,
+                3
+              ],
+              "step": 0,
+              "phase": "previous-fresh-input",
+              "scope": "previous-fresh"
+            },
+            {
+              "objectId": "R0.topk_idx[2]",
+              "elementPath": [],
+              "value": [
+                4,
+                6
+              ],
+              "step": 0,
+              "phase": "previous-fresh-input",
+              "scope": "previous-fresh"
+            },
+            {
+              "objectId": "R0.topk_idx[3]",
+              "elementPath": [],
+              "value": [
+                -1,
+                0
+              ],
+              "step": 0,
+              "phase": "previous-fresh-input",
+              "scope": "previous-fresh"
+            }
+          ]
+        },
+        "actor": "教学输入 / 源码初始化"
+      },
+      "text": "R0.psum_num_recv_tokens_per_rank[0] = 2\n×\n\n数值 · 单位：接收记录条数 · observe\n\n逻辑 shape=[4]；元素路径 [0]。方括号表示数组元素列表，非数值区间。\n\n来源：前一次 fresh 调用的 handle 缓存继承；路由/容量/核数保持不变。生产：初始状态；教学输入 / 源码初始化。\n\n缓存继承；复用上次fresh布局\n\n以下推导是上次fresh生产该缓存的依据，本轮不重新执行路由/count/slot计算。\n\n来源R0 → 目的R0，上次fresh逐token贡献：\n\n每 Rank 专家数 E÷R = 8÷4 = 2。目的 Rank = floor(expert_id÷2)。\n\ntoken 0: topk=[0,1]；过滤 -1 → [0,1]；floor(0÷2)=0，floor(1÷2)=0；目标去重 → {R0}；对 R0 贡献 1。\n\ntoken 1: topk=[2,3]；过滤 -1 → [2,3]；floor(2÷2)=1，floor(3÷2)=1；目标去重 → {R1}；对 R0 贡献 0。\n\ntoken 2: topk=[4,6]；过滤 -1 → [4,6]；floor(4÷2)=2，floor(6÷2)=3；目标去重 → {R2,R3}；对 R0 贡献 0。\n\ntoken 3: topk=[-1,0]；过滤 -1 → [0]；floor(0÷2)=0；目标去重 → {R0}；对 R0 贡献 1。\n\nR0 计数 = 0 + 1 + 0 + 0 + 1 = 2。\n\n2 = 2。包含来源rank 0 自己；来源分区物理容量仍各有M=4槽。\n\n实际操作数 / 身份\n\ncsrc/buffers/ep.hpp:205 · EPBuffer::dispatch\n\n悬浮 / 聚焦查看；点击或 Enter 固定；Esc关闭"
+    },
+    {
+      "name": "unwritten receive buffer",
+      "record": {
+        "objectId": "R0.recv_buffer[0,0]",
+        "elementPath": [],
+        "step": 0,
+        "displayPhase": "observe",
+        "history": false,
+        "producerStep": -1,
+        "kind": "未定义/未写入",
+        "unit": "状态",
+        "origin": "SymmetricMemory接收容量槽本轮尚未有效写入；须等drain与barrier再消费有效记录，空容量槽没有token",
+        "operation": "不执行数值算术",
+        "operands": [],
+        "calculation": [
+          "R0.recv_buffer[0,0][] = 未写入。它不是数字0，不能作为有效载荷/计数读取。"
+        ],
+        "result": "未写入",
+        "sourceRef": {
+          "commit": "3b25377d04b24fc6154698ded78a2bcb2c59afff",
+          "file": "deep_ep/include/deep_ep/impls/ep/dispatch_copy_epilogue.hpp",
+          "line": 199,
+          "fn": "dispatch_copy_epilogue_impl",
+          "url": "source.html?file=deep_ep%2Finclude%2Fdeep_ep%2Fimpls%2Fep%2Fdispatch_copy_epilogue.hpp&line=199"
+        },
+        "contributions": [],
+        "arrayMeaning": "逻辑 shape=[576]；元素路径 []。方括号表示数组元素列表，非数值区间。",
+        "actor": "教学输入 / 源码初始化"
+      },
+      "text": "R0.recv_buffer[0,0] = \"未写入\"\n×\n\n未定义/未写入 · 单位：状态 · observe\n\n逻辑 shape=[576]；元素路径 []。方括号表示数组元素列表，非数值区间。\n\n来源：SymmetricMemory接收容量槽本轮尚未有效写入；须等drain与barrier再消费有效记录，空容量槽没有token。生产：初始状态；教学输入 / 源码初始化。\n\n不执行数值算术\n\nR0.recv_buffer[0,0][] = 未写入。它不是数字0，不能作为有效载荷/计数读取。\n\ndeep_ep/include/deep_ep/impls/ep/dispatch_copy_epilogue.hpp:199 · dispatch_copy_epilogue_impl\n\n悬浮 / 聚焦查看；点击或 Enter 固定；Esc关闭"
+    },
+    {
+      "name": "mixed optional sf",
+      "record": {
+        "objectId": "R0.metadata_send_buffer[0]",
+        "elementPath": [
+          "sf"
+        ],
+        "step": 7,
+        "displayPhase": "write-after",
+        "history": false,
+        "producerStep": 7,
+        "kind": "未定义/未写入",
+        "unit": "int16 SF pack原始位模式",
+        "origin": "可选/缓存分支未传输此字段",
+        "operation": "不执行数值算术",
+        "operands": [],
+        "calculation": [
+          "R0.metadata_send_buffer[0][\"sf\"] = 无SF分支。它不是数字0，不能作为有效载荷/计数读取。"
+        ],
+        "result": "无SF分支",
+        "sourceRef": {
+          "commit": "3b25377d04b24fc6154698ded78a2bcb2c59afff",
+          "file": "deep_ep/include/deep_ep/impls/ep/dispatch.hpp",
+          "line": 697,
+          "fn": "dispatch_impl",
+          "url": "source.html?file=deep_ep%2Finclude%2Fdeep_ep%2Fimpls%2Fep%2Fdispatch.hpp&line=697"
+        },
+        "contributions": [],
+        "arrayMeaning": "逻辑 shape=[64]；元素路径 [\"sf\"]。方括号表示数组元素列表，非数值区间。",
+        "before": "未写入",
+        "after": "无SF分支",
+        "transition": "\"未写入\" → \"无SF分支\"",
+        "actor": "R0–R3 / AIV 0 scalar + MTE2/MTE3"
+      },
+      "text": "R0.metadata_send_buffer[0].sf = \"无SF分支\"\n×\n\n未定义/未写入 · 单位：int16 SF pack原始位模式 · write-after\n\n逻辑 shape=[64]；元素路径 [\"sf\"]。方括号表示数组元素列表，非数值区间。\n\n来源：可选/缓存分支未传输此字段。生产：步骤 7；R0–R3 / AIV 0 scalar + MTE2/MTE3。\n\n不执行数值算术 · \"未写入\" → \"无SF分支\"\n\nR0.metadata_send_buffer[0][\"sf\"] = 无SF分支。它不是数字0，不能作为有效载荷/计数读取。\n\ndeep_ep/include/deep_ep/impls/ep/dispatch.hpp:697 · dispatch_impl\n\n悬浮 / 聚焦查看；点击或 Enter 固定；Esc关闭"
+    },
+    {
+      "name": "noWeights optional weights",
+      "record": {
+        "objectId": "R0.metadata_send_buffer[0]",
+        "elementPath": [
+          "weights"
+        ],
+        "step": 7,
+        "displayPhase": "write-after",
+        "history": false,
+        "producerStep": 7,
+        "kind": "未定义/未写入",
+        "unit": "float32 top-k权重",
+        "origin": "可选/缓存分支未传输此字段",
+        "operation": "不执行数值算术",
+        "operands": [],
+        "calculation": [
+          "R0.metadata_send_buffer[0][\"weights\"] = 未提供；预留区域未定义。它不是数字0，不能作为有效载荷/计数读取。"
+        ],
+        "result": "未提供；预留区域未定义",
+        "sourceRef": {
+          "commit": "3b25377d04b24fc6154698ded78a2bcb2c59afff",
+          "file": "deep_ep/include/deep_ep/impls/ep/dispatch.hpp",
+          "line": 740,
+          "fn": "dispatch_impl",
+          "url": "source.html?file=deep_ep%2Finclude%2Fdeep_ep%2Fimpls%2Fep%2Fdispatch.hpp&line=740"
+        },
+        "contributions": [],
+        "arrayMeaning": "逻辑 shape=[64]；元素路径 [\"weights\"]。方括号表示数组元素列表，非数值区间。",
+        "before": "未写入",
+        "after": "未提供；预留区域未定义",
+        "transition": "\"未写入\" → \"未提供；预留区域未定义\"",
+        "actor": "R0–R3 / AIV 0 scalar + MTE2/MTE3"
+      },
+      "text": "R0.metadata_send_buffer[0].weights = \"未提供；预留区域未定义\"\n×\n\n未定义/未写入 · 单位：float32 top-k权重 · write-after\n\n逻辑 shape=[64]；元素路径 [\"weights\"]。方括号表示数组元素列表，非数值区间。\n\n来源：可选/缓存分支未传输此字段。生产：步骤 7；R0–R3 / AIV 0 scalar + MTE2/MTE3。\n\n不执行数值算术 · \"未写入\" → \"未提供；预留区域未定义\"\n\nR0.metadata_send_buffer[0][\"weights\"] = 未提供；预留区域未定义。它不是数字0，不能作为有效载荷/计数读取。\n\ndeep_ep/include/deep_ep/impls/ep/dispatch.hpp:740 · dispatch_impl\n\n悬浮 / 聚焦查看；点击或 Enter 固定；Esc关闭"
+    },
+    {
+      "name": "cached optional topk",
+      "record": {
+        "objectId": "R0.metadata_send_buffer[0]",
+        "elementPath": [
+          "topk"
+        ],
+        "step": 2,
+        "displayPhase": "write-after",
+        "history": false,
+        "producerStep": 2,
+        "kind": "未定义/未写入",
+        "unit": "状态",
+        "origin": "可选/缓存分支未传输此字段",
+        "operation": "不执行数值算术",
+        "operands": [],
+        "calculation": [
+          "R0.metadata_send_buffer[0][\"topk\"] = cached不发送。它不是数字0，不能作为有效载荷/计数读取。"
+        ],
+        "result": "cached不发送",
+        "sourceRef": {
+          "commit": "3b25377d04b24fc6154698ded78a2bcb2c59afff",
+          "file": "deep_ep/include/deep_ep/impls/ep/dispatch.hpp",
+          "line": 727,
+          "fn": "dispatch_impl",
+          "url": "source.html?file=deep_ep%2Finclude%2Fdeep_ep%2Fimpls%2Fep%2Fdispatch.hpp&line=727"
+        },
+        "contributions": [],
+        "arrayMeaning": "逻辑 shape=[32]；元素路径 [\"topk\"]。方括号表示数组元素列表，非数值区间。",
+        "before": "未写入",
+        "after": "cached不发送",
+        "transition": "\"未写入\" → \"cached不发送\"",
+        "actor": "R0–R3 / AIV 0 scalar + MTE2/MTE3"
+      },
+      "text": "R0.metadata_send_buffer[0].topk = \"cached不发送\"\n×\n\n未定义/未写入 · 单位：状态 · write-after\n\n逻辑 shape=[32]；元素路径 [\"topk\"]。方括号表示数组元素列表，非数值区间。\n\n来源：可选/缓存分支未传输此字段。生产：步骤 2；R0–R3 / AIV 0 scalar + MTE2/MTE3。\n\n不执行数值算术 · \"未写入\" → \"cached不发送\"\n\nR0.metadata_send_buffer[0][\"topk\"] = cached不发送。它不是数字0，不能作为有效载荷/计数读取。\n\ndeep_ep/include/deep_ep/impls/ep/dispatch.hpp:727 · dispatch_impl\n\n悬浮 / 聚焦查看；点击或 Enter 固定；Esc关闭"
+    },
+    {
+      "name": "empty rank count remains zero",
+      "record": {
+        "objectId": "R0.rank_histogram_sum_view",
+        "elementPath": [
+          0
+        ],
+        "step": 2,
+        "displayPhase": "write-after",
+        "history": false,
+        "producerStep": 2,
+        "kind": "数值",
+        "unit": "token条数",
+        "origin": "跨核计数教学聚合；不是独立真实GM数组",
+        "operation": "跨核去重计数求和",
+        "operands": [
+          {
+            "kind": "constant",
+            "name": "destination rank",
+            "value": 0,
+            "sourceRef": {
+              "commit": "3b25377d04b24fc6154698ded78a2bcb2c59afff",
+              "file": "deep_ep/include/deep_ep/impls/ep/dispatch.hpp",
+              "line": 242,
+              "fn": "simt_persistent_worker",
+              "url": "source.html?file=deep_ep%2Finclude%2Fdeep_ep%2Fimpls%2Fep%2Fdispatch.hpp&line=242"
+            }
+          },
+          {
+            "kind": "parameter",
+            "objectId": "@config.E",
+            "elementPath": [],
+            "value": 8,
+            "step": 0,
+            "phase": "initial",
+            "sourceRef": {
+              "commit": "3b25377d04b24fc6154698ded78a2bcb2c59afff",
+              "file": "deep_ep/include/deep_ep/layout/ep/token.hpp",
+              "line": 17,
+              "fn": "TokenLayout",
+              "url": "source.html?file=deep_ep%2Finclude%2Fdeep_ep%2Flayout%2Fep%2Ftoken.hpp&line=17"
+            }
+          },
+          {
+            "kind": "parameter",
+            "objectId": "@config.R",
+            "elementPath": [],
+            "value": 4,
+            "step": 0,
+            "phase": "initial",
+            "sourceRef": {
+              "commit": "3b25377d04b24fc6154698ded78a2bcb2c59afff",
+              "file": "deep_ep/include/deep_ep/layout/ep/token.hpp",
+              "line": 17,
+              "fn": "TokenLayout",
+              "url": "source.html?file=deep_ep%2Finclude%2Fdeep_ep%2Flayout%2Fep%2Ftoken.hpp&line=17"
+            }
+          },
+          {
+            "kind": "parameter",
+            "objectId": "@config.T",
+            "elementPath": [],
+            "value": 0,
+            "step": 0,
+            "phase": "initial",
+            "sourceRef": {
+              "commit": "3b25377d04b24fc6154698ded78a2bcb2c59afff",
+              "file": "deep_ep/include/deep_ep/layout/ep/token.hpp",
+              "line": 17,
+              "fn": "TokenLayout",
+              "url": "source.html?file=deep_ep%2Finclude%2Fdeep_ep%2Flayout%2Fep%2Ftoken.hpp&line=17"
+            }
+          }
+        ],
+        "calculation": [
+          "本轮T=0，所以来源R0有效token集合为空∅；没有有效expert映射或去重贡献，空集合求和=0。所有16 AIV仍以count0发布arrival1，不能省略同步。",
+          "每 Rank 专家数 E÷R = 8÷4 = 2。目的 Rank = floor(expert_id÷2)。",
+          "R0 计数 = 0 = 0。",
+          "sum_view把各AIV本地计数聚合展示；真实rank_histogram在prefix后覆盖为每核排他前缀。"
+        ],
+        "result": 0,
+        "sourceRef": {
+          "commit": "3b25377d04b24fc6154698ded78a2bcb2c59afff",
+          "file": "deep_ep/include/deep_ep/impls/ep/dispatch.hpp",
+          "line": 242,
+          "fn": "simt_persistent_worker",
+          "url": "source.html?file=deep_ep%2Finclude%2Fdeep_ep%2Fimpls%2Fep%2Fdispatch.hpp&line=242"
+        },
+        "contributions": [],
+        "arrayMeaning": "逻辑 shape=[4]；元素路径 [0]。方括号表示数组元素列表，非数值区间。",
+        "computed": 0,
+        "derivation": {
+          "computed": 0,
+          "operation": "跨核去重计数求和",
+          "operands": [
+            {
+              "kind": "constant",
+              "name": "destination rank",
+              "value": 0,
+              "sourceRef": {
+                "commit": "3b25377d04b24fc6154698ded78a2bcb2c59afff",
+                "file": "deep_ep/include/deep_ep/impls/ep/dispatch.hpp",
+                "line": 242,
+                "fn": "simt_persistent_worker",
+                "url": "source.html?file=deep_ep%2Finclude%2Fdeep_ep%2Fimpls%2Fep%2Fdispatch.hpp&line=242"
+              }
+            },
+            {
+              "kind": "parameter",
+              "objectId": "@config.E",
+              "elementPath": [],
+              "value": 8,
+              "step": 0,
+              "phase": "initial",
+              "sourceRef": {
+                "commit": "3b25377d04b24fc6154698ded78a2bcb2c59afff",
+                "file": "deep_ep/include/deep_ep/layout/ep/token.hpp",
+                "line": 17,
+                "fn": "TokenLayout",
+                "url": "source.html?file=deep_ep%2Finclude%2Fdeep_ep%2Flayout%2Fep%2Ftoken.hpp&line=17"
+              }
+            },
+            {
+              "kind": "parameter",
+              "objectId": "@config.R",
+              "elementPath": [],
+              "value": 4,
+              "step": 0,
+              "phase": "initial",
+              "sourceRef": {
+                "commit": "3b25377d04b24fc6154698ded78a2bcb2c59afff",
+                "file": "deep_ep/include/deep_ep/layout/ep/token.hpp",
+                "line": 17,
+                "fn": "TokenLayout",
+                "url": "source.html?file=deep_ep%2Finclude%2Fdeep_ep%2Flayout%2Fep%2Ftoken.hpp&line=17"
+              }
+            },
+            {
+              "kind": "parameter",
+              "objectId": "@config.T",
+              "elementPath": [],
+              "value": 0,
+              "step": 0,
+              "phase": "initial",
+              "sourceRef": {
+                "commit": "3b25377d04b24fc6154698ded78a2bcb2c59afff",
+                "file": "deep_ep/include/deep_ep/layout/ep/token.hpp",
+                "line": 17,
+                "fn": "TokenLayout",
+                "url": "source.html?file=deep_ep%2Finclude%2Fdeep_ep%2Flayout%2Fep%2Ftoken.hpp&line=17"
+              }
+            }
+          ]
+        },
+        "before": 0,
+        "after": 0,
+        "transition": "0 → 0",
+        "actor": "每源rank 16 AIV / peer工作分工"
+      },
+      "text": "R0.rank_histogram_sum_view[0] = 0\n×\n\n数值 · 单位：token条数 · write-after\n\n逻辑 shape=[4]；元素路径 [0]。方括号表示数组元素列表，非数值区间。\n\n来源：跨核计数教学聚合；不是独立真实GM数组。生产：步骤 2；每源rank 16 AIV / peer工作分工。\n\n跨核去重计数求和 · 0 → 0\n\n本轮T=0，所以来源R0有效token集合为空∅；没有有效expert映射或去重贡献，空集合求和=0。所有16 AIV仍以count0发布arrival1，不能省略同步。\n\n每 Rank 专家数 E÷R = 8÷4 = 2。目的 Rank = floor(expert_id÷2)。\n\nR0 计数 = 0 = 0。\n\nsum_view把各AIV本地计数聚合展示；真实rank_histogram在prefix后覆盖为每核排他前缀。\n\n实际操作数 / 身份\n\ndeep_ep/include/deep_ep/impls/ep/dispatch.hpp:242 · simt_persistent_worker\n\n悬浮 / 聚焦查看；点击或 Enter 固定；Esc关闭"
+    }
+  ],
+  "errors": []
+}

@@ -1,0 +1,103 @@
+{
+  "function_id": "dispatch-simt-77",
+  "revision": 1,
+  "draft_author": "walkthrough-agent",
+  "reviewer": "independent-review",
+  "source_sha256": "25244c66d5937e9e7521400792c2e0ddc974512971f582e95d19c4828c31b678",
+  "line_range": [
+    77,
+    549
+  ],
+  "gaps": [],
+  "overlaps": [],
+  "unresolved": [],
+  "verdict": "REWORK",
+  "required_changes": [
+    {
+      "line": 78,
+      "issue": "签名参数78-98被模板“补全对象偏移长度”替代，没有参数职责",
+      "change": "每行解释该行模板/GM/UB/偏移/容量参数在本worker中的真实用途。"
+    },
+    {
+      "line": 162,
+      "issue": "跨行call上下文泄漏导致错误关联；如162-163 mask公式变成补全asc_atomic_max，253清零变补全exchange；374-375为ceil_div但说ASSERT；381/385-386/414/441-442等同类",
+      "change": "全面去掉陈旧call状态；准确解释本条表达式每行公式；464闭合的是atomic_add，不是get_sym_ptr；467/479/488/501/540必须解释实际GM写。"
+    },
+    {
+      "line": 188,
+      "issue": "词典把UB数组sgep_idx和380局部变量sgep_idx混为一谈：188/271被称当前SQE word的pair lane号",
+      "change": "188/271是核内该目标rank atomic取得的去重token序号；380才是当前word映射的0..5 pair索引。max_gsge_idx在135/147归约前为每thread局部最大，152后才warp共享。"
+    },
+    {
+      "line": 217,
+      "issue": "217和segment217-247把lower/upper叫两个warp；实际同一warp两次扫描",
+      "change": "明确同warp32lane分别处理前32与后32个AIV，合计<=64核；threadfence不是跨核barrier。"
+    },
+    {
+      "line": 132,
+      "issue": "普通语义注释被误归类为未实测性能：132连续区间、344 entry有效性、358头6lane、359 pair4lane、466/487/500清理等",
+      "change": "逐条说明源码注释约束；仅真正含历史耗时的114/166/259等保留未实测边界。"
+    },
+    {
+      "line": 109,
+      "issue": "大量分支、循环、assert仅复述代码+统一segment why，未解释该行条件必要性",
+      "change": "逐条说明：109/110一thread可覆盖一桶，112组位图界限；176限制非2幂K的padding lane；227 peer在AIV/warp间分摊；303压缩非self peer索引；395末SQ终结有序完成；518/537屏蔽尾wave等。"
+    },
+    {
+      "line": 77,
+      "issue": "inputs遗漏num_tokens/rank_idx/vec_core_idx/大小偏移等关键运行时输入，outputs/side_effects遗漏SQ写、远端控制统计、host写及累计统计；reads/writes与calls未完成",
+      "change": "登记确切副作用和API调用表；先修语义再以完整r2重审，不能直接合并PASS。"
+    }
+  ],
+  "all_fallback_lines": [
+    78,
+    79,
+    80,
+    81,
+    87,
+    88,
+    89,
+    90,
+    91,
+    92,
+    93,
+    94,
+    95,
+    96,
+    97,
+    98,
+    162,
+    163,
+    205,
+    206,
+    213,
+    214,
+    253,
+    303,
+    319,
+    320,
+    321,
+    374,
+    375,
+    381,
+    385,
+    386,
+    414,
+    423,
+    424,
+    425,
+    441,
+    442,
+    454,
+    462,
+    463,
+    467,
+    473,
+    479,
+    488,
+    498,
+    501,
+    540
+  ],
+  "source_read": "重新逐行对照77-549及完整caller/callee基线"
+}

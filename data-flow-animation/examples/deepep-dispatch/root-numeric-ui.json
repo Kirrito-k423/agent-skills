@@ -1,0 +1,220 @@
+{
+  "status": "PASS",
+  "checkedAt": "2026-10-02T03:45:31.617Z",
+  "deliveredHashes": {
+    "app.mjs": "bfc8c966eda1f13f49126f3e5aa04f0609658ee151437638aa4c131e7fe23af4",
+    "style.css": "94a4bf33a948915d7fa377c6be54e21059e7143ea76c39d30acae684096427e0",
+    "numeric-ui.mjs": "432726a01acec95d1881cc1842f9d352dbe98f018cfb1679d7bbbda6efe9a648",
+    "provenance.mjs": "6ac9d0f9ad90d2666d7d3d2ee639c570292ba0b9429a4b337d5d23e4f55befa8",
+    "model.mjs": "567fc1e82f4c91dd09c481a05d7eee2b6ea850e6f155a541c1a3f1c95b633197"
+  },
+  "source_revision": "3b25377d04b24fc6154698ded78a2bcb2c59afff",
+  "checks": [
+    "screenshot 1: separate array elements, sentinel and valid expert zero",
+    "screenshot 2: each destination count has its own contributions and arithmetic",
+    "write-before zero differs from write-after count",
+    "historic and observed values retain actual production step",
+    "step changes discard stale tooltip",
+    "keyboard focus, Enter pin and Escape close",
+    "tooltip fits all three actual CSS viewports and does not cover its anchor"
+  ],
+  "hoverResults": [
+    {
+      "name": "initial -1 sentinel",
+      "text": "R0.topk_idx[3][0] = -1\n×\n\n专家 ID / 哨兵 · 单位：expert ID · observe\n\n逻辑 shape=[2]；元素路径 [0]。方括号表示数组元素列表，非数值区间。\n\n来源：教学者选定的非均匀路由输入。生产：初始状态；教学输入 / 源码初始化。\n\n人为路由选择\n\ntopk_idx[3][0]=-1：该top-k lane无专家选择；过滤条件 expert_id≥0 不成立，不进入floor/原子计数。不是区间端点，也不是有效专家0。\n\nanimation/model.mjs:5 · buildModel（教学者选择输入）\n\n悬浮 / 聚焦查看；点击或 Enter 固定；Esc关闭",
+      "geometry": {
+        "left": 273,
+        "top": 293,
+        "right": 703,
+        "bottom": 621.5,
+        "viewport": [
+          1280,
+          720
+        ]
+      }
+    },
+    {
+      "name": "initial expert 0",
+      "text": "R0.topk_idx[3][1] = 0\n×\n\n专家 ID / 哨兵 · 单位：expert ID · observe\n\n逻辑 shape=[2]；元素路径 [1]。方括号表示数组元素列表，非数值区间。\n\n来源：教学者选定的非均匀路由输入。生产：初始状态；教学输入 / 源码初始化。\n\n人为路由选择\n\ntopk_idx[3][1]=0：合法专家[0,8)中的有效expert。floor(0÷2)=0 是目的rank，0 mod 2=0 是local expert。输入选择用于展示一个有效专家与一个无选择lane。\n\nanimation/model.mjs:5 · buildModel（教学者选择输入）\n\n悬浮 / 聚焦查看；点击或 Enter 固定；Esc关闭",
+      "geometry": {
+        "left": 273,
+        "top": 293,
+        "right": 703,
+        "bottom": 621.5,
+        "viewport": [
+          1280,
+          720
+        ]
+      }
+    },
+    {
+      "name": "destination R0 count",
+      "text": "R0.rank_histogram_sum_view[0] = 2\n×\n\n数值 · 单位：token条数 · write-after\n\n逻辑 shape=[4]；元素路径 [0]。方括号表示数组元素列表，非数值区间。\n\n来源：跨核计数教学聚合；不是独立真实GM数组。生产：步骤 5；每源rank 16 AIV / peer工作分工。\n\n跨核去重计数求和 · 0 → 2\n\n每 Rank 专家数 E÷R = 8÷4 = 2。目的 Rank = floor(expert_id÷2)。\n\ntoken 0: topk=[0,1]；过滤 -1 → [0,1]；floor(0÷2)=0，floor(1÷2)=0；目标去重 → {R0}；对 R0 贡献 1。\n\ntoken 1: topk=[2,3]；过滤 -1 → [2,3]；floor(2÷2)=1，floor(3÷2)=1；目标去重 → {R1}；对 R0 贡献 0。\n\ntoken 2: topk=[4,6]；过滤 -1 → [4,6]；floor(4÷2)=2，floor(6÷2)=3；目标去重 → {R2,R3}；对 R0 贡献 0。\n\ntoken 3: topk=[-1,0]；过滤 -1 → [0]；floor(0÷2)=0；目标去重 → {R0}；对 R0 贡献 1。\n\nR0 计数 = 0 + 1 + 0 + 0 + 1 = 2。\n\nsum_view把各AIV本地计数聚合展示；真实rank_histogram在prefix后覆盖为每核排他前缀。\n\n实际操作数 / 身份\n\ndeep_ep/include/deep_ep/impls/ep/dispatch.hpp:242 · simt_persistent_worker\n\n悬浮 / 聚焦查看；点击或 Enter 固定；Esc关闭",
+      "geometry": {
+        "left": 235.015625,
+        "top": 222,
+        "right": 665.015625,
+        "bottom": 711.59375,
+        "viewport": [
+          1280,
+          720
+        ]
+      }
+    },
+    {
+      "name": "destination R1 count",
+      "text": "R0.rank_histogram_sum_view[1] = 1\n×\n\n数值 · 单位：token条数 · write-after\n\n逻辑 shape=[4]；元素路径 [1]。方括号表示数组元素列表，非数值区间。\n\n来源：跨核计数教学聚合；不是独立真实GM数组。生产：步骤 5；每源rank 16 AIV / peer工作分工。\n\n跨核去重计数求和 · 0 → 1\n\n每 Rank 专家数 E÷R = 8÷4 = 2。目的 Rank = floor(expert_id÷2)。\n\ntoken 0: topk=[0,1]；过滤 -1 → [0,1]；floor(0÷2)=0，floor(1÷2)=0；目标去重 → {R0}；对 R1 贡献 0。\n\ntoken 1: topk=[2,3]；过滤 -1 → [2,3]；floor(2÷2)=1，floor(3÷2)=1；目标去重 → {R1}；对 R1 贡献 1。\n\ntoken 2: topk=[4,6]；过滤 -1 → [4,6]；floor(4÷2)=2，floor(6÷2)=3；目标去重 → {R2,R3}；对 R1 贡献 0。\n\ntoken 3: topk=[-1,0]；过滤 -1 → [0]；floor(0÷2)=0；目标去重 → {R0}；对 R1 贡献 0。\n\nR1 计数 = 0 + 0 + 1 + 0 + 0 = 1。\n\nsum_view把各AIV本地计数聚合展示；真实rank_histogram在prefix后覆盖为每核排他前缀。\n\n实际操作数 / 身份\n\ndeep_ep/include/deep_ep/impls/ep/dispatch.hpp:242 · simt_persistent_worker\n\n悬浮 / 聚焦查看；点击或 Enter 固定；Esc关闭",
+      "geometry": {
+        "left": 235.015625,
+        "top": 222,
+        "right": 665.015625,
+        "bottom": 711.59375,
+        "viewport": [
+          1280,
+          720
+        ]
+      }
+    },
+    {
+      "name": "destination R2 count",
+      "text": "R0.rank_histogram_sum_view[2] = 1\n×\n\n数值 · 单位：token条数 · write-after\n\n逻辑 shape=[4]；元素路径 [2]。方括号表示数组元素列表，非数值区间。\n\n来源：跨核计数教学聚合；不是独立真实GM数组。生产：步骤 5；每源rank 16 AIV / peer工作分工。\n\n跨核去重计数求和 · 0 → 1\n\n每 Rank 专家数 E÷R = 8÷4 = 2。目的 Rank = floor(expert_id÷2)。\n\ntoken 0: topk=[0,1]；过滤 -1 → [0,1]；floor(0÷2)=0，floor(1÷2)=0；目标去重 → {R0}；对 R2 贡献 0。\n\ntoken 1: topk=[2,3]；过滤 -1 → [2,3]；floor(2÷2)=1，floor(3÷2)=1；目标去重 → {R1}；对 R2 贡献 0。\n\ntoken 2: topk=[4,6]；过滤 -1 → [4,6]；floor(4÷2)=2，floor(6÷2)=3；目标去重 → {R2,R3}；对 R2 贡献 1。\n\ntoken 3: topk=[-1,0]；过滤 -1 → [0]；floor(0÷2)=0；目标去重 → {R0}；对 R2 贡献 0。\n\nR2 计数 = 0 + 0 + 0 + 1 + 0 = 1。\n\nsum_view把各AIV本地计数聚合展示；真实rank_histogram在prefix后覆盖为每核排他前缀。\n\n实际操作数 / 身份\n\ndeep_ep/include/deep_ep/impls/ep/dispatch.hpp:242 · simt_persistent_worker\n\n悬浮 / 聚焦查看；点击或 Enter 固定；Esc关闭",
+      "geometry": {
+        "left": 235.015625,
+        "top": 222,
+        "right": 665.015625,
+        "bottom": 711.59375,
+        "viewport": [
+          1280,
+          720
+        ]
+      }
+    },
+    {
+      "name": "destination R3 count",
+      "text": "R0.rank_histogram_sum_view[3] = 1\n×\n\n数值 · 单位：token条数 · write-after\n\n逻辑 shape=[4]；元素路径 [3]。方括号表示数组元素列表，非数值区间。\n\n来源：跨核计数教学聚合；不是独立真实GM数组。生产：步骤 5；每源rank 16 AIV / peer工作分工。\n\n跨核去重计数求和 · 0 → 1\n\n每 Rank 专家数 E÷R = 8÷4 = 2。目的 Rank = floor(expert_id÷2)。\n\ntoken 0: topk=[0,1]；过滤 -1 → [0,1]；floor(0÷2)=0，floor(1÷2)=0；目标去重 → {R0}；对 R3 贡献 0。\n\ntoken 1: topk=[2,3]；过滤 -1 → [2,3]；floor(2÷2)=1，floor(3÷2)=1；目标去重 → {R1}；对 R3 贡献 0。\n\ntoken 2: topk=[4,6]；过滤 -1 → [4,6]；floor(4÷2)=2，floor(6÷2)=3；目标去重 → {R2,R3}；对 R3 贡献 1。\n\ntoken 3: topk=[-1,0]；过滤 -1 → [0]；floor(0÷2)=0；目标去重 → {R0}；对 R3 贡献 0。\n\nR3 计数 = 0 + 0 + 0 + 1 + 0 = 1。\n\nsum_view把各AIV本地计数聚合展示；真实rank_histogram在prefix后覆盖为每核排他前缀。\n\n实际操作数 / 身份\n\ndeep_ep/include/deep_ep/impls/ep/dispatch.hpp:242 · simt_persistent_worker\n\n悬浮 / 聚焦查看；点击或 Enter 固定；Esc关闭",
+      "geometry": {
+        "left": 235.015625,
+        "top": 222,
+        "right": 665.015625,
+        "bottom": 711.59375,
+        "viewport": [
+          1280,
+          720
+        ]
+      }
+    },
+    {
+      "name": "R0 count full derivation",
+      "text": "R0.rank_histogram_sum_view[0] = 2\n×\n\n数值 · 单位：token条数 · write-after\n\n逻辑 shape=[4]；元素路径 [0]。方括号表示数组元素列表，非数值区间。\n\n来源：跨核计数教学聚合；不是独立真实GM数组。生产：步骤 5；每源rank 16 AIV / peer工作分工。\n\n跨核去重计数求和 · 0 → 2\n\n每 Rank 专家数 E÷R = 8÷4 = 2。目的 Rank = floor(expert_id÷2)。\n\ntoken 0: topk=[0,1]；过滤 -1 → [0,1]；floor(0÷2)=0，floor(1÷2)=0；目标去重 → {R0}；对 R0 贡献 1。\n\ntoken 1: topk=[2,3]；过滤 -1 → [2,3]；floor(2÷2)=1，floor(3÷2)=1；目标去重 → {R1}；对 R0 贡献 0。\n\ntoken 2: topk=[4,6]；过滤 -1 → [4,6]；floor(4÷2)=2，floor(6÷2)=3；目标去重 → {R2,R3}；对 R0 贡献 0。\n\ntoken 3: topk=[-1,0]；过滤 -1 → [0]；floor(0÷2)=0；目标去重 → {R0}；对 R0 贡献 1。\n\nR0 计数 = 0 + 1 + 0 + 0 + 1 = 2。\n\nsum_view把各AIV本地计数聚合展示；真实rank_histogram在prefix后覆盖为每核排他前缀。\n\n实际操作数 / 身份\n\ndeep_ep/include/deep_ep/impls/ep/dispatch.hpp:242 · simt_persistent_worker\n\n悬浮 / 聚焦查看；点击或 Enter 固定；Esc关闭",
+      "geometry": {
+        "left": 235.015625,
+        "top": 222,
+        "right": 665.015625,
+        "bottom": 711.59375,
+        "viewport": [
+          1280,
+          720
+        ]
+      }
+    },
+    {
+      "name": "write-before zero",
+      "text": "R0.rank_histogram_sum_view[0] = 0\n×\n\n数值 · 单位：状态或计数 · write-before\n\n逻辑 shape=[4]；元素路径 [0]。方括号表示数组元素列表，非数值区间。\n\n来源：教学聚合视图初始化，非真实GM分配。生产：初始状态；教学输入 / 源码初始化。\n\n源码/教学初始化 · 0 → 2\n\n初始值 0：计数器尚未计入任何token。没有加法贡献事件。\n\n本步 写入前 值=0；生产事件仍是初始状态，不能使用本步写后值。\n\nanimation/model.mjs:29 · buildModel::defs（教学账本声明）\n\n悬浮 / 聚焦查看；点击或 Enter 固定；Esc关闭",
+      "geometry": {
+        "left": 235.015625,
+        "top": 395,
+        "right": 665.015625,
+        "bottom": 712,
+        "viewport": [
+          1280,
+          720
+        ]
+      }
+    },
+    {
+      "name": "history value produced at step 5",
+      "text": "R0.rank_histogram_sum_view[0] = 2\n×\n\n数值 · 单位：token条数 · write-after · 历史时刻\n\n逻辑 shape=[4]；元素路径 [0]。方括号表示数组元素列表，非数值区间。\n\n来源：跨核计数教学聚合；不是独立真实GM数组。生产：步骤 5；每源rank 16 AIV / peer工作分工。\n\n跨核去重计数求和 · 0 → 2\n\n每 Rank 专家数 E÷R = 8÷4 = 2。目的 Rank = floor(expert_id÷2)。\n\ntoken 0: topk=[0,1]；过滤 -1 → [0,1]；floor(0÷2)=0，floor(1÷2)=0；目标去重 → {R0}；对 R0 贡献 1。\n\ntoken 1: topk=[2,3]；过滤 -1 → [2,3]；floor(2÷2)=1，floor(3÷2)=1；目标去重 → {R1}；对 R0 贡献 0。\n\ntoken 2: topk=[4,6]；过滤 -1 → [4,6]；floor(4÷2)=2，floor(6÷2)=3；目标去重 → {R2,R3}；对 R0 贡献 0。\n\ntoken 3: topk=[-1,0]；过滤 -1 → [0]；floor(0÷2)=0；目标去重 → {R0}；对 R0 贡献 1。\n\nR0 计数 = 0 + 1 + 0 + 0 + 1 = 2。\n\nsum_view把各AIV本地计数聚合展示；真实rank_histogram在prefix后覆盖为每核排他前缀。\n\n实际操作数 / 身份\n\ndeep_ep/include/deep_ep/impls/ep/dispatch.hpp:242 · simt_persistent_worker\n\n悬浮 / 聚焦查看；点击或 Enter 固定；Esc关闭",
+      "geometry": {
+        "left": 235.015625,
+        "top": 222,
+        "right": 665.015625,
+        "bottom": 711.59375,
+        "viewport": [
+          1280,
+          720
+        ]
+      }
+    },
+    {
+      "name": "observation retains earlier producer",
+      "text": "R0.rank_histogram_sum_view[0] = 2\n×\n\n数值 · 单位：token条数 · observe\n\n逻辑 shape=[4]；元素路径 [0]。方括号表示数组元素列表，非数值区间。\n\n来源：跨核计数教学聚合；不是独立真实GM数组。生产：步骤 5；每源rank 16 AIV / peer工作分工。\n\n跨核去重计数求和\n\n每 Rank 专家数 E÷R = 8÷4 = 2。目的 Rank = floor(expert_id÷2)。\n\ntoken 0: topk=[0,1]；过滤 -1 → [0,1]；floor(0÷2)=0，floor(1÷2)=0；目标去重 → {R0}；对 R0 贡献 1。\n\ntoken 1: topk=[2,3]；过滤 -1 → [2,3]；floor(2÷2)=1，floor(3÷2)=1；目标去重 → {R1}；对 R0 贡献 0。\n\ntoken 2: topk=[4,6]；过滤 -1 → [4,6]；floor(4÷2)=2，floor(6÷2)=3；目标去重 → {R2,R3}；对 R0 贡献 0。\n\ntoken 3: topk=[-1,0]；过滤 -1 → [0]；floor(0÷2)=0；目标去重 → {R0}；对 R0 贡献 1。\n\nR0 计数 = 0 + 1 + 0 + 0 + 1 = 2。\n\nsum_view把各AIV本地计数聚合展示；真实rank_histogram在prefix后覆盖为每核排他前缀。\n\n实际操作数 / 身份\n\ndeep_ep/include/deep_ep/impls/ep/dispatch.hpp:242 · simt_persistent_worker\n\n悬浮 / 聚焦查看；点击或 Enter 固定；Esc关闭",
+      "geometry": {
+        "left": 235.015625,
+        "top": 222,
+        "right": 665.015625,
+        "bottom": 711.59375,
+        "viewport": [
+          1280,
+          720
+        ]
+      }
+    },
+    {
+      "name": "right edge 1440x900",
+      "text": "R0.rank_histogram_sum_view[3] = 1\n×\n\n数值 · 单位：token条数 · write-after\n\n逻辑 shape=[4]；元素路径 [3]。方括号表示数组元素列表，非数值区间。\n\n来源：跨核计数教学聚合；不是独立真实GM数组。生产：步骤 5；每源rank 16 AIV / peer工作分工。\n\n跨核去重计数求和 · 0 → 1\n\n每 Rank 专家数 E÷R = 8÷4 = 2。目的 Rank = floor(expert_id÷2)。\n\ntoken 0: topk=[0,1]；过滤 -1 → [0,1]；floor(0÷2)=0，floor(1÷2)=0；目标去重 → {R0}；对 R3 贡献 0。\n\ntoken 1: topk=[2,3]；过滤 -1 → [2,3]；floor(2÷2)=1，floor(3÷2)=1；目标去重 → {R1}；对 R3 贡献 0。\n\ntoken 2: topk=[4,6]；过滤 -1 → [4,6]；floor(4÷2)=2，floor(6÷2)=3；目标去重 → {R2,R3}；对 R3 贡献 1。\n\ntoken 3: topk=[-1,0]；过滤 -1 → [0]；floor(0÷2)=0；目标去重 → {R0}；对 R3 贡献 0。\n\nR3 计数 = 0 + 0 + 0 + 1 + 0 = 1。\n\nsum_view把各AIV本地计数聚合展示；真实rank_histogram在prefix后覆盖为每核排他前缀。\n\n实际操作数 / 身份\n\ndeep_ep/include/deep_ep/impls/ep/dispatch.hpp:242 · simt_persistent_worker\n\n悬浮 / 聚焦查看；点击或 Enter 固定；Esc关闭",
+      "geometry": {
+        "left": 320.234375,
+        "top": 293,
+        "right": 750.234375,
+        "bottom": 892,
+        "viewport": [
+          1440,
+          900
+        ]
+      }
+    },
+    {
+      "name": "bottom rank edge 1440x900",
+      "text": "R3.topk_idx[3][1] = -1\n×\n\n专家 ID / 哨兵 · 单位：expert ID · observe\n\n逻辑 shape=[2]；元素路径 [1]。方括号表示数组元素列表，非数值区间。\n\n来源：教学者选定的非均匀路由输入。生产：初始状态；教学输入 / 源码初始化。\n\n人为路由选择\n\ntopk_idx[3][1]=-1：该top-k lane无专家选择；过滤条件 expert_id≥0 不成立，不进入floor/原子计数。不是区间端点，也不是有效专家0。\n\nanimation/model.mjs:5 · buildModel（教学者选择输入）\n\n悬浮 / 聚焦查看；点击或 Enter 固定；Esc关闭",
+      "geometry": {
+        "left": 363,
+        "top": 563,
+        "right": 793,
+        "bottom": 891.5,
+        "viewport": [
+          1440,
+          900
+        ]
+      }
+    },
+    {
+      "name": "right edge 1920x1080",
+      "text": "R0.rank_histogram_sum_view[3] = 1\n×\n\n数值 · 单位：token条数 · write-after\n\n逻辑 shape=[4]；元素路径 [3]。方括号表示数组元素列表，非数值区间。\n\n来源：跨核计数教学聚合；不是独立真实GM数组。生产：步骤 5；每源rank 16 AIV / peer工作分工。\n\n跨核去重计数求和 · 0 → 1\n\n每 Rank 专家数 E÷R = 8÷4 = 2。目的 Rank = floor(expert_id÷2)。\n\ntoken 0: topk=[0,1]；过滤 -1 → [0,1]；floor(0÷2)=0，floor(1÷2)=0；目标去重 → {R0}；对 R3 贡献 0。\n\ntoken 1: topk=[2,3]；过滤 -1 → [2,3]；floor(2÷2)=1，floor(3÷2)=1；目标去重 → {R1}；对 R3 贡献 0。\n\ntoken 2: topk=[4,6]；过滤 -1 → [4,6]；floor(4÷2)=2，floor(6÷2)=3；目标去重 → {R2,R3}；对 R3 贡献 1。\n\ntoken 3: topk=[-1,0]；过滤 -1 → [0]；floor(0÷2)=0；目标去重 → {R0}；对 R3 贡献 0。\n\nR3 计数 = 0 + 0 + 0 + 1 + 0 = 1。\n\nsum_view把各AIV本地计数聚合展示；真实rank_histogram在prefix后覆盖为每核排他前缀。\n\n实际操作数 / 身份\n\ndeep_ep/include/deep_ep/impls/ep/dispatch.hpp:242 · simt_persistent_worker\n\n悬浮 / 聚焦查看；点击或 Enter 固定；Esc关闭",
+      "geometry": {
+        "left": 567.21875,
+        "top": 473,
+        "right": 997.21875,
+        "bottom": 1072,
+        "viewport": [
+          1920,
+          1080
+        ]
+      }
+    },
+    {
+      "name": "bottom rank edge 1920x1080",
+      "text": "R3.topk_idx[3][1] = -1\n×\n\n专家 ID / 哨兵 · 单位：expert ID · observe\n\n逻辑 shape=[2]；元素路径 [1]。方括号表示数组元素列表，非数值区间。\n\n来源：教学者选定的非均匀路由输入。生产：初始状态；教学输入 / 源码初始化。\n\n人为路由选择\n\ntopk_idx[3][1]=-1：该top-k lane无专家选择；过滤条件 expert_id≥0 不成立，不进入floor/原子计数。不是区间端点，也不是有效专家0。\n\nanimation/model.mjs:5 · buildModel（教学者选择输入）\n\n悬浮 / 聚焦查看；点击或 Enter 固定；Esc关闭",
+      "geometry": {
+        "left": 1331,
+        "top": 743,
+        "right": 1761,
+        "bottom": 1071.5,
+        "viewport": [
+          1920,
+          1080
+        ]
+      }
+    }
+  ],
+  "errors": []
+}

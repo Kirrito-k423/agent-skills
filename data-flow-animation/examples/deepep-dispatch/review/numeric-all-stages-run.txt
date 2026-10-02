@@ -1,0 +1,56 @@
+{
+  "status": "PASS",
+  "reviewer": "independent-review",
+  "provenance_sha256": "6ac9d0f9ad90d2666d7d3d2ee639c570292ba0b9429a4b337d5d23e4f55befa8",
+  "queries": 2135248,
+  "computed": 2079109,
+  "cases": [
+    {
+      "preset": "mixed",
+      "frames": 26,
+      "queries": 259852
+    },
+    {
+      "preset": "concentrated",
+      "frames": 36,
+      "queries": 374996
+    },
+    {
+      "preset": "invalid",
+      "frames": 26,
+      "queries": 248111
+    },
+    {
+      "preset": "zero",
+      "frames": 26,
+      "queries": 259852
+    },
+    {
+      "preset": "fp8",
+      "frames": 26,
+      "queries": 269378
+    },
+    {
+      "preset": "cached",
+      "frames": 19,
+      "queries": 199757
+    },
+    {
+      "preset": "noWeights",
+      "frames": 26,
+      "queries": 257356
+    },
+    {
+      "preset": "uninitialized",
+      "frames": 26,
+      "queries": 252202
+    },
+    {
+      "preset": "empty",
+      "frames": 13,
+      "queries": 13744
+    }
+  ],
+  "sourceRefs": 81,
+  "issues": []
+}

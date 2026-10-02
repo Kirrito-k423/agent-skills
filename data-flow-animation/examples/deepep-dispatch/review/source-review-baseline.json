@@ -1,0 +1,232 @@
+{
+  "reviewer": "independent-review",
+  "draft_author": "walkthrough-agent",
+  "commit": "3b25377d04b24fc6154698ded78a2bcb2c59afff",
+  "deepjit_revision": "65f513952b8771408a19202f65e36398522db6db",
+  "scope": "两目标文件全部函数及lambda；调用依赖只读事实",
+  "files": [
+    {
+      "path": "DeepEP-Ascend/deep_ep/include/deep_ep/impls/ep/dispatch.hpp",
+      "lines": 867,
+      "sha256": "25244c66d5937e9e7521400792c2e0ddc974512971f582e95d19c4828c31b678",
+      "functions": [
+        {
+          "name": "simt_persistent_worker",
+          "start": 77,
+          "end": 549,
+          "signature_start": 86,
+          "signature": "__simt_vf__ __aicore__ __launch_bounds__(kNumThreads) void simt_persistent_worker(\n    const layout::EPWorkspaceLayout workspace_layout, const layout::EPWorkspaceLayout host_workspace_layout,\n    __ubuf__ ub_layout_t* ub_layout,\n    __gm__ const uint8_t* x, __gm__ const uint8_t* metadata_send_buffer,\n    __gm__ const uint64_t* jetty_ptrs,\n    __gm__ const int64_t* topk_idx,\n    __gm__ int* cumulative_local_expert_recv_stats,\n    __gm__ int* psum_num_recv_tokens_per_rank,\n    __gm__ int* psum_num_recv_tokens_per_expert, __gm__ int* num_unaligned_recv_tokens_per_expert,\n    __gm__ int* dst_buffer_slot_idx, __gm__ int* dst_gsge_idx,\n    const uint64_t recv_buffer_offset,\n    const int num_hidden_bytes, const int num_metadata_bytes, const int num_token_bytes,\n    const int num_tokens, const int vec_core_idx, const int rank_idx) {",
+          "unit_kind": "definition",
+          "inactive": false
+        },
+        {
+          "name": "dispatch_impl",
+          "start": 551,
+          "end": 865,
+          "signature_start": 559,
+          "signature": "__global__ __vector__ void dispatch_impl(\n    __gm__ void* x, __gm__ sf_pack_t* sf,\n    __gm__ int64_t* topk_idx, __gm__ float* topk_weights,\n    __gm__ uint8_t* metadata_send_buffer,\n    __gm__ int* cumulative_local_expert_recv_stats,\n    __gm__ int* psum_num_recv_tokens_per_rank,\n    __gm__ int* psum_num_recv_tokens_per_expert, __gm__ int* num_unaligned_recv_tokens_per_expert,\n    __gm__ int* dst_buffer_slot_idx, __gm__ int* dst_gsge_idx,\n    __gm__ void* buffer, __gm__ void* workspace, __gm__ void* host_workspace,\n    __gm__ void* jetty_ptrs,\n    const int rank_idx,\n    const int num_tokens,\n    const int sf_token_stride,\n    const int sf_hidden_stride) {",
+          "unit_kind": "definition",
+          "inactive": false
+        },
+        {
+          "name": "preload_metadata",
+          "start": 688,
+          "end": 753,
+          "signature_start": 688,
+          "signature": "    auto preload_metadata = [&](const int token_idx, const int stage_idx) __aicore__ {",
+          "unit_kind": "lambda",
+          "inactive": false
+        }
+      ]
+    },
+    {
+      "path": "DeepEP-Ascend/deep_ep/include/deep_ep/impls/ep/dispatch_copy_epilogue.hpp",
+      "lines": 623,
+      "sha256": "3666da791943b16986c7a0258c52cc022361c1a07d364098e0713036bd412a25",
+      "functions": [
+        {
+          "name": "fill_ubuf",
+          "start": 21,
+          "end": 30,
+          "signature_start": 21,
+          "signature": "__simd_vf__ void fill_ubuf(__ubuf__ int* ptr, const int num_elems, const int value) {",
+          "unit_kind": "definition",
+          "inactive": false
+        },
+        {
+          "name": "histogram_accumulate_u32",
+          "start": 37,
+          "end": 101,
+          "signature_start": 38,
+          "signature": "__simd_vf__ void histogram_accumulate_u32(__ubuf__ int64_t* data, __ubuf__ uint32_t* acc, const int num_i64_elems, const int16_t offset) {",
+          "unit_kind": "definition",
+          "inactive": false
+        },
+        {
+          "name": "initialize_dst_slot_idx",
+          "start": 107,
+          "end": 128,
+          "signature_start": 108,
+          "signature": "__simd_vf__ void initialize_dst_slot_idx(__ubuf__ uint32_t* dst_slot_idx,\n                                         __ubuf__ uint32_t* unaligned_expert_start_slot_idx) {",
+          "unit_kind": "definition",
+          "inactive": false
+        },
+        {
+          "name": "PSumIterator",
+          "start": 139,
+          "end": 148,
+          "signature_start": 139,
+          "signature": "    __aicore__ __forceinline__ PSumIterator(__gm__ const int* psum, const int token_idx, const int token_end_idx):\n        psum(psum),\n        token_idx(token_idx),\n        token_end_idx(token_end_idx),\n        rank_idx(0),\n        rank_start_idx(0),\n        rank_end_idx(psum[0])\n    {",
+          "unit_kind": "definition",
+          "inactive": false
+        },
+        {
+          "name": "advance",
+          "start": 150,
+          "end": 152,
+          "signature_start": 150,
+          "signature": "    __aicore__ __forceinline__ void advance(const int num_tokens) {",
+          "unit_kind": "definition",
+          "inactive": false
+        },
+        {
+          "name": "advance_to",
+          "start": 154,
+          "end": 161,
+          "signature_start": 154,
+          "signature": "    __aicore__ __forceinline__ void advance_to(const int target_token_idx) {",
+          "unit_kind": "definition",
+          "inactive": false
+        },
+        {
+          "name": "get_local_idx",
+          "start": 163,
+          "end": 165,
+          "signature_start": 163,
+          "signature": "    __aicore__ __forceinline__ int get_local_idx() const {",
+          "unit_kind": "definition",
+          "inactive": false
+        },
+        {
+          "name": "get_contiguous_count",
+          "start": 167,
+          "end": 169,
+          "signature_start": 167,
+          "signature": "    __aicore__ __forceinline__ int get_contiguous_count(const int max_tokens) const {",
+          "unit_kind": "definition",
+          "inactive": false
+        },
+        {
+          "name": "finished",
+          "start": 171,
+          "end": 173,
+          "signature_start": 171,
+          "signature": "    __aicore__ __forceinline__ bool finished() const {",
+          "unit_kind": "definition",
+          "inactive": false
+        },
+        {
+          "name": "dispatch_copy_epilogue_impl",
+          "start": 176,
+          "end": 621,
+          "signature_start": 181,
+          "signature": "__global__ __vector__ void dispatch_copy_epilogue_impl(\n    __gm__ void* buffer,\n    __gm__ void* workspace,\n    __gm__ void* jetty_ptrs,\n    __gm__ int* psum_num_recv_tokens_per_rank,\n    __gm__ int* psum_num_recv_tokens_per_expert,\n    __gm__ void* recv_x,\n    __gm__ sf_pack_t* recv_sf,\n    __gm__ float* recv_topk_weights,\n    __gm__ int* recv_src_metadata,\n    const int rank_idx,\n    const int recv_sf_token_stride,\n    const int recv_sf_hidden_stride\n) {",
+          "unit_kind": "definition",
+          "inactive": false
+        },
+        {
+          "name": "issue_load",
+          "start": 291,
+          "end": 324,
+          "signature_start": 291,
+          "signature": "    const auto issue_load = [&](int load_stage_idx, bool is_preload) __aicore__ {",
+          "unit_kind": "lambda",
+          "inactive": false
+        }
+      ]
+    }
+  ],
+  "definition_count": 14,
+  "discovery": {
+    "text_and_brace": "reviewer独立全文完成，与root文本清单一致",
+    "syntax": "root已完成tree-sitter0.25.2/tree-sitter-cpp0.23.4与regex+brace双清单；14定义与独立全文边界一致"
+  },
+  "facts": [
+    {
+      "topic": "routing",
+      "evidence": "dispatch.hpp:133-295",
+      "finding": "非cached按ceil(max_tokens/C)连续区间分配AIV；expert histogram保留每个有效topk项；rank histogram在token组内去重；同rank多个expert只通信一份payload。cached恢复slots及逆SGE映射，不能变更原路由。"
+    },
+    {
+      "topic": "slot",
+      "evidence": "dispatch.hpp:199-295",
+      "finding": "每目的rank分别以此前AIV计数为前缀，原子编号决定核内slot。不同目的rank SQE分组，尾部可空；原子调度不承诺固定token顺序。"
+    },
+    {
+      "topic": "sqe",
+      "evidence": "dispatch.hpp:327-425",
+      "finding": "每SQE最多6对SGE；每对直接读取x的hidden及metadata_send_buffer元数据；remote base+recv_buffer_offset+首slot*T，连续写入。48B header+12*16B<=4*64B；固定4WQEBB槽，空余WQEBB用NOP。最后physical WRITE附强序/fence/CQE。"
+    },
+    {
+      "topic": "self",
+      "evidence": "dispatch.hpp:431-446,810-845",
+      "finding": "本地hidden由MTE2到UB再MTE3到本rank buffer的本源rank分区；本地metadata由SIMT uint64 store复制；远端hidden不先打包到UB。"
+    },
+    {
+      "topic": "counts",
+      "evidence": "dispatch.hpp:451-546",
+      "finding": "rank psum是源rank接收去重token数inclusive前缀。expert psum[e]=sum(j<e,align(count[j],A))+count[e]；不是全对齐前缀。高8位到达/阶段、低24位计数，不是payload到达flag。"
+    },
+    {
+      "topic": "sync",
+      "evidence": "dispatch.hpp:651,666-685,797-864;dispatch_copy_epilogue.hpp:199-202",
+      "finding": "初始barrier跨rank握手但kFlushStores=false。MTE阶段事件保护UB复用；metadata_ready在metadata GM写完成后发布，local_copy_ready在slots产生后发布；V到S join后ring DB。doorbell不等于远端完成。host在issue尾或epilogue首二选一运行drain+跨rank barrier，之后epilogue可读接收buffer。"
+    },
+    {
+      "topic": "epilogue",
+      "evidence": "dispatch_copy_epilogue.hpp:328-545",
+      "finding": "fresh先遍历received topk生成每AIV局部expert计数，原子广播到后续AIV行形成exclusive前缀；加专家aligned起点决定展开输出。PSumIterator跨源rank紧凑流定位到固定容量分区。每个本地expert复制一份hidden、SF和对应单weight。"
+    },
+    {
+      "topic": "metadata",
+      "evidence": "dispatch_copy_epilogue.hpp:459-522",
+      "finding": "recv_src_metadata按未展开received stream索引，K个dst slots+global source token+最后匹配的master j；cached直接读取K slots且不重写metadata。"
+    },
+    {
+      "topic": "padding",
+      "evidence": "dispatch_copy_epilogue.hpp:547-620",
+      "finding": "zero padding只处理每expert原始尾至aligned尾；up to4份分摊；hidden、可选weights及SF清零。不开zero padding时padding区内容未定义。"
+    },
+    {
+      "topic": "sf",
+      "evidence": "csrc/kernels/ep/dispatch.hpp:106-110;dispatch.hpp:697-725",
+      "finding": "输入SF支持行/列连续并通过普通copy或NDDMA整理；输出kernel launcher强制token_stride=P、hidden_stride=1，列主序转换在host后续torch操作。"
+    },
+    {
+      "topic": "allocation",
+      "evidence": "csrc/kernels/comm/api.hpp:48-63;csrc/kernels/comm/symmetric.hpp:16-24",
+      "finding": "每rank真实分配W+align(B+LB+R,2MiB)，EP的W=sizeof(EPSignals)、R=0，B和LB均2MiB对齐。aclrtMalloc+memset；workspace为base，buffer为base+W，rdma为buffer+B+LB。Context和HCCLContext shared_ptr共享，最后owner释放才aclrtFree；没有额外SHMEM heap。"
+    },
+    {
+      "topic": "capacity",
+      "evidence": "csrc/buffers/ep.hpp:195-204,288-342,560-605",
+      "finding": "当前layout span=RANKS*M*T，base_offset=W，end=W+span，host精确fresh layout检查<=B；cached传输T更小，但预留按fresh。metadata tensor也按fresh N*Tmeta预留，cached只用更小前缀。outputs最坏容量与CPU-sync/cached实际容量不同。hint使用topk未指定32、FP8 SF packs=ceil(H/32)，不强制运行时P相同；hint含metadata，无凭据不得声称固定缺字节。"
+    },
+    {
+      "topic": "lifetime",
+      "evidence": "csrc/buffers/ep.hpp:284-286",
+      "finding": "URMA在issue返回后仍读取x/metadata_send_buffer，epilogue闭包捕获这两者和context，保留到排队drain。host_workspace使用aclrtMallocHost+mapped register，EPBuffer destroy barrier后unregister/free。"
+    },
+    {
+      "topic": "cache",
+      "evidence": "dispatch.hpp:707,723,735,747,790,824,835;dispatch_copy_epilogue.hpp:312,364,408,496",
+      "finding": "明确存在L2 NORMAL_FIRST_VICTIM、NOTALLOC_CLEAN、NOTALLOC_CI提示；没有显式L1 scratch分配。不能把UBMEM通信协议当作__ubuf__片上UB。"
+    },
+    {
+      "topic": "limits",
+      "evidence": "dispatch.hpp:109-112,493,607;csrc/kernels/ep/dispatch.hpp:49",
+      "finding": "主host launch C>=16，worker实际C>1，C<=64；thread=512，所以E<=512；K<=32。epilogue bins256/512，padding原始计数/容量不混淆；历史注释us不是冻结版本实测。"
+    }
+  ],
+  "status": "BASELINE_COMPLETE_AWAIT_DRAFT"
+}

@@ -1,0 +1,20 @@
+{
+  "errors": [],
+  "combinations": 2026,
+  "failures": [],
+  "behaviors": "play/pause/step/seek/reset/speed/preset/reverse selection/element255/late join/visual refresh/control refresh/owner takeover PASS",
+  "viewports": [
+    [
+      1280,
+      720
+    ],
+    [
+      1440,
+      900
+    ],
+    [
+      1920,
+      1080
+    ]
+  ]
+}

@@ -1,0 +1,36 @@
+[
+  {
+    "file": "dispatch.walkthrough.html",
+    "source_lines": 867,
+    "coverage": "覆盖 867 / 867 行",
+    "visible_segments_in_selected_function": 16,
+    "search_result": "2 / 6 · 6 行",
+    "console_errors": [],
+    "network_dependencies": [],
+    "offline": true,
+    "checks": [
+      "正式PASS标记",
+      "完整源码行数",
+      "逻辑模式与module切换",
+      "全源码搜索Enter/Escape",
+      "内存模式与搬运点击"
+    ]
+  },
+  {
+    "file": "dispatch_copy_epilogue.walkthrough.html",
+    "source_lines": 623,
+    "coverage": "覆盖 623 / 623 行",
+    "visible_segments_in_selected_function": 20,
+    "search_result": "2 / 13 · 13 行",
+    "console_errors": [],
+    "network_dependencies": [],
+    "offline": true,
+    "checks": [
+      "正式PASS标记",
+      "完整源码行数",
+      "逻辑模式与module切换",
+      "全源码搜索Enter/Escape",
+      "内存模式与搬运点击"
+    ]
+  }
+]

@@ -1,0 +1,232 @@
+{
+  "reviewer": "independent-review",
+  "author": "animation",
+  "status": "IN_REVIEW",
+  "scope": "纯数值来源语义和独立复算；UI交互/几何证据另列，既有动画PASS不替代此审核",
+  "source_commit": "3b25377d04b24fc6154698ded78a2bcb2c59afff",
+  "skill_revision": "045c667",
+  "protocol": "https://github.com/Kirrito-k423/agent-skills/blob/eb2740498eafa9dc92115f1ba4d39e154e92fa89/data-flow-animation/references/numeric-provenance.md",
+  "baseline_model_sha256": "567fc1e82f4c91dd09c481a05d7eee2b6ea850e6f155a541c1a3f1c95b633197",
+  "phase_contract": {
+    "initial": "真正初始状态；缓存handle为本轮开始前继承，不能归当前producer",
+    "read-before": "当前frame.reads.value，发生于当前写之前",
+    "write-before": "当前write.before，producer不包含当前写",
+    "write-after": "当前write.after，当前写是producer，值相等也必须记写",
+    "observe": "snapshot可见值，追到最近真实写或初始来源",
+    "history": "历史entry所在step回溯，禁止当前UI或未来step操作数"
+  },
+  "required_cases": [
+    {
+      "case": "sentinel_identity",
+      "query": "mixed R0.topk_idx[3] elementPath=[0]/[1]",
+      "expected": [
+        -1,
+        0
+      ],
+      "meaning": "两个不同lane；-1无专家、0合法expert0；教学输入数组不是范围"
+    },
+    {
+      "case": "rank_sum",
+      "query": "mixed prefix step5 R0.rank_histogram_sum_view",
+      "expected": [
+        2,
+        1,
+        1,
+        1
+      ],
+      "calculation": "t0[0,1]→{R0},t1[2,3]→{R1},t2[4,6]→{R2,R3},t3[-1,0]→{R0};每token每目的rank至多1"
+    },
+    {
+      "case": "SF_bits",
+      "query": "fp8 R0.sf[0] elementPath=[0]",
+      "expected": 15360,
+      "calculation": "0x3c00=3×4096+12×256;int16 pack原始位模式，不能称解码scale"
+    },
+    {
+      "case": "same_write_clear_unknown",
+      "expected": "真实零载荷copy、signals重复发布1均有当前producer；clear0是新写；未写入/未定义padding不得推定0"
+    }
+  ],
+  "source_evidence": [
+    {
+      "file": "dispatch.hpp",
+      "lines": [
+        177,
+        179,
+        182,
+        183,
+        186
+      ],
+      "fact": "读取topk，expert每有效命中加1，rank先过滤/映射/去重再计数"
+    },
+    {
+      "file": "dispatch.hpp",
+      "lines": [
+        221,
+        232,
+        233,
+        242,
+        244,
+        252,
+        253
+      ],
+      "fact": "空核也发布ready,count；排他前缀由包含和减自身；随后clear0"
+    },
+    {
+      "file": "dispatch.hpp",
+      "lines": [
+        272,
+        274,
+        277,
+        281,
+        282
+      ],
+      "fact": "slot=前核rank前缀+本核原子ordinal；globalSGEpair=logicalSQEbase×6+pair"
+    },
+    {
+      "file": "dispatch.hpp",
+      "lines": [
+        395,
+        396,
+        400,
+        402,
+        407,
+        409,
+        411,
+        413,
+        414,
+        417
+      ],
+      "fact": "最后物理SQE flags；SGE长度和地址偏移、目的槽offset、剩余WQEBB NOP"
+    },
+    {
+      "file": "dispatch.hpp",
+      "lines": [
+        511,
+        512,
+        513,
+        514,
+        519,
+        532,
+        533,
+        534,
+        538
+      ],
+      "fact": "expert end=前专家aligned容量+当前raw计数；rank是按来源rank包含式前缀"
+    },
+    {
+      "file": "dispatch_copy_epilogue.hpp",
+      "lines": [
+        403,
+        404,
+        405,
+        407,
+        420,
+        426,
+        479,
+        480,
+        482,
+        484,
+        485,
+        486,
+        493,
+        494,
+        501,
+        502,
+        509,
+        515,
+        520,
+        521
+      ],
+      "fact": "前核计数+expert起点产生展开slot；拷贝hidden/SF；weight按匹配j；metadata含slot/gid/最后本地j"
+    },
+    {
+      "file": "dispatch_copy_epilogue.hpp",
+      "lines": [
+        556,
+        557,
+        560,
+        561,
+        568,
+        569,
+        580
+      ],
+      "fact": "padding=align(rawEnd,A)-rawEnd；按part分配且明确写0"
+    },
+    {
+      "file": "deep_ep/layout/ep/token.hpp",
+      "lines": [
+        24,
+        25,
+        38,
+        39,
+        40,
+        42,
+        107,
+        111
+      ],
+      "fact": "metadata字节采用SF独立32字节对齐和topk/weights/global字段；skipHidden后为send metadata；每rank容量M条，不按实际T减分配。"
+    },
+    {
+      "file": "dispatch.hpp",
+      "lines": [
+        340,
+        348,
+        357,
+        370,
+        371,
+        372,
+        373,
+        374,
+        375
+      ],
+      "fact": "physical SQE采用原子取号；教学合法顺序不同于硬件确定顺序；header48B、SGE16B、WQEBB64B。"
+    }
+  ],
+  "coverage_required": {
+    "presets": [
+      "mixed",
+      "concentrated",
+      "invalid",
+      "zero",
+      "fp8",
+      "cached",
+      "noWeights",
+      "uninitialized",
+      "empty"
+    ],
+    "objects": "枚举ledger的所有obj类型及每个数值/boolean/UNKNOWN叶；字符串地址单独按结构语义核验",
+    "operations": [
+      "input",
+      "source_init",
+      "cache_inherit",
+      "filter",
+      "floor",
+      "deduplicate",
+      "sum",
+      "exclusive_prefix",
+      "inclusive_prefix",
+      "align",
+      "slot",
+      "SGE",
+      "SQE",
+      "copy",
+      "same_value_write",
+      "clear",
+      "UNKNOWN"
+    ],
+    "assertions": "result严格等于对应phase快照；producer由真实写日志独立重建；operands的object/path/step值独立读回并复算；已知object不得落入泛化fallback"
+  },
+  "ui_evidence": {
+    "status": "PENDING",
+    "required": [
+      "哨兵/计数/前缀/重复写/历史hover",
+      "键盘Enter固定与Esc关闭",
+      "触控",
+      "边界翻转与局部滚动",
+      "切step/preset/dialog清陈旧tooltip"
+    ]
+  },
+  "protocol_sha256": "9488d3167e29d110646c7da6c3de886893d462b174a6d4b03d00684956c68dfb",
+  "baseline_coverage_queries": 629468
+}

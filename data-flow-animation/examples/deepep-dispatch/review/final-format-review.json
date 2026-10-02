@@ -1,0 +1,32 @@
+{
+  "status": "PASS",
+  "reviewer": "independent-review",
+  "author": "walkthrough-agent",
+  "changed_functions": [
+    "epi-histogram-37",
+    "epi-init-slot-107",
+    "epi-iter-167",
+    "dispatch-simt-77",
+    "dispatch-impl-551",
+    "dispatch-preload-688",
+    "epi-impl-176",
+    "epi-issue-load-291"
+  ],
+  "analysis_input_sha256": {
+    "dispatch": "c677c39bd97dd8d012890977136938a59e146388b03c68435c37786eb099ca82",
+    "dispatch_copy_epilogue": "dc01efb69a3429d1deae73490f57c535ea05bb5f6509f16613fce3dd9613ac6a"
+  },
+  "allowed_diff": [
+    "源码标识符周边空白",
+    "getter167返回量解释扩写",
+    "dispatch输入region标签增加hidden"
+  ],
+  "unchanged": [
+    "line_notes",
+    "calls",
+    "function/segment ranges",
+    "inputs/outputs",
+    "memory addresses/sizes/ownership/synchronization/budget"
+  ],
+  "required_changes": []
+}

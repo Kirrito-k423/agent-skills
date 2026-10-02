@@ -1,0 +1,4223 @@
+{
+  "source_sha256": "25244c66d5937e9e7521400792c2e0ddc974512971f582e95d19c4828c31b678",
+  "functions": [
+    {
+      "id": "dispatch-impl-551",
+      "module_id": "issue",
+      "name": "dispatch_impl",
+      "start": 551,
+      "end": 865,
+      "summary": "issue kernel：Scalar metadata与本地hidden流水并行异步SIMT worker，最后提交URMA SQ。",
+      "inactive": false,
+      "inputs": [
+        "x",
+        "sf",
+        "topk_idx",
+        "topk_weights",
+        "buffer",
+        "workspace",
+        "host_workspace",
+        "jetty_ptrs",
+        "rank_idx",
+        "num_tokens",
+        "sf_token_stride",
+        "sf_hidden_stride",
+        "dst_buffer_slot_idx",
+        "dst_gsge_idx"
+      ],
+      "outputs": [
+        "metadata_send_buffer",
+        "dst_buffer_slot_idx",
+        "dst_gsge_idx",
+        "psum_num_recv_tokens_per_rank",
+        "psum_num_recv_tokens_per_expert",
+        "num_unaligned_recv_tokens_per_expert",
+        "cumulative_local_expert_recv_stats"
+      ],
+      "side_effects": [
+        "MTE3写metadata_send_buffer与本Rankrecv hidden",
+        "异步启动SIMT worker",
+        "等待V→S后advance_sq并ring doorbell",
+        "可选drain通信屏障；默认尾部不drain",
+        "worker更新GM counts、fresh路由handle、peer reduction统计与mapped host通知"
+      ],
+      "review": {
+        "function_id": "dispatch-impl-551",
+        "revision": 5,
+        "draft_author": "walkthrough-agent",
+        "reviewer": "independent-review",
+        "source_sha256": "25244c66d5937e9e7521400792c2e0ddc974512971f582e95d19c4828c31b678",
+        "draft_sha256": "c677c39bd97dd8d012890977136938a59e146388b03c68435c37786eb099ca82",
+        "function_content_sha256": "988e21a222c96f2a26a64eee1df900afcdc2ea18ec2009010881bb5290fc0831",
+        "line_range": [
+          551,
+          865
+        ],
+        "gaps": [],
+        "overlaps": [],
+        "unresolved": [],
+        "verdict": "PASS",
+        "status": "PASS",
+        "required_changes": [],
+        "verified": [
+          "模板计数/容量门禁与UB预算，首屏障和可选尾drain区别",
+          "异步SIMT启动；metadata SF连续/NDDMA、fresh TopK/src、可选weight打包",
+          "MTE2/S/MTE3阶段事件、metadata_ready与local_copy_ready独立依赖",
+          "local hidden仅经UB，remote hidden直接x；advance_sq仅UB，ring才GM head+DSB+doorbell",
+          "完整定义逐行含signature/comment/brace/blank复核；无fallback或错误跨域变量解释",
+          "caller/callee真实调用点、IO/成员/GM/UB/remote状态变化核对",
+          "allocator/owner/capacity/alignment/lifetime/cache边界详见独立PASS memory-review-r3",
+          "独立复审renderer整改：仅既有标识符周边空白，calls/notes/IO/ranges完全一致"
+        ],
+        "prior_function_content_sha256": "2dca5d9b898a6f68366f5f90b746305af40e1b6289aac54a6b444165019a8bc4"
+      },
+      "segments": [
+        {
+          "start": 551,
+          "end": 575,
+          "title": "声明issue kernel与初始化SoC",
+          "detail": "模板固定W/E/K/A/V/H/P/M和UB预算；InitSocState初始化设备执行状态。",
+          "kind": "input",
+          "input_state": [
+            "x/sf/topk_idx/topk_weights是输入；buffer/workspace由Context拥有"
+          ],
+          "mechanism": "模板固定W/E/K/A/V/H/P/M和UB预算；InitSocState初始化设备执行状态。",
+          "output_state": [
+            "kernel参数绑定当前Rank资源"
+          ],
+          "why": "issue只发出通信与控制计数，完整expert输出由epilogue完成。",
+          "calls": [
+            {
+              "name": "InitSocState",
+              "line": 574,
+              "type": "external"
+            }
+          ],
+          "id": "dispatch-impl-551-s1"
+        },
+        {
+          "start": 576,
+          "end": 597,
+          "title": "限制归约编码与输出整数范围",
+          "detail": "编译断言检查均分专家、2幂alignment、SGE容量、24位原始/host计数与INT_MAX展开行数。",
+          "kind": "guard",
+          "input_state": [
+            "V/W不超过8位arrival；M/W/E/K/A影响最坏展开"
+          ],
+          "mechanism": "编译断言检查均分专家、2幂alignment、SGE容量、24位原始/host计数与INT_MAX展开行数。",
+          "output_state": [
+            "不会因计数高低位或int溢出破坏协议"
+          ],
+          "why": "host count对齐与device原始count必须分别校验。",
+          "calls": [
+            {
+              "name": "EP_STATIC_ASSERT",
+              "line": 578,
+              "type": "external"
+            },
+            {
+              "name": "EP_STATIC_ASSERT",
+              "line": 579,
+              "type": "external"
+            },
+            {
+              "name": "EP_STATIC_ASSERT",
+              "line": 580,
+              "type": "external"
+            },
+            {
+              "name": "EP_STATIC_ASSERT",
+              "line": 581,
+              "type": "external"
+            },
+            {
+              "name": "EP_STATIC_ASSERT",
+              "line": 582,
+              "type": "external"
+            },
+            {
+              "name": "EP_STATIC_ASSERT",
+              "line": 583,
+              "type": "external"
+            },
+            {
+              "name": "EP_STATIC_ASSERT",
+              "line": 584,
+              "type": "external"
+            },
+            {
+              "name": "EP_STATIC_ASSERT",
+              "line": 585,
+              "type": "external"
+            },
+            {
+              "name": "EP_STATIC_ASSERT",
+              "line": 586,
+              "type": "external"
+            },
+            {
+              "name": "EP_STATIC_ASSERT",
+              "line": 588,
+              "type": "external"
+            },
+            {
+              "name": "EP_STATIC_ASSERT",
+              "line": 590,
+              "type": "external"
+            },
+            {
+              "name": "EP_STATIC_ASSERT",
+              "line": 593,
+              "type": "external"
+            }
+          ],
+          "id": "dispatch-impl-551-s2"
+        },
+        {
+          "start": 598,
+          "end": 615,
+          "title": "估算SQ最坏槽数与绑定workspace",
+          "detail": " kNumMaxSQEs 取多个保守上界最小值；4 WQEBB固定槽不越16位索引；检查token范围、SF stride，绑定EPSignals。",
+          "kind": "compute",
+          "input_state": [
+            "单AIV最多ceil(M/V) token，可发往min(K,W-1)个远端Rank"
+          ],
+          "mechanism": " kNumMaxSQEs 取多个保守上界最小值；4 WQEBB固定槽不越16位索引；检查token范围、SF stride，绑定EPSignals。",
+          "output_state": [
+            "每AIV与Context workspace地址一致"
+          ],
+          "why": "每个peer可能留下尾SQ不足6pair，不能只用全域总pair/6估算SQ。",
+          "calls": [
+            {
+              "name": "EP_STATIC_ASSERT",
+              "line": 604,
+              "type": "external"
+            },
+            {
+              "name": "EP_STATIC_ASSERT",
+              "line": 607,
+              "type": "external"
+            },
+            {
+              "name": "EP_DEVICE_ASSERT",
+              "line": 608,
+              "type": "external"
+            },
+            {
+              "name": "EP_DEVICE_ASSERT",
+              "line": 610,
+              "type": "external"
+            }
+          ],
+          "id": "dispatch-impl-551-s3"
+        },
+        {
+          "start": 616,
+          "end": 640,
+          "title": "构造GM接收切片与静态UB布局",
+          "detail": "TokenLayout fresh含src/Top-K，cached只重发SF/weights；接收取源rank_idx切片；UB0布局控制区+metadata/hidden stages，并编译检查sizeof。",
+          "kind": "compute",
+          "input_state": [
+            "buffer为GM接收大块；kNumUbBytes为每AIV launch预算"
+          ],
+          "mechanism": "TokenLayout fresh含src/Top-K，cached只重发SF/weights；接收取源rank_idx切片；UB0布局控制区+metadata/hidden stages，并编译检查sizeof。",
+          "output_state": [
+            "Scalar和SIMT指向同一ub_layout与metadata stage"
+          ],
+          "why": "远端写入当前源Rank在目标窗口的对应切片，因此本地recv_buffer也取rank_idx。",
+          "calls": [
+            {
+              "name": "EP_STATIC_ASSERT",
+              "line": 629,
+              "type": "external"
+            }
+          ],
+          "id": "dispatch-impl-551-s4"
+        },
+        {
+          "start": 641,
+          "end": 656,
+          "title": "进入跨Rank起始屏障",
+          "detail": "可选trace stamp包围barrier<W,timeout,false>，此屏障不采用末尾drain模板组合。",
+          "kind": "sync",
+          "input_state": [
+            "workspace common_signals保存通信域与屏障状态"
+          ],
+          "mechanism": "可选trace stamp包围barrier<W,timeout,false>，此屏障不采用末尾drain模板组合。",
+          "output_state": [
+            "各Rank起始状态汇合"
+          ],
+          "why": "trace源码注释时间不是实测；屏障用于对齐不同Rank进入本次dispatch。",
+          "calls": [
+            {
+              "name": "asc_mark_stamp",
+              "line": 649,
+              "type": "external"
+            },
+            {
+              "name": "barrier",
+              "line": 651,
+              "type": "external"
+            },
+            {
+              "name": "asc_mark_stamp",
+              "line": 654,
+              "type": "external"
+            }
+          ],
+          "id": "dispatch-impl-551-s5"
+        },
+        {
+          "start": 657,
+          "end": 687,
+          "title": "异步启动SIMT路由worker",
+          "detail": "清local_copy_ready/metadata_ready，通过S→V事件后VF_CALL发512thread worker；传recv_buffer.base-workspace的对称偏移。",
+          "kind": "compute",
+          "input_state": [
+            "ub_layout控制区已构造；ready旗标可能含旧调用值"
+          ],
+          "mechanism": "清local_copy_ready/metadata_ready，通过S→V事件后VF_CALL发512thread worker；传recv_buffer.base-workspace的对称偏移。",
+          "output_state": [
+            "SIMT路由/SQ编码与Scalar metadata流水并行"
+          ],
+          "why": "worker读旧ready会破坏本次GM与UB先后关系；相对workspace偏移能用于peer注册基址。",
+          "calls": [
+            {
+              "name": "asc_sync_notify",
+              "line": 666,
+              "type": "external"
+            },
+            {
+              "name": "asc_sync_wait",
+              "line": 667,
+              "type": "external"
+            },
+            {
+              "name": "simt_persistent_worker",
+              "line": 672,
+              "type": "internal",
+              "target": "dispatch-simt-77"
+            }
+          ],
+          "id": "dispatch-impl-551-s6"
+        },
+        {
+          "start": 688,
+          "end": 696,
+          "title": "确定metadata stage边界并等待复用",
+          "detail": "stage首token=stage_idx*每stage容量；真实数量夹到本AIV末端；等MTE3→MTE2事件避免覆盖尚在写GM的UB。",
+          "kind": "input",
+          "input_state": [
+            "preload_metadata(token_idx,stage_idx)捕获本AIV布局"
+          ],
+          "mechanism": "UB stage首token槽=stage_idx*kNumTokensPerMetadataMTE；GM首token由形参token_idx给出；真实数量夹到本AIV末端；等MTE3→MTE2事件避免覆盖尚在写GM的UB。",
+          "output_state": [
+            "该stage可安全接收下一批metadata"
+          ],
+          "why": "最后AIV与最后stage都可能不足，不能越读相邻核token。",
+          "calls": [
+            {
+              "name": "asc_sync_wait",
+              "line": 696,
+              "type": "external"
+            }
+          ],
+          "id": "dispatch-impl-551-s7"
+        },
+        {
+          "start": 697,
+          "end": 726,
+          "title": "读取连续或跨stride SF",
+          "detail": "hidden_stride==1用burst MTE2；否则两维 nddma_desc 按token和pack维stride收集到metadata SF子区。",
+          "kind": "compute",
+          "input_state": [
+            "sf可能存在token_stride和hidden_stride"
+          ],
+          "mechanism": "hidden_stride==1用burst MTE2；否则两维 nddma_desc 按token和pack维stride收集到metadata SF子区。",
+          "output_state": [
+            "metadata UB中SF pack布局紧凑"
+          ],
+          "why": "支持输入SF的不同strided视图，输出epilogue另外强制连续pack。",
+          "calls": [
+            {
+              "name": "asc_copy_gm2ub_align",
+              "line": 701,
+              "type": "external"
+            },
+            {
+              "name": "nddma_out_to_ub",
+              "line": 720,
+              "type": "external"
+            }
+          ],
+          "id": "dispatch-impl-551-s8"
+        },
+        {
+          "start": 727,
+          "end": 739,
+          "title": "fresh加载Top-K专家ID",
+          "detail": "仅not kCachedMode读每token K*sizeof(int64)，按num_metadata_bytes stride放UB TokenLayout Top-K子区。",
+          "kind": "compute",
+          "input_state": [
+            "topk_idx是int64 [N,K]；cached handle已有路由"
+          ],
+          "mechanism": "仅not kCachedMode读每token K*sizeof(int64)，按num_metadata_bytes stride放UB TokenLayout Top-K子区。",
+          "output_state": [
+            "fresh metadata带原始Top-K，cached不重发ID"
+          ],
+          "why": "epilogue fresh需要在同Rank复制给多个专家，cached直接复用recv_src_metadata槽。",
+          "calls": [
+            {
+              "name": "asc_copy_gm2ub_align",
+              "line": 728,
+              "type": "external"
+            }
+          ],
+          "id": "dispatch-impl-551-s9"
+        },
+        {
+          "start": 740,
+          "end": 753,
+          "title": "加载可选weight并发布stage已读",
+          "detail": "非空则MTE2读每token K个float到UB weight字段；notify MTE2→S(stage_idx)。",
+          "kind": "sync",
+          "input_state": [
+            "topk_weights为空时无weight消费请求"
+          ],
+          "mechanism": "非空则MTE2读每token K个float到UB weight字段；notify MTE2→S(stage_idx)。",
+          "output_state": [
+            "Scalar能修改src全局token字段并准备metadata写GM"
+          ],
+          "why": "MTE2完成前不能让Scalar读取或修改同一metadata stage。",
+          "calls": [
+            {
+              "name": "asc_copy_gm2ub_align",
+              "line": 741,
+              "type": "external"
+            },
+            {
+              "name": "asc_sync_notify",
+              "line": 752,
+              "type": "external"
+            }
+          ],
+          "id": "dispatch-impl-551-s10"
+        },
+        {
+          "start": 754,
+          "end": 768,
+          "title": "预热metadata多stage",
+          "detail": "num_metadata_batches=ceil(n/C)，num_active_stages=min(batches,stages)；先发布空stage再preload每个初始批。",
+          "kind": "compute",
+          "input_state": [
+            "本AIV有效num_tokens_for_vec_core可能为0"
+          ],
+          "mechanism": "num_metadata_batches=ceil(num_tokens_for_vec_core/kNumTokensPerMetadataMTE)，num_active_stages=min(batches,stages)；先发布空stage再preload每个初始批。",
+          "output_state": [
+            "多stage MTE2读取已排队"
+          ],
+          "why": "零token AIV不发无用读取；元数据管线和worker路由可重叠。",
+          "calls": [
+            {
+              "name": "EP_STATIC_ASSERT",
+              "line": 756,
+              "type": "external"
+            },
+            {
+              "name": "EP_STATIC_ASSERT",
+              "line": 757,
+              "type": "external"
+            },
+            {
+              "name": "EP_STATIC_ASSERT",
+              "line": 758,
+              "type": "external"
+            },
+            {
+              "name": "asc_sync_notify",
+              "line": 765,
+              "type": "external"
+            },
+            {
+              "name": "preload_metadata",
+              "line": 767,
+              "type": "internal",
+              "target": "dispatch-preload-688"
+            }
+          ],
+          "id": "dispatch-impl-551-s11"
+        },
+        {
+          "start": 769,
+          "end": 796,
+          "title": "打包src索引并流水写metadata GM",
+          "detail": "等待MTE2→S；fresh写rank_idx*M+token_idx全局src；S→MTE3后写 metadata_send_buffer ；释放stage并提前读取环后下一批。",
+          "kind": "output",
+          "input_state": [
+            "UB stage已由preload读取SF/Top-K/weights"
+          ],
+          "mechanism": "等待MTE2→S；fresh写rank_idx*M+token_idx全局src；S→MTE3后写 metadata_send_buffer ；释放stage并提前读取环后下一批。",
+          "output_state": [
+            "紧凑metadata发送GM与每token一致"
+          ],
+          "why": "URMA要把metadata与直接读取的x拼接，src全局索引用最大容量M作为跨Rank步长。",
+          "calls": [
+            {
+              "name": "asc_sync_wait",
+              "line": 774,
+              "type": "external"
+            },
+            {
+              "name": "asc_sync_notify",
+              "line": 784,
+              "type": "external"
+            },
+            {
+              "name": "asc_sync_wait",
+              "line": 785,
+              "type": "external"
+            },
+            {
+              "name": "asc_copy_ub2gm_align",
+              "line": 786,
+              "type": "external"
+            },
+            {
+              "name": "asc_sync_notify",
+              "line": 792,
+              "type": "external"
+            },
+            {
+              "name": "preload_metadata",
+              "line": 795,
+              "type": "internal",
+              "target": "dispatch-preload-688"
+            }
+          ],
+          "id": "dispatch-impl-551-s12"
+        },
+        {
+          "start": 797,
+          "end": 808,
+          "title": "发布metadata完成并等待本地槽",
+          "detail": "等各stage MTE3释放事件，再MTE2→S汇合后metadata_ready=1；等待 local_copy_ready 并初始化hidden stage空闲事件。",
+          "kind": "sync",
+          "input_state": [
+            "metadata所有MTE3批次已发出；worker可能仍算路由"
+          ],
+          "mechanism": "等各stage MTE3释放事件，再MTE2→S汇合后metadata_ready=1；等待 local_copy_ready 并初始化hidden stage空闲事件。",
+          "output_state": [
+            "SIMT可复制metadata，Scalar可复制本地hidden"
+          ],
+          "why": "metadata GM可读和local槽号就绪是两条独立握手，不能互相替代。",
+          "calls": [
+            {
+              "name": "asc_sync_wait",
+              "line": 798,
+              "type": "external"
+            },
+            {
+              "name": "asc_sync_notify",
+              "line": 799,
+              "type": "external"
+            },
+            {
+              "name": "asc_sync_wait",
+              "line": 800,
+              "type": "external"
+            },
+            {
+              "name": "asc_sync_notify",
+              "line": 807,
+              "type": "external"
+            }
+          ],
+          "id": "dispatch-impl-551-s13"
+        },
+        {
+          "start": 809,
+          "end": 827,
+          "title": "self-copy hidden读取GM到UB",
+          "detail": "循环本AIV token，等待hidden stage释放，MTE2读x+token_idx*H，共H字节，notify MTE2→MTE3。",
+          "kind": "compute",
+          "input_state": [
+            "local_copy_dst_slot_idx[i]>=0表示该token需本Rank副本"
+          ],
+          "mechanism": "循环本AIV token，等待hidden stage释放，MTE2读x+token_idx*H，共H字节，notify MTE2→MTE3。",
+          "output_state": [
+            "ub_hidden中完整hidden可写入本Rankrecv"
+          ],
+          "why": "远端hidden由URMA直接读；只有本地路径使用这些UB hidden stage。",
+          "calls": [
+            {
+              "name": "asc_sync_wait",
+              "line": 817,
+              "type": "external"
+            },
+            {
+              "name": "asc_copy_gm2ub_align",
+              "line": 818,
+              "type": "external"
+            },
+            {
+              "name": "asc_sync_notify",
+              "line": 827,
+              "type": "external"
+            }
+          ],
+          "id": "dispatch-impl-551-s14"
+        },
+        {
+          "start": 828,
+          "end": 845,
+          "title": "self-copy hidden写UB到本RankGM",
+          "detail": "MTE3写recv_buffer[dst_slot_idx].hidden，释放stage循环复用；末尾逐stage等待再汇合S。",
+          "kind": "output",
+          "input_state": [
+            "ub_hidden已MTE2完成；dst_slot_idx已唯一分配"
+          ],
+          "mechanism": "MTE3写recv_buffer[dst_slot_idx].hidden，释放stage循环复用；末尾逐stage等待再汇合S。",
+          "output_state": [
+            "本Rankrecv切片hidden已写完"
+          ],
+          "why": "和SIMT metadata copy合成完整本地token；MTE3结束后才能进入最终通知阶段。",
+          "calls": [
+            {
+              "name": "asc_sync_wait",
+              "line": 830,
+              "type": "external"
+            },
+            {
+              "name": "asc_copy_ub2gm_align",
+              "line": 831,
+              "type": "external"
+            },
+            {
+              "name": "asc_sync_notify",
+              "line": 838,
+              "type": "external"
+            },
+            {
+              "name": "asc_sync_wait",
+              "line": 843,
+              "type": "external"
+            },
+            {
+              "name": "asc_sync_notify",
+              "line": 844,
+              "type": "external"
+            },
+            {
+              "name": "asc_sync_wait",
+              "line": 845,
+              "type": "external"
+            }
+          ],
+          "id": "dispatch-impl-551-s15"
+        },
+        {
+          "start": 846,
+          "end": 865,
+          "title": "等待VF结束、推进SQ并ring doorbell",
+          "detail": "V→S事件等worker完成；advance_sq只推进UB packed_head低位SQ和高位completion，再 ring_doorbell 写GM head、DSB、doorbell；kDoBarrier可选drain。",
+          "kind": "sync",
+          "input_state": [
+            "全部路由、计数、metadata GM与SQ word准备完毕"
+          ],
+          "mechanism": "V→S事件等worker完成；advance_sq只推进UB packed_head低位SQ和高位completion，再 ring_doorbell 写GM head、DSB、doorbell；kDoBarrier可选drain。",
+          "output_state": [
+            "远端URMA开始异步读取数据；配置决定此处是否等待完成"
+          ],
+          "why": "默认issue kernel退出不代表URMA完成；host决定issue尾或epilogue首做drain，并保活x/metadata至drain排队。",
+          "calls": [
+            {
+              "name": "asc_sync_notify",
+              "line": 849,
+              "type": "external"
+            },
+            {
+              "name": "asc_sync_wait",
+              "line": 850,
+              "type": "external"
+            },
+            {
+              "name": "EP_DEVICE_ASSERT",
+              "line": 852,
+              "type": "external"
+            },
+            {
+              "name": "advance_sq",
+              "line": 855,
+              "type": "external"
+            },
+            {
+              "name": "EP_DEVICE_ASSERT",
+              "line": 856,
+              "type": "external"
+            },
+            {
+              "name": "ring_doorbell",
+              "line": 857,
+              "type": "external"
+            },
+            {
+              "name": "barrier",
+              "line": 862,
+              "type": "external"
+            }
+          ],
+          "id": "dispatch-impl-551-s16"
+        }
+      ],
+      "line_notes": [
+        {
+          "line": 551,
+          "kind": "signature",
+          "explanation": "本行声明当前设备入口参数/模板约束“template <int kNumRanks, int kNumExperts, int kNumTopk,”。 kNumRanks：通信域Rank数W；kNumExperts：全域专家数E，按Rank均分；kNumTopk：每token路由数K",
+          "reads": [
+            "kNumRanks",
+            "kNumExperts",
+            "kNumTopk"
+          ],
+          "writes": []
+        },
+        {
+          "line": 552,
+          "kind": "signature",
+          "explanation": "本行声明当前设备入口参数/模板约束“int kExpertAlignment, bool kCachedMode, bool kDoCPUSync,”。 kExpertAlignment：专家输出行对齐A，须为2幂；kCachedMode：复用首次handle并省略Top-K/src元数据；kDoCPUSync：允许device写mapped host计数通知",
+          "reads": [
+            "kExpertAlignment",
+            "kCachedMode",
+            "kDoCPUSync"
+          ],
+          "writes": []
+        },
+        {
+          "line": 553,
+          "kind": "signature",
+          "explanation": "本行声明当前设备入口参数/模板约束“int kNumVecCores,”。 kNumVecCores：AIV并行核数V与私有Jetty数",
+          "reads": [
+            "kNumVecCores"
+          ],
+          "writes": []
+        },
+        {
+          "line": 554,
+          "kind": "signature",
+          "explanation": "本行声明当前设备入口参数/模板约束“int kNumHiddenBytes, int kNumSFPacks, int kNumMaxTokensPerRank, int kNumUbBytes,”。 kNumHiddenBytes：每token hidden字节H；kNumSFPacks：每token SF pack数P；kNumMaxTokensPerRank：每Rank最大输入容量M；kNumUbBytes：每AIV静态UB字节预算",
+          "reads": [
+            "kNumHiddenBytes",
+            "kNumSFPacks",
+            "kNumMaxTokensPerRank",
+            "kNumUbBytes"
+          ],
+          "writes": []
+        },
+        {
+          "line": 555,
+          "kind": "signature",
+          "explanation": "本行声明当前设备入口参数/模板约束“int64_t kNumTimeoutCycles, bool kDoBarrier = false,”。 kNumTimeoutCycles：通信/归约等待超时周期；kDoBarrier：选择在本kernel执行带drain的通信屏障",
+          "reads": [
+            "kNumTimeoutCycles"
+          ],
+          "writes": [
+            "kDoBarrier"
+          ]
+        },
+        {
+          "line": 556,
+          "kind": "signature",
+          "explanation": "本行声明当前设备入口参数/模板约束“int kNumMaxTokensPerVecCore = math::ceil_div(kNumMaxTokensPerRank, kNumVecCores),”。 kNumMaxTokensPerRank：每Rank最大输入容量M；kNumVecCores：AIV并行核数V与私有Jetty数",
+          "reads": [
+            "kNumMaxTokensPerRank",
+            "kNumVecCores"
+          ],
+          "writes": [
+            "kNumMaxTokensPerVecCore"
+          ]
+        },
+        {
+          "line": 557,
+          "kind": "signature",
+          "explanation": "本行声明当前设备入口参数/模板约束“int kNumJetties = kNumVecCores,”。 kNumVecCores：AIV并行核数V与私有Jetty数",
+          "reads": [
+            "kNumVecCores"
+          ],
+          "writes": [
+            "kNumJetties"
+          ]
+        },
+        {
+          "line": 558,
+          "kind": "signature",
+          "explanation": "本行声明当前设备入口参数/模板约束“int kNumSGEPairsPerSQE = 6>”。 kNumSGEPairsPerSQE：每SQ最多六个hidden+metadata SGE pair",
+          "reads": [],
+          "writes": [
+            "kNumSGEPairsPerSQE"
+          ]
+        },
+        {
+          "line": 559,
+          "kind": "signature",
+          "explanation": "声明声明issue kernel与初始化SoC对应的模板/设备入口“__global__ __vector__ void dispatch_impl(”；x/sf/topk_idx/topk_weights是输入；buffer/workspace由Context拥有",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 560,
+          "kind": "signature",
+          "explanation": "本行声明当前设备入口参数/模板约束“__gm__ void* x, __gm__ sf_pack_t* sf,”。 x：输入hidden GM；URMA远端直接读取它；sf：可选SF GM输入，允许双维stride",
+          "reads": [
+            "x",
+            "sf"
+          ],
+          "writes": []
+        },
+        {
+          "line": 561,
+          "kind": "signature",
+          "explanation": "本行声明当前设备入口参数/模板约束“__gm__ int64_t* topk_idx, __gm__ float* topk_weights,”。 topk_idx：[N,K] int64全局专家ID输入；topk_weights：可选[N,K] float路由权重输入",
+          "reads": [
+            "topk_idx",
+            "topk_weights"
+          ],
+          "writes": []
+        },
+        {
+          "line": 562,
+          "kind": "signature",
+          "explanation": "本行声明当前设备入口参数/模板约束“__gm__ uint8_t* metadata_send_buffer,”。 metadata_send_buffer：host torch::empty创建的紧凑metadata发送GM",
+          "reads": [
+            "metadata_send_buffer"
+          ],
+          "writes": []
+        },
+        {
+          "line": 563,
+          "kind": "signature",
+          "explanation": "本行声明当前设备入口参数/模板约束“__gm__ int* cumulative_local_expert_recv_stats,”。 cumulative_local_expert_recv_stats：可选GM累计原始expert接收计数",
+          "reads": [
+            "cumulative_local_expert_recv_stats"
+          ],
+          "writes": []
+        },
+        {
+          "line": 564,
+          "kind": "signature",
+          "explanation": "本行声明当前设备入口参数/模板约束“__gm__ int* psum_num_recv_tokens_per_rank,”。 psum_num_recv_tokens_per_rank：来源Rank去重接收流的普通cumsum GM",
+          "reads": [
+            "psum_num_recv_tokens_per_rank"
+          ],
+          "writes": []
+        },
+        {
+          "line": 565,
+          "kind": "signature",
+          "explanation": "本行声明当前设备入口参数/模板约束“__gm__ int* psum_num_recv_tokens_per_expert, __gm__ int* num_unaligned_recv_tokens_per_expert,”。 psum_num_recv_tokens_per_expert：含此前专家对齐跨度的当前专家有效end GM；num_unaligned_recv_tokens_per_expert：原始expert接收count GM",
+          "reads": [
+            "psum_num_recv_tokens_per_expert",
+            "num_unaligned_recv_tokens_per_expert"
+          ],
+          "writes": []
+        },
+        {
+          "line": 566,
+          "kind": "signature",
+          "explanation": "本行声明当前设备入口参数/模板约束“__gm__ int* dst_buffer_slot_idx, __gm__ int* dst_gsge_idx,”。 dst_buffer_slot_idx：fresh写/cached读的发送目的slot GM handle；dst_gsge_idx：fresh写/cached读的远端SGE索引GM handle",
+          "reads": [
+            "dst_buffer_slot_idx",
+            "dst_gsge_idx"
+          ],
+          "writes": []
+        },
+        {
+          "line": 567,
+          "kind": "signature",
+          "explanation": "本行声明当前设备入口参数/模板约束“__gm__ void* buffer, __gm__ void* workspace, __gm__ void* host_workspace,”。 buffer：Context symmetric memory中的token接收GM子区；workspace：Context symmetric memory首址EPSignals GM；host_workspace：EPBuffer注册映射的host计数通知页",
+          "reads": [
+            "buffer",
+            "workspace",
+            "host_workspace"
+          ],
+          "writes": []
+        },
+        {
+          "line": 568,
+          "kind": "signature",
+          "explanation": "本行声明当前设备入口参数/模板约束“__gm__ void* jetty_ptrs,”。 jetty_ptrs：通信域peer描述符与每AIV Jetty地址数组",
+          "reads": [
+            "jetty_ptrs"
+          ],
+          "writes": []
+        },
+        {
+          "line": 569,
+          "kind": "signature",
+          "explanation": "本行声明当前设备入口参数/模板约束“const int rank_idx,”。 rank_idx：当前Rank编号，用于expert归属和源接收切片",
+          "reads": [
+            "rank_idx"
+          ],
+          "writes": []
+        },
+        {
+          "line": 570,
+          "kind": "signature",
+          "explanation": "本行声明当前设备入口参数/模板约束“const int num_tokens,”。 num_tokens：本次有效输入数N，须不超过M",
+          "reads": [
+            "num_tokens"
+          ],
+          "writes": []
+        },
+        {
+          "line": 571,
+          "kind": "signature",
+          "explanation": "本行声明当前设备入口参数/模板约束“const int sf_token_stride,”。 sf_token_stride：输入SF token维pack步长",
+          "reads": [
+            "sf_token_stride"
+          ],
+          "writes": []
+        },
+        {
+          "line": 572,
+          "kind": "signature",
+          "explanation": "本行声明当前设备入口参数/模板约束“const int sf_hidden_stride) {”。 sf_hidden_stride：输入SF pack维步长，非1走NDDMA",
+          "reads": [
+            "sf_hidden_stride"
+          ],
+          "writes": []
+        },
+        {
+          "line": 573,
+          "kind": "comment",
+          "explanation": "这是声明issue kernel与初始化SoC的后续优化提示（TODO(HUAWEI): kernel launch & init SoC cost 1.9 us, which is slow），当前冻结版本仍执行下面的已有实现；不是已实现或实测收益。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 574,
+          "kind": "statement",
+          "explanation": "初始化本设备kernel的SoC执行状态；调用本行“AscendC::InitSocState();”。 模板固定W/E/K/A/V/H/P/M和UB预算；InitSocState初始化设备执行状态。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 575,
+          "kind": "blank",
+          "explanation": "在声明issue kernel与初始化SoC中，分隔“AscendC::InitSocState();”与随后“// Checks”两步；此处没有数据写入。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 576,
+          "kind": "comment",
+          "explanation": "注释说明限制归约编码与输出整数范围的实现意图（Checks）；编译断言检查均分专家、2幂alignment、SGE容量、24位原始/host计数与INT_MAX展开行数。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 577,
+          "kind": "comment",
+          "explanation": "注释说明限制归约编码与输出整数范围的实现意图（NOTES: the one-to-many-rank Jetty is private for this vector core）；编译断言检查均分专家、2幂alignment、SGE容量、24位原始/host计数与INT_MAX展开行数。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 578,
+          "kind": "statement",
+          "explanation": "在编译期限制此实例的容量、索引或硬件协议假设；调用本行“EP_STATIC_ASSERT(kNumRanks <= kNumMaxRanks);”。 编译断言检查均分专家、2幂alignment、SGE容量、24位原始/host计数与INT_MAX展开行数。",
+          "reads": [
+            "kNumRanks"
+          ],
+          "writes": []
+        },
+        {
+          "line": 579,
+          "kind": "statement",
+          "explanation": "在编译期限制此实例的容量、索引或硬件协议假设；调用本行“EP_STATIC_ASSERT(kNumExperts % kNumRanks == 0);”。 编译断言检查均分专家、2幂alignment、SGE容量、24位原始/host计数与INT_MAX展开行数。",
+          "reads": [
+            "kNumExperts",
+            "kNumRanks"
+          ],
+          "writes": []
+        },
+        {
+          "line": 580,
+          "kind": "statement",
+          "explanation": "在编译期限制此实例的容量、索引或硬件协议假设；调用本行“EP_STATIC_ASSERT(math::is_power_of_2(kExpertAlignment));”。 编译断言检查均分专家、2幂alignment、SGE容量、24位原始/host计数与INT_MAX展开行数。",
+          "reads": [
+            "kExpertAlignment"
+          ],
+          "writes": []
+        },
+        {
+          "line": 581,
+          "kind": "statement",
+          "explanation": "在编译期限制此实例的容量、索引或硬件协议假设；调用本行“EP_STATIC_ASSERT(kNumVecCores > 0);”。 编译断言检查均分专家、2幂alignment、SGE容量、24位原始/host计数与INT_MAX展开行数。",
+          "reads": [
+            "kNumVecCores"
+          ],
+          "writes": []
+        },
+        {
+          "line": 582,
+          "kind": "statement",
+          "explanation": "在编译期限制此实例的容量、索引或硬件协议假设；调用本行“EP_STATIC_ASSERT(kNumTopk > 0);”。 编译断言检查均分专家、2幂alignment、SGE容量、24位原始/host计数与INT_MAX展开行数。",
+          "reads": [
+            "kNumTopk"
+          ],
+          "writes": []
+        },
+        {
+          "line": 583,
+          "kind": "statement",
+          "explanation": "在编译期限制此实例的容量、索引或硬件协议假设；调用本行“EP_STATIC_ASSERT(kNumMaxTokensPerRank > 0);”。 编译断言检查均分专家、2幂alignment、SGE容量、24位原始/host计数与INT_MAX展开行数。",
+          "reads": [
+            "kNumMaxTokensPerRank"
+          ],
+          "writes": []
+        },
+        {
+          "line": 584,
+          "kind": "statement",
+          "explanation": "在编译期限制此实例的容量、索引或硬件协议假设；调用本行“EP_STATIC_ASSERT(kNumMaxTokensPerVecCore > 0);”。 编译断言检查均分专家、2幂alignment、SGE容量、24位原始/host计数与INT_MAX展开行数。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 585,
+          "kind": "statement",
+          "explanation": "在编译期限制此实例的容量、索引或硬件协议假设；调用本行“EP_STATIC_ASSERT(kNumSGEPairsPerSQE <= handle::kNumMaxSGEPairsPerSQE);”。 编译断言检查均分专家、2幂alignment、SGE容量、24位原始/host计数与INT_MAX展开行数。",
+          "reads": [
+            "kNumSGEPairsPerSQE"
+          ],
+          "writes": []
+        },
+        {
+          "line": 586,
+          "kind": "statement",
+          "explanation": "在编译期限制此实例的容量、索引或硬件协议假设；调用本行“EP_STATIC_ASSERT(kNumRanks <= reduction::kReductionMaxHighCount and kNumVecCores <= reduction::kReductionMaxHighCount,”。 编译断言检查均分专家、2幂alignment、SGE容量、24位原始/host计数与INT_MAX展开行数。",
+          "reads": [
+            "kNumRanks",
+            "kNumVecCores"
+          ],
+          "writes": []
+        },
+        {
+          "line": 587,
+          "kind": "statement",
+          "explanation": "编译错误诊断说明Rank/AIV arrival数超过高8位编码上限；这是字符串文本，没有GM或UB访问。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 588,
+          "kind": "statement",
+          "explanation": "在编译期限制此实例的容量、索引或硬件协议假设；调用本行“EP_STATIC_ASSERT(static_cast<int64_t>(kNumMaxTokensPerRank) * kNumRanks <= reduction::kReductionMaxLowCount,”。 编译断言检查均分专家、2幂alignment、SGE容量、24位原始/host计数与INT_MAX展开行数。",
+          "reads": [
+            "kNumMaxTokensPerRank",
+            "kNumRanks"
+          ],
+          "writes": []
+        },
+        {
+          "line": 589,
+          "kind": "statement",
+          "explanation": "编译错误诊断说明最坏原始expert count超过低24位编码上限；字符串中的value不是变量读取。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 590,
+          "kind": "statement",
+          "explanation": "在编译期限制此实例的容量、索引或硬件协议假设；调用本行“EP_STATIC_ASSERT(not kDoCPUSync or math::align<int64_t>(”。 编译断言检查均分专家、2幂alignment、SGE容量、24位原始/host计数与INT_MAX展开行数。",
+          "reads": [
+            "kDoCPUSync"
+          ],
+          "writes": []
+        },
+        {
+          "line": 591,
+          "kind": "statement",
+          "explanation": "在限制归约编码与输出整数范围中更新/计算“static_cast<int64_t>(kNumMaxTokensPerRank) * kNumRanks, kExpertAlignment) <= reduction::kReductionMaxLowCount,”。 编译断言检查均分专家、2幂alignment、SGE容量、24位原始/host计数与INT_MAX展开行数。",
+          "reads": [
+            "kNumMaxTokensPerRank",
+            "kNumRanks",
+            "kExpertAlignment"
+          ],
+          "writes": []
+        },
+        {
+          "line": 592,
+          "kind": "statement",
+          "explanation": "编译错误诊断说明host通知中对齐expert count可能超过24位；未执行任何数据搬运。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 593,
+          "kind": "statement",
+          "explanation": "在编译期限制此实例的容量、索引或硬件协议假设；调用本行“EP_STATIC_ASSERT(math::align<int64_t>(”。 编译断言检查均分专家、2幂alignment、SGE容量、24位原始/host计数与INT_MAX展开行数。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 594,
+          "kind": "statement",
+          "explanation": "最坏expert展开行数先取M*W*min(K,E/W)：每个输入token最多命中本Rankmin(K,E/W)个专家。",
+          "reads": [
+            "kNumMaxTokensPerRank",
+            "kNumRanks",
+            "kNumTopk",
+            "kNumExperts"
+          ],
+          "writes": []
+        },
+        {
+          "line": 595,
+          "kind": "statement",
+          "explanation": "在限制归约编码与输出整数范围中更新/计算“static_cast<int64_t>(kExpertAlignment - 1) * (kNumExperts / kNumRanks), kExpertAlignment) <= INT_MAX,”。 编译断言检查均分专家、2幂alignment、SGE容量、24位原始/host计数与INT_MAX展开行数。",
+          "reads": [
+            "kExpertAlignment",
+            "kNumExperts",
+            "kNumRanks"
+          ],
+          "writes": []
+        },
+        {
+          "line": 596,
+          "kind": "statement",
+          "explanation": "编译错误诊断说明含expert padding的总展开行数超INT_MAX；这是assert报错文本。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 597,
+          "kind": "blank",
+          "explanation": "在限制归约编码与输出整数范围中，分隔“\"Expanded token count including expert padding overflows int\");”与随后“// Each remote peer can leave one partially filled SQE; all SQEs are written before the doorbell.”两步；此处没有数据写入。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 598,
+          "kind": "comment",
+          "explanation": "注释说明估算SQ最坏槽数与绑定workspace的实现意图（Each remote peer can leave one partially filled SQE; all SQEs are written before the doorbell.）；kNumMaxSQEs取多个保守上界最小值；4 WQEBB固定槽不越16位索引；检查token范围、SF stride，绑定EPSignals。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 599,
+          "kind": "declaration",
+          "explanation": "在估算SQ最坏槽数与绑定workspace中更新/计算“static constexpr int64_t kNumMaxRemoteEntries =”。 kNumMaxSQEs取多个保守上界最小值；4 WQEBB固定槽不越16位索引；检查token范围、SF stride，绑定EPSignals。",
+          "reads": [],
+          "writes": [
+            "kNumMaxRemoteEntries"
+          ]
+        },
+        {
+          "line": 600,
+          "kind": "statement",
+          "explanation": "单AIV最多ceil(M/V)个输入token，每token最多发min(K,W-1)个远端Rank，因此得到远端entry保守上界。",
+          "reads": [
+            "kNumTopk",
+            "kNumRanks"
+          ],
+          "writes": []
+        },
+        {
+          "line": 601,
+          "kind": "declaration",
+          "explanation": "在估算SQ最坏槽数与绑定workspace中更新/计算“static constexpr int64_t kNumMaxSQEs = math::min(kNumMaxRemoteEntries, math::min<int64_t>(”。 kNumMaxSQEs取多个保守上界最小值；4 WQEBB固定槽不越16位索引；检查token范围、SF stride，绑定EPSignals。",
+          "reads": [],
+          "writes": [
+            "kNumMaxSQEs"
+          ]
+        },
+        {
+          "line": 602,
+          "kind": "statement",
+          "explanation": "按每个远端peer最多ceil(M/V)个token估计尾SQ数量，总SQ上界为(W-1)*ceil(核token容量/6)。",
+          "reads": [
+            "kNumRanks",
+            "kNumSGEPairsPerSQE"
+          ],
+          "writes": []
+        },
+        {
+          "line": 603,
+          "kind": "statement",
+          "explanation": "在总远端entry后加入每peer最多5个尾部空pair余量，再除6；与其他上界取min后得到kNumMaxSQEs。",
+          "reads": [
+            "kNumRanks",
+            "kNumSGEPairsPerSQE"
+          ],
+          "writes": []
+        },
+        {
+          "line": 604,
+          "kind": "statement",
+          "explanation": "在编译期限制此实例的容量、索引或硬件协议假设；调用本行“EP_STATIC_ASSERT(kNumMaxSQEs * kNumWQEBBsPerSQESlot <= static_cast<int64_t>(UINT16_MAX) + 1,”。 kNumMaxSQEs取多个保守上界最小值；4 WQEBB固定槽不越16位索引；检查token范围、SF stride，绑定EPSignals。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 605,
+          "kind": "statement",
+          "explanation": "编译错误诊断说明最坏SQ数×4 WQEBB超出16位SQ环索引空间；没有指针读写。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 606,
+          "kind": "comment",
+          "explanation": "注释说明估算SQ最坏槽数与绑定workspace的实现意图（TODO: tune the best Jetty count）；kNumMaxSQEs取多个保守上界最小值；4 WQEBB固定槽不越16位索引；检查token范围、SF stride，绑定EPSignals。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 607,
+          "kind": "statement",
+          "explanation": "在编译期限制此实例的容量、索引或硬件协议假设；调用本行“EP_STATIC_ASSERT(kNumJetties == kNumVecCores and kNumJetties <= 64);”。 kNumMaxSQEs取多个保守上界最小值；4 WQEBB固定槽不越16位索引；检查token范围、SF stride，绑定EPSignals。",
+          "reads": [
+            "kNumVecCores"
+          ],
+          "writes": []
+        },
+        {
+          "line": 608,
+          "kind": "statement",
+          "explanation": "在设备执行时检查运行值是否符合已编译布局；调用本行“EP_DEVICE_ASSERT(0 <= num_tokens and num_tokens <= kNumMaxTokensPerRank);”。 kNumMaxSQEs取多个保守上界最小值；4 WQEBB固定槽不越16位索引；检查token范围、SF stride，绑定EPSignals。",
+          "reads": [
+            "num_tokens",
+            "kNumMaxTokensPerRank"
+          ],
+          "writes": []
+        },
+        {
+          "line": 609,
+          "kind": "branch",
+          "explanation": "估算SQ最坏槽数与绑定workspace的分支条件为“if constexpr (kNumSFPacks > 0)”；每个peer可能留下尾SQ不足6pair，不能只用全域总pair/6估算SQ。",
+          "reads": [
+            "kNumSFPacks"
+          ],
+          "writes": []
+        },
+        {
+          "line": 610,
+          "kind": "statement",
+          "explanation": "在设备执行时检查运行值是否符合已编译布局；调用本行“EP_DEVICE_ASSERT(sf_token_stride > 0 and sf_hidden_stride > 0);”。 kNumMaxSQEs取多个保守上界最小值；4 WQEBB固定槽不越16位索引；检查token范围、SF stride，绑定EPSignals。",
+          "reads": [
+            "sf_token_stride",
+            "sf_hidden_stride"
+          ],
+          "writes": []
+        },
+        {
+          "line": 611,
+          "kind": "blank",
+          "explanation": "在估算SQ最坏槽数与绑定workspace中，分隔“EP_DEVICE_ASSERT(sf_token_stride > 0 and sf_hidden_stride > 0);”与随后“const auto vec_core_idx = static_cast<int>(AscendC::GetBlockIdx());”两步；此处没有数据写入。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 612,
+          "kind": "declaration",
+          "explanation": "在估算SQ最坏槽数与绑定workspace中更新/计算“const auto vec_core_idx = static_cast<int>(AscendC::GetBlockIdx());”。 vec_core_idx：当前AIV编号，是连续输入片段或接收流片段的owner。",
+          "reads": [],
+          "writes": [
+            "vec_core_idx"
+          ]
+        },
+        {
+          "line": 613,
+          "kind": "declaration",
+          "explanation": "在估算SQ最坏槽数与绑定workspace中更新/计算“const auto workspace_layout = layout::EPWorkspaceLayout(workspace);”。 workspace_layout：Context::workspace的EPSignals视图，不在kernel里malloc。",
+          "reads": [
+            "workspace"
+          ],
+          "writes": [
+            "workspace_layout"
+          ]
+        },
+        {
+          "line": 614,
+          "kind": "declaration",
+          "explanation": "在估算SQ最坏槽数与绑定workspace中更新/计算“const auto host_workspace_layout = layout::EPWorkspaceLayout(host_workspace);”。 host_workspace_layout：EPBuffer拥有的映射页锁定host通知区视图。",
+          "reads": [
+            "host_workspace"
+          ],
+          "writes": [
+            "host_workspace_layout"
+          ]
+        },
+        {
+          "line": 615,
+          "kind": "blank",
+          "explanation": "在估算SQ最坏槽数与绑定workspace中，分隔“const auto host_workspace_layout = layout::EPWorkspaceLayout(host_workspace);”与随后“// Token and buffer layouts”两步；此处没有数据写入。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 616,
+          "kind": "comment",
+          "explanation": "注释说明构造GM接收切片与静态UB布局的实现意图（Token and buffer layouts）；TokenLayout fresh含src/Top-K，cached只重发SF/weights；接收取源rank_idx切片；UB0布局控制区+metadata/hidden stages，并编译检查sizeof。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 617,
+          "kind": "comment",
+          "explanation": "注释说明构造GM接收切片与静态UB布局的实现意图（Cached dispatch reuses source metadata from the handle; only SF and weights travel again.）；TokenLayout fresh含src/Top-K，cached只重发SF/weights；接收取源rank_idx切片；UB0布局控制区+metadata/hidden stages，并编译检查sizeof。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 618,
+          "kind": "declaration",
+          "explanation": "在构造GM接收切片与静态UB布局中更新/计算“const auto token_layout = layout::TokenLayout(”。 token_layout：完整通信token布局：hidden+可选SF+weight，fresh还含Top-K ID和src全局索引。",
+          "reads": [],
+          "writes": [
+            "token_layout"
+          ]
+        },
+        {
+          "line": 619,
+          "kind": "statement",
+          "explanation": "完整TokenLayout取hidden H字节、SF P*sizeof(sf_pack_t)、K权重；fresh带Top-K和src索引，cached省去这两种字段。",
+          "reads": [
+            "kNumHiddenBytes",
+            "kNumSFPacks",
+            "kNumTopk",
+            "kCachedMode"
+          ],
+          "writes": []
+        },
+        {
+          "line": 620,
+          "kind": "declaration",
+          "explanation": "在构造GM接收切片与静态UB布局中更新/计算“const auto recv_buffer = layout::BufferLayout(”。 recv_buffer：Context::buffer对称GM的接收区；按源Rank分区后每区最多M token。",
+          "reads": [],
+          "writes": [
+            "recv_buffer"
+          ]
+        },
+        {
+          "line": 621,
+          "kind": "statement",
+          "explanation": "BufferLayout按W个来源Rank区、每区M个最大token、完整TokenLayout步长保留接收容量。",
+          "reads": [
+            "token_layout",
+            "kNumRanks",
+            "kNumMaxTokensPerRank"
+          ],
+          "writes": []
+        },
+        {
+          "line": 622,
+          "kind": "statement",
+          "explanation": "接收布局基址取Context::buffer原地址，0偏移只绑定view而不分配新内存。",
+          "reads": [
+            "buffer"
+          ],
+          "writes": []
+        },
+        {
+          "line": 623,
+          "kind": "statement",
+          "explanation": "取当前源rank_idx的接收切片：本Rankself-copy写此区，远端WQE也用对应源Rank区偏移。",
+          "reads": [
+            "rank_idx"
+          ],
+          "writes": []
+        },
+        {
+          "line": 624,
+          "kind": "blank",
+          "explanation": "在构造GM接收切片与静态UB布局中，分隔“).get_rank_buffer(rank_idx);”与随后“// Assign unified buffer”两步；此处没有数据写入。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 625,
+          "kind": "comment",
+          "explanation": "注释说明构造GM接收切片与静态UB布局的实现意图（Assign unified buffer）；TokenLayout fresh含src/Top-K，cached只重发SF/weights；接收取源rank_idx切片；UB0布局控制区+metadata/hidden stages，并编译检查sizeof。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 626,
+          "kind": "statement",
+          "explanation": "在构造GM接收切片与静态UB布局中更新/计算“using ub_layout_t = DispatchUBLayout<kNumExperts, kNumRanks, kNumMaxTokensPerVecCore * kNumTopk, kNumMaxTokensPerVecCore>;”。 ub_layout_t：路由统计、槽映射及Jetty/peer快照的AIV UB控制布局。",
+          "reads": [
+            "kNumExperts",
+            "kNumRanks",
+            "kNumTopk"
+          ],
+          "writes": [
+            "ub_layout_t"
+          ]
+        },
+        {
+          "line": 627,
+          "kind": "statement",
+          "explanation": "在构造GM接收切片与静态UB布局中更新/计算“using ub_layout_with_buffer_t = UBLayoutWithBuffer<ub_layout_t, kNumHiddenBytes, kNumSFPacks,”。 ub_layout_with_buffer_t：UB控制布局加metadata与hidden循环stage的完整预算；ub_layout_t：路由统计、槽映射及Jetty/peer快照的AIV UB控制布局。",
+          "reads": [
+            "ub_layout_t",
+            "kNumHiddenBytes",
+            "kNumSFPacks"
+          ],
+          "writes": [
+            "ub_layout_with_buffer_t"
+          ]
+        },
+        {
+          "line": 628,
+          "kind": "statement",
+          "explanation": "UBLayoutWithBuffer模板绑定K、核token容量、UB字节预算和cached模式，进而算metadata/hidden stage数量。",
+          "reads": [
+            "kNumTopk",
+            "kNumUbBytes",
+            "kCachedMode"
+          ],
+          "writes": []
+        },
+        {
+          "line": 629,
+          "kind": "statement",
+          "explanation": "在编译期限制此实例的容量、索引或硬件协议假设；调用本行“EP_STATIC_ASSERT(sizeof(ub_layout_with_buffer_t) <= kNumUbBytes, \"Dispatch buffers exceed UB capacity\");”。 ub_layout_with_buffer_t：UB控制布局加metadata与hidden循环stage的完整预算。",
+          "reads": [
+            "ub_layout_with_buffer_t",
+            "kNumUbBytes"
+          ],
+          "writes": []
+        },
+        {
+          "line": 630,
+          "kind": "statement",
+          "explanation": "在构造GM接收切片与静态UB布局中更新/计算“constexpr auto kNumMetadataMTEStages = ub_layout_with_buffer_t::kNumMetadataMTEStages;”。 kNumMetadataMTEStages：metadata循环缓冲stage数，不超过8且受UB预算约束；ub_layout_with_buffer_t：UB控制布局加metadata与hidden循环stage的完整预算。",
+          "reads": [
+            "ub_layout_with_buffer_t",
+            "kNumMetadataMTEStages"
+          ],
+          "writes": [
+            "kNumMetadataMTEStages"
+          ]
+        },
+        {
+          "line": 631,
+          "kind": "statement",
+          "explanation": "在构造GM接收切片与静态UB布局中更新/计算“constexpr auto kNumHiddenMTEStages = ub_layout_with_buffer_t::kNumHiddenMTEStages;”。 kNumHiddenMTEStages：self-copy hidden缓冲stage数，预算扣除metadata后确定；ub_layout_with_buffer_t：UB控制布局加metadata与hidden循环stage的完整预算。",
+          "reads": [
+            "ub_layout_with_buffer_t",
+            "kNumHiddenMTEStages"
+          ],
+          "writes": [
+            "kNumHiddenMTEStages"
+          ]
+        },
+        {
+          "line": 632,
+          "kind": "statement",
+          "explanation": "在构造GM接收切片与静态UB布局中更新/计算“constexpr auto kNumTokensPerMetadataMTE = ub_layout_with_buffer_t::kNumTokensPerMetadataMTE;”。 kNumTokensPerMetadataMTE：一次metadata stage包含64或4个token，由可用UB至少能容纳的metadata决定；ub_layout_with_buffer_t：UB控制布局加metadata与hidden循环stage的完整预算。",
+          "reads": [
+            "ub_layout_with_buffer_t",
+            "kNumTokensPerMetadataMTE"
+          ],
+          "writes": [
+            "kNumTokensPerMetadataMTE"
+          ]
+        },
+        {
+          "line": 633,
+          "kind": "declaration",
+          "explanation": "在构造GM接收切片与静态UB布局中更新/计算“const auto ub = reinterpret_cast<__ubuf__ ub_layout_with_buffer_t*>(0);”。 ub：从UB地址0开始的静态资源视图，不是GM空指针分配；ub_layout_with_buffer_t：UB控制布局加metadata与hidden循环stage的完整预算。",
+          "reads": [
+            "ub_layout_with_buffer_t"
+          ],
+          "writes": [
+            "ub"
+          ]
+        },
+        {
+          "line": 634,
+          "kind": "declaration",
+          "explanation": "在构造GM接收切片与静态UB布局中更新/计算“const auto ub_layout = &ub->workspace;”。 ub_layout：ub->workspace，Scalar和SIMT共享本AIV路由控制状态；ub：从UB地址0开始的静态资源视图，不是GM空指针分配。",
+          "reads": [
+            "ub",
+            "workspace"
+          ],
+          "writes": [
+            "ub_layout"
+          ]
+        },
+        {
+          "line": 635,
+          "kind": "declaration",
+          "explanation": "在构造GM接收切片与静态UB布局中更新/计算“const auto metadata_token_layout = layout::TokenLayout(”。 metadata_token_layout：hidden长度为0的紧凑metadata布局。",
+          "reads": [],
+          "writes": [
+            "metadata_token_layout"
+          ]
+        },
+        {
+          "line": 636,
+          "kind": "statement",
+          "explanation": "metadata TokenLayout的hidden长度为0；SF和weight仍按P/K布局，Top-K/src字段由fresh模式决定。",
+          "reads": [
+            "kNumSFPacks",
+            "kNumTopk",
+            "kCachedMode"
+          ],
+          "writes": []
+        },
+        {
+          "line": 637,
+          "kind": "declaration",
+          "explanation": "在构造GM接收切片与静态UB布局中更新/计算“const auto ub_metadata_buffer = layout::BufferLayout(”。 ub_metadata_buffer：按stage切分的UB metadata批次区。",
+          "reads": [],
+          "writes": [
+            "ub_metadata_buffer"
+          ]
+        },
+        {
+          "line": 638,
+          "kind": "statement",
+          "explanation": "metadata UB BufferLayout把每个stage视作一个rank维，stage内最多kNumTokensPerMetadataMTE个紧凑metadata token。",
+          "reads": [
+            "metadata_token_layout",
+            "kNumMetadataMTEStages",
+            "kNumTokensPerMetadataMTE"
+          ],
+          "writes": []
+        },
+        {
+          "line": 639,
+          "kind": "statement",
+          "explanation": "metadata UB首址为ub->metadata数组，不复用hidden数组或GM token接收区。",
+          "reads": [
+            "ub"
+          ],
+          "writes": []
+        },
+        {
+          "line": 640,
+          "kind": "brace",
+          "explanation": "闭合第637行“const auto ub_metadata_buffer = layout::BufferLayout(”的实参列表；Scalar和SIMT指向同一ub_layout与metadata stage。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 641,
+          "kind": "blank",
+          "explanation": "在进入跨Rank起始屏障中，分隔“);”与随后“// Barrier before dispatch”两步；此处没有数据写入。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 642,
+          "kind": "comment",
+          "explanation": "注释说明进入跨Rank起始屏障的实现意图（Barrier before dispatch）；可选trace stamp包围barrier<W,timeout,false>，此屏障不采用末尾drain模板组合。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 643,
+          "kind": "comment",
+          "explanation": "源码在进入跨Rank起始屏障旁记载“NOTES: this costs 4 us (8 ranks)”；这是源码备注，未在本作品对应硬件配置实测，不能当性能结论。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 644,
+          "kind": "comment",
+          "explanation": "注释说明进入跨Rank起始屏障的实现意图（NOTES: marking is for aligning different ranks' time）；可选trace stamp包围barrier<W,timeout,false>，此屏障不采用末尾drain模板组合。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 645,
+          "kind": "preprocessor",
+          "explanation": "仅ASCENDC_TRACE_ON编译时保留起始屏障之前的trace stamp常量与写入；正常构建跳过此块。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 646,
+          "kind": "declaration",
+          "explanation": "在进入跨Rank起始屏障中更新/计算“static constexpr uint16_t kTraceBarrierBefore = 0x101;”。 可选trace stamp包围barrier<W,timeout,false>，此屏障不采用末尾drain模板组合。",
+          "reads": [],
+          "writes": [
+            "kTraceBarrierBefore"
+          ]
+        },
+        {
+          "line": 647,
+          "kind": "declaration",
+          "explanation": "在进入跨Rank起始屏障中更新/计算“static constexpr uint16_t kTraceBarrierAfter = 0x102;”。 可选trace stamp包围barrier<W,timeout,false>，此屏障不采用末尾drain模板组合。",
+          "reads": [],
+          "writes": [
+            "kTraceBarrierAfter"
+          ]
+        },
+        {
+          "line": 648,
+          "kind": "branch",
+          "explanation": "trace启用时只有AIV0记录before stamp，避免多个AIV对同一屏障开始重复打点。",
+          "reads": [
+            "vec_core_idx"
+          ],
+          "writes": []
+        },
+        {
+          "line": 649,
+          "kind": "call",
+          "explanation": "向Scalar trace记录当前屏障前/后标记，仅trace编译分支启用；调用本行“asc_mark_stamp<PIPE_S>(kTraceBarrierBefore);”。 可选trace stamp包围barrier<W,timeout,false>，此屏障不采用末尾drain模板组合。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 650,
+          "kind": "preprocessor",
+          "explanation": "结束起始屏障之前的ASCENDC_TRACE_ON分支；下一行barrier在所有构建都执行。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 651,
+          "kind": "statement",
+          "explanation": "调用跨Rank屏障；是否drain URMA和同步AIV由本次模板参数决定；调用本行“comm::scalar::barrier<kNumRanks, kNumTimeoutCycles, false>(workspace_layout.get_common_signals(), vec_core_idx);”。 workspace_layout：Context::workspace的EPSignals视图，不在kernel里malloc；vec_core_idx：当前AIV编号，是连续输入片段或接收流片段的owner。",
+          "reads": [
+            "kNumRanks",
+            "kNumTimeoutCycles",
+            "workspace_layout",
+            "vec_core_idx"
+          ],
+          "writes": []
+        },
+        {
+          "line": 652,
+          "kind": "preprocessor",
+          "explanation": "仅ASCENDC_TRACE_ON编译时在屏障完成后记录after stamp，用于和前面的before stamp配对。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 653,
+          "kind": "branch",
+          "explanation": "跨Rank起始屏障返回后，trace启用时仅AIV0写after stamp，表示本核观察的屏障结束。",
+          "reads": [
+            "vec_core_idx"
+          ],
+          "writes": []
+        },
+        {
+          "line": 654,
+          "kind": "call",
+          "explanation": "向Scalar trace记录当前屏障前/后标记，仅trace编译分支启用；调用本行“asc_mark_stamp<PIPE_S>(kTraceBarrierAfter);”。 可选trace stamp包围barrier<W,timeout,false>，此屏障不采用末尾drain模板组合。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 655,
+          "kind": "preprocessor",
+          "explanation": "结束屏障之后的ASCENDC_TRACE_ON分支，后面构造Jetty并启动SIMT worker。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 656,
+          "kind": "blank",
+          "explanation": "在进入跨Rank起始屏障中，分隔“#endif”与随后“// Do notify, SQE writes and local copy pipeline using a SIMT persistent worker”两步；此处没有数据写入。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 657,
+          "kind": "comment",
+          "explanation": "注释说明异步启动SIMT路由worker的实现意图（Do notify, SQE writes and local copy pipeline using a SIMT persistent worker）；清local_copy_ready/metadata_ready，通过S→V事件后VF_CALL发512thread worker；传recv_buffer.base-workspace的对称偏移。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 658,
+          "kind": "statement",
+          "explanation": "构造HcommJetty view只绑定ub_layout->jetty_info与AIV编号；此次发送不提供CQ/peer额外view，不另申请控制资源。",
+          "reads": [
+            "ub_layout",
+            "jetty_info",
+            "vec_core_idx"
+          ],
+          "writes": []
+        },
+        {
+          "line": 659,
+          "kind": "blank",
+          "explanation": "在异步启动SIMT路由worker中，分隔“handle::HcommJetty jetty(&ub_layout->jetty_info, nullptr, nullptr, vec_core_idx);”与随后“{”两步；此处没有数据写入。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 660,
+          "kind": "brace",
+          "explanation": "进入const int sf_hidden_stride) {的作用域；本段承担异步启动SIMT路由worker，不会在花括号行搬数据。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 661,
+          "kind": "declaration",
+          "explanation": "在异步启动SIMT路由worker中更新/计算“static constexpr int kNumThreads = 512;”。 清local_copy_ready/metadata_ready，通过S→V事件后VF_CALL发512thread worker；传recv_buffer.base-workspace的对称偏移。",
+          "reads": [],
+          "writes": [
+            "kNumThreads"
+          ]
+        },
+        {
+          "line": 662,
+          "kind": "statement",
+          "explanation": "在异步启动SIMT路由worker中更新/计算“ub_layout->local_copy_ready = 0;”。 ub_layout：ub->workspace，Scalar和SIMT共享本AIV路由控制状态；local_copy_ready：SIMT槽位映射完成信号；Scalar仅在其为1后搬本地hidden。",
+          "reads": [],
+          "writes": [
+            "ub_layout",
+            "local_copy_ready"
+          ]
+        },
+        {
+          "line": 663,
+          "kind": "statement",
+          "explanation": "在异步启动SIMT路由worker中更新/计算“ub_layout->metadata_ready = 0;”。 ub_layout：ub->workspace，Scalar和SIMT共享本AIV路由控制状态；metadata_ready：Scalar MTE3 metadata GM写回完成信号；SIMT依此执行metadata self-copy。",
+          "reads": [],
+          "writes": [
+            "ub_layout",
+            "metadata_ready"
+          ]
+        },
+        {
+          "line": 664,
+          "kind": "blank",
+          "explanation": "在异步启动SIMT路由worker中，分隔“ub_layout->metadata_ready = 0;”与随后“// Fence S -> V”两步；此处没有数据写入。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 665,
+          "kind": "comment",
+          "explanation": "注释说明异步启动SIMT路由worker的实现意图（Fence S -> V）；清local_copy_ready/metadata_ready，通过S→V事件后VF_CALL发512thread worker；传recv_buffer.base-workspace的对称偏移。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 666,
+          "kind": "sync",
+          "explanation": "在第一管线完成前序动作后发布事件给第二管线；event_t区分循环stage；调用本行“asc_sync_notify(PIPE_S, PIPE_V, static_cast<event_t>(0));”。 清local_copy_ready/metadata_ready，通过S→V事件后VF_CALL发512thread worker；传recv_buffer.base-workspace的对称偏移。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 667,
+          "kind": "sync",
+          "explanation": "让第二管线等待第一管线发布的同一event，建立数据就绪或stage释放依赖；调用本行“asc_sync_wait(PIPE_S, PIPE_V, static_cast<event_t>(0));”。 清local_copy_ready/metadata_ready，通过S→V事件后VF_CALL发512thread worker；传recv_buffer.base-workspace的对称偏移。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 668,
+          "kind": "blank",
+          "explanation": "在异步启动SIMT路由worker中，分隔“asc_sync_wait(PIPE_S, PIPE_V, static_cast<event_t>(0));”与随后“// Call VF”两步；此处没有数据写入。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 669,
+          "kind": "comment",
+          "explanation": "注释说明异步启动SIMT路由worker的实现意图（Call VF）；清local_copy_ready/metadata_ready，通过S→V事件后VF_CALL发512thread worker；传recv_buffer.base-workspace的对称偏移。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 670,
+          "kind": "comment",
+          "explanation": "这是异步启动SIMT路由worker的后续优化提示（TODO(HUAWEI): launching this VF costs 0.5 us, which is slow），当前冻结版本仍执行下面的已有实现；不是已实现或实测收益。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 671,
+          "kind": "statement",
+          "explanation": "VF_CALL异步启动SIMT worker，随后Scalar继续metadata/self-copy流水；该调用返回不意味着路由worker已结束。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 672,
+          "kind": "statement",
+          "explanation": "指定simt_persistent_worker模板目标，传M/W/E/K/A、cached/host通知模式和通信SQ/超时参数。",
+          "reads": [
+            "kNumMaxTokensPerRank",
+            "kNumRanks",
+            "kNumExperts",
+            "kNumTopk",
+            "kExpertAlignment",
+            "kCachedMode",
+            "kDoCPUSync"
+          ],
+          "writes": []
+        },
+        {
+          "line": 673,
+          "kind": "statement",
+          "explanation": "worker模板固定V、512个thread、每SQ六pair与超时周期，闭合VF_CALL的模板目标列表。",
+          "reads": [
+            "kNumVecCores",
+            "kNumSGEPairsPerSQE",
+            "kNumTimeoutCycles"
+          ],
+          "writes": []
+        },
+        {
+          "line": 674,
+          "kind": "statement",
+          "explanation": "VF worker线程网格为Dim3(512,1,1)，warp/lane分工均在这一个AIV worker内。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 675,
+          "kind": "statement",
+          "explanation": "传device EPSignals、mapped host通知layout与当前AIV UB路由控制区给worker；owner保持在Context/EPBuffer。",
+          "reads": [
+            "workspace_layout",
+            "host_workspace_layout",
+            "ub_layout"
+          ],
+          "writes": []
+        },
+        {
+          "line": 676,
+          "kind": "statement",
+          "explanation": "worker读hidden x时使用const uint8 GM视图，并接收metadata_send_buffer GM来源；不经UB重新打包hidden。",
+          "reads": [
+            "x",
+            "metadata_send_buffer"
+          ],
+          "writes": []
+        },
+        {
+          "line": 677,
+          "kind": "statement",
+          "explanation": "jetty_ptrs转换成GM uint64地址数组视图，供SIMT加载peer和私有Jetty描述符。",
+          "reads": [
+            "jetty_ptrs"
+          ],
+          "writes": []
+        },
+        {
+          "line": 678,
+          "kind": "statement",
+          "explanation": "传Top-K专家路由数组及可选累计expert计数输出，worker分别读取route和更新统计。",
+          "reads": [
+            "topk_idx",
+            "cumulative_local_expert_recv_stats"
+          ],
+          "writes": []
+        },
+        {
+          "line": 679,
+          "kind": "statement",
+          "explanation": "传来源Rank cumsum、专家有效end、专家原始count三个GM输出；epilogue/host使用各自不同容量语义。",
+          "reads": [
+            "psum_num_recv_tokens_per_rank",
+            "psum_num_recv_tokens_per_expert",
+            "num_unaligned_recv_tokens_per_expert"
+          ],
+          "writes": []
+        },
+        {
+          "line": 680,
+          "kind": "statement",
+          "explanation": "传fresh生成或cached复用的发送目的slot与SGE索引handle数组，worker保持二者对应同token route。",
+          "reads": [
+            "dst_buffer_slot_idx",
+            "dst_gsge_idx"
+          ],
+          "writes": []
+        },
+        {
+          "line": 681,
+          "kind": "statement",
+          "explanation": "把本Rank接收源切片首址减workspace首址，作为peer注册大块中的recv_buffer_offset；不是另一块GM malloc。",
+          "reads": [
+            "recv_buffer",
+            "workspace"
+          ],
+          "writes": []
+        },
+        {
+          "line": 682,
+          "kind": "statement",
+          "explanation": "传hidden字节H与TokenLayout.get_num_bytes(true)的metadata字节，作为远端两个SGE的独立长度。",
+          "reads": [
+            "kNumHiddenBytes",
+            "token_layout"
+          ],
+          "writes": []
+        },
+        {
+          "line": 683,
+          "kind": "statement",
+          "explanation": "传完整token字节步长，目标slot地址必须含hidden与metadata整体跨度。",
+          "reads": [
+            "token_layout"
+          ],
+          "writes": []
+        },
+        {
+          "line": 684,
+          "kind": "statement",
+          "explanation": "传本次有效N、当前AIV编号与当前Rank编号，限定worker实际输入范围和self/remote路由。",
+          "reads": [
+            "num_tokens",
+            "vec_core_idx",
+            "rank_idx"
+          ],
+          "writes": []
+        },
+        {
+          "line": 685,
+          "kind": "brace",
+          "explanation": "闭合第673行“kNumVecCores, kNumThreads, kNumSGEPairsPerSQE, kNumTimeoutCycles>>(”的实参列表；SIMT路由/SQ编码与Scalar metadata流水并行。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 686,
+          "kind": "brace",
+          "explanation": "结束由“”开启的作用域；到此异步启动SIMT路由worker对应状态更新完成，此括号不增加额外同步。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 687,
+          "kind": "blank",
+          "explanation": "在异步启动SIMT路由worker中，分隔“}”与随后“auto preload_metadata = [&](const int token_idx, const int stage_idx) __aicore__ {”两步；此处没有数据写入。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 688,
+          "kind": "statement",
+          "explanation": "声明确定metadata stage边界并等待复用对应的模板/设备入口“auto preload_metadata = [&](const int token_idx, const int stage_idx) __aicore__ {”；preload_metadata(token_idx,stage_idx)捕获本AIV布局",
+          "reads": [
+            "token_idx",
+            "stage_idx"
+          ],
+          "writes": [
+            "preload_metadata"
+          ]
+        },
+        {
+          "line": 689,
+          "kind": "declaration",
+          "explanation": "在确定metadata stage边界并等待复用中更新/计算“const auto ub_metadata = ub_metadata_buffer.get_token_buffer(stage_idx * kNumTokensPerMetadataMTE);”。 ub_metadata：当前dispatch metadata TokenLayout字段视图，包含SF、weights和fresh Top-K/src索引；ub_metadata_buffer：按stage切分的UB metadata批次区；stage_idx：当前循环UB stage；对应事件ID用于防止提前覆盖。",
+          "reads": [
+            "ub_metadata_buffer",
+            "stage_idx",
+            "kNumTokensPerMetadataMTE"
+          ],
+          "writes": [
+            "ub_metadata"
+          ]
+        },
+        {
+          "line": 690,
+          "kind": "declaration",
+          "explanation": "在确定metadata stage边界并等待复用中更新/计算“const auto num_metadata_bytes = static_cast<uint32_t>(metadata_token_layout.get_num_bytes());”。 num_metadata_bytes：紧凑metadata每token字节步长，与完整token hidden分离；metadata_token_layout：hidden长度为0的紧凑metadata布局。",
+          "reads": [
+            "metadata_token_layout"
+          ],
+          "writes": [
+            "num_metadata_bytes"
+          ]
+        },
+        {
+          "line": 691,
+          "kind": "declaration",
+          "explanation": "在确定metadata stage边界并等待复用中更新/计算“const auto num_tokens_in_stage = math::min(”。 num_tokens_in_stage：本stage真实token数，不能超过本AIV连续片段或stage容量。",
+          "reads": [],
+          "writes": [
+            "num_tokens_in_stage"
+          ]
+        },
+        {
+          "line": 692,
+          "kind": "statement",
+          "explanation": "当前metadata batch最多kNumTokensPerMetadataMTE个token；这是stage容量上限而非总AIV token数。",
+          "reads": [
+            "kNumTokensPerMetadataMTE"
+          ],
+          "writes": []
+        },
+        {
+          "line": 693,
+          "kind": "statement",
+          "explanation": "stage真实数量还受本AIV末端min(N,(aiv+1)*ceil(M/V))约束，减token_idx后夹到0，避免尾AIV越读。",
+          "reads": [
+            "num_tokens",
+            "vec_core_idx",
+            "token_idx"
+          ],
+          "writes": []
+        },
+        {
+          "line": 694,
+          "kind": "blank",
+          "explanation": "在确定metadata stage边界并等待复用中，分隔“math::max(0, math::min(num_tokens, (vec_core_idx + 1) * kNumMaxTokensPerVecCore) - token_idx));”与随后“// Copy metadata within this AIV's contiguous token range”两步；此处没有数据写入。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 695,
+          "kind": "comment",
+          "explanation": "注释说明确定metadata stage边界并等待复用的实现意图（Copy metadata within this AIV's contiguous token range）；stage首token=stage_idx*每stage容量；真实数量夹到本AIV末端；等MTE3→MTE2事件避免覆盖尚在写GM的UB。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 696,
+          "kind": "sync",
+          "explanation": "metadata preload先等当前stage先前MTE3写发送GM完成，MTE2才能覆盖SF/ID/weight UB来源区。",
+          "reads": [
+            "stage_idx"
+          ],
+          "writes": []
+        },
+        {
+          "line": 697,
+          "kind": "branch",
+          "explanation": "读取连续或跨stride SF的分支条件为“if constexpr (kNumSFPacks > 0)”；支持输入SF的不同strided视图，输出epilogue另外强制连续pack。",
+          "reads": [
+            "kNumSFPacks"
+          ],
+          "writes": []
+        },
+        {
+          "line": 698,
+          "kind": "declaration",
+          "explanation": "在读取连续或跨stride SF中更新/计算“const auto gm_sf = math::advance_ptr<__gm__ sf_pack_t>(”。 gm_sf：sf+token_idx*sf_token_stride*sizeof(sf_pack_t)，支持源SF双维stride。",
+          "reads": [],
+          "writes": [
+            "gm_sf"
+          ]
+        },
+        {
+          "line": 699,
+          "kind": "statement",
+          "explanation": "输入SF首址=sf+token_idx*sf_token_stride*sizeof(sf_pack_t)，stride以SF pack数输入、这里转换成字节。",
+          "reads": [
+            "sf",
+            "token_idx",
+            "sf_token_stride"
+          ],
+          "writes": []
+        },
+        {
+          "line": 700,
+          "kind": "branch",
+          "explanation": "读取连续或跨stride SF的分支条件为“if (sf_hidden_stride == 1)”；支持输入SF的不同strided视图，输出epilogue另外强制连续pack。",
+          "reads": [
+            "sf_hidden_stride"
+          ],
+          "writes": []
+        },
+        {
+          "line": 701,
+          "kind": "call",
+          "explanation": "通过MTE2把指定GM区读入AIV UB，burst、stride、padding和L2 hint由后续实参确定；调用本行“asc_copy_gm2ub_align(”。 hidden_stride==1用burst MTE2；否则两维nddma_desc按token和pack维stride收集到metadata SF子区。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 702,
+          "kind": "statement",
+          "explanation": "连续SF的MTE2目的为UB metadata SF子字段、源为gm_sf；burst逐token从源stride收集到紧凑metadata stride。",
+          "reads": [
+            "ub_metadata",
+            "gm_sf"
+          ],
+          "writes": [
+            "ub_metadata"
+          ]
+        },
+        {
+          "line": 703,
+          "kind": "statement",
+          "explanation": "n_burst=static_cast<uint16_t>(num_tokens_in_stage)：burst数量；决定当前stage有效token行或固定单行复制。 此参数属于“读取连续或跨stride SF”。",
+          "reads": [
+            "num_tokens_in_stage"
+          ],
+          "writes": []
+        },
+        {
+          "line": 704,
+          "kind": "statement",
+          "explanation": "len_burst=kNumSFPacks * sizeof(sf_pack_t)：每burst字节长度；决定该字段是hidden、Top-K、weight还是SF的有效extent。 此参数属于“读取连续或跨stride SF”。",
+          "reads": [
+            "kNumSFPacks"
+          ],
+          "writes": []
+        },
+        {
+          "line": 705,
+          "kind": "statement",
+          "explanation": "left_padding_num=0：左padding元素数；此处0表示无左补齐；right_padding_num=0：右padding元素数；Top-K扫描按int32数量补-1至UB对齐，普通metadata读则0。 此参数属于“读取连续或跨stride SF”。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 706,
+          "kind": "statement",
+          "explanation": "enable_constant_pad=false：是否启用前面asc_set_copy_pad_val常数padding。 此参数属于“读取连续或跨stride SF”。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 707,
+          "kind": "statement",
+          "explanation": "l2_cache_mode=static_cast<uint8_t>(LD_L2CacheType::L2_CACHE_HINT_NORMAL_FV)：显式L2 cache hint，控制缓存分配/优先或不分配清理策略；未声明L1。 此参数属于“读取连续或跨stride SF”。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 708,
+          "kind": "statement",
+          "explanation": "src_stride=static_cast<uint64_t>(sf_token_stride) * sizeof(sf_pack_t)：源相邻token字段起点的字节stride。 此参数属于“读取连续或跨stride SF”。",
+          "reads": [
+            "sf_token_stride"
+          ],
+          "writes": []
+        },
+        {
+          "line": 709,
+          "kind": "statement",
+          "explanation": "dst_stride=num_metadata_bytes：UB/GM目标相邻token字段起点的字节stride。 此参数属于“读取连续或跨stride SF”。",
+          "reads": [
+            "num_metadata_bytes"
+          ],
+          "writes": []
+        },
+        {
+          "line": 710,
+          "kind": "brace",
+          "explanation": "闭合第701行“asc_copy_gm2ub_align(”的实参列表；metadata UB中SF pack布局紧凑。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 711,
+          "kind": "statement",
+          "explanation": "结束if (sf_hidden_stride == 1) {并进入else {，在读取连续或跨stride SF里处理相反/后续分支。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 712,
+          "kind": "declaration",
+          "explanation": "构造sf_desc双维NDDMA描述；随后nddma_out_to_ub用同一gm_sf与UB SF首址执行token×pack读取。",
+          "reads": [
+            "sf_desc"
+          ],
+          "writes": []
+        },
+        {
+          "line": 713,
+          "kind": "statement",
+          "explanation": "NDDMA第一个loop_desc对应token维，以下三项依次为token数量、UB目的element stride、GM源element stride。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 714,
+          "kind": "statement",
+          "explanation": "token维loop次数=num_tokens_in_stage，只有本AIV当前stage真实token参与SF读取。",
+          "reads": [
+            "num_tokens_in_stage"
+          ],
+          "writes": []
+        },
+        {
+          "line": 715,
+          "kind": "statement",
+          "explanation": "token维UB目的stride=num_metadata_bytes/sizeof(sf_pack_t)，单位是SF pack元素，跳到下一token metadata的同一SF字段。",
+          "reads": [
+            "num_metadata_bytes"
+          ],
+          "writes": []
+        },
+        {
+          "line": 716,
+          "kind": "statement",
+          "explanation": "token维GM源stride=sf_token_stride，单位是sf_pack_t元素；输入token维可非紧凑。",
+          "reads": [
+            "sf_token_stride"
+          ],
+          "writes": []
+        },
+        {
+          "line": 717,
+          "kind": "statement",
+          "explanation": "NDDMA第二个loop_desc对应token内SF pack维，与token维组成二维gather。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 718,
+          "kind": "statement",
+          "explanation": "SF pack维读取kNumSFPacks个元素，UB目的stride=1保证紧凑pack，GM源stride=sf_hidden_stride支持跨步源pack。",
+          "reads": [
+            "kNumSFPacks",
+            "sf_hidden_stride"
+          ],
+          "writes": []
+        },
+        {
+          "line": 719,
+          "kind": "brace",
+          "explanation": "闭合sf_desc构造，两个loop分别按token和pack维定义次数及源/目标元素stride。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 720,
+          "kind": "statement",
+          "explanation": "通过两维NDDMA从任意stride的SF GM读取到metadata UB；调用本行“nddma_out_to_ub(”。 hidden_stride==1用burst MTE2；否则两维nddma_desc按token和pack维stride收集到metadata SF子区。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 721,
+          "kind": "statement",
+          "explanation": "NDDMA目的与连续SF路径相同，都是UB当前metadata stage SF字段；gm_sf为该batch输入首token SF地址。",
+          "reads": [
+            "ub_metadata",
+            "gm_sf"
+          ],
+          "writes": [
+            "ub_metadata"
+          ]
+        },
+        {
+          "line": 722,
+          "kind": "statement",
+          "explanation": "sid=0, sf_desc：NDDMA stream选择；sf_desc定义两维搬运，pad_val设置填充值；pad_val=0, CONSTANT_PADDING：当前DMA实参。 此参数属于“读取连续或跨stride SF”。",
+          "reads": [
+            "sf_desc"
+          ],
+          "writes": []
+        },
+        {
+          "line": 723,
+          "kind": "statement",
+          "explanation": "l2_cache_ctl=static_cast<uint8_t>(LD_L2CacheType::L2_CACHE_HINT_NORMAL_FV)：NDDMA的显式L2 cache hint；不是新申请的片上缓存区。 此参数属于“读取连续或跨stride SF”。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 724,
+          "kind": "brace",
+          "explanation": "闭合第720行“nddma_out_to_ub(”的实参列表；metadata UB中SF pack布局紧凑。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 725,
+          "kind": "brace",
+          "explanation": "结束由“} else {”开启的作用域；到此读取连续或跨stride SF对应状态更新完成，此括号不增加额外同步。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 726,
+          "kind": "brace",
+          "explanation": "结束由“if constexpr (kNumSFPacks > 0) {”开启的作用域；到此读取连续或跨stride SF对应状态更新完成，此括号不增加额外同步。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 727,
+          "kind": "branch",
+          "explanation": "fresh加载Top-K专家ID的分支条件为“if constexpr (not kCachedMode)”；epilogue fresh需要在同Rank复制给多个专家，cached直接复用recv_src_metadata槽。",
+          "reads": [
+            "kCachedMode"
+          ],
+          "writes": []
+        },
+        {
+          "line": 728,
+          "kind": "call",
+          "explanation": "通过MTE2把指定GM区读入AIV UB，burst、stride、padding和L2 hint由后续实参确定；调用本行“asc_copy_gm2ub_align(”。 仅not kCachedMode读每token K*sizeof(int64)，按num_metadata_bytes stride放UB TokenLayout Top-K子区。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 729,
+          "kind": "statement",
+          "explanation": "fresh Top-K MTE2目的为UB metadata的int64专家ID字段，以uint8视图按字节写入。",
+          "reads": [
+            "ub_metadata"
+          ],
+          "writes": [
+            "ub_metadata"
+          ]
+        },
+        {
+          "line": 730,
+          "kind": "statement",
+          "explanation": "Top-K来源首址=topk_idx+token_idx*K个int64，math::advance_ptr的偏移参数是字节token_idx*K*8。",
+          "reads": [
+            "topk_idx",
+            "token_idx",
+            "kNumTopk"
+          ],
+          "writes": []
+        },
+        {
+          "line": 731,
+          "kind": "statement",
+          "explanation": "n_burst=static_cast<uint16_t>(num_tokens_in_stage)：burst数量；决定当前stage有效token行或固定单行复制。 此参数属于“fresh加载Top-K专家ID”。",
+          "reads": [
+            "num_tokens_in_stage"
+          ],
+          "writes": []
+        },
+        {
+          "line": 732,
+          "kind": "statement",
+          "explanation": "len_burst=kNumTopk * sizeof(int64_t)：每burst字节长度；决定该字段是hidden、Top-K、weight还是SF的有效extent。 此参数属于“fresh加载Top-K专家ID”。",
+          "reads": [
+            "kNumTopk"
+          ],
+          "writes": []
+        },
+        {
+          "line": 733,
+          "kind": "statement",
+          "explanation": "left_padding_num=0：左padding元素数；此处0表示无左补齐；right_padding_num=0：右padding元素数；Top-K扫描按int32数量补-1至UB对齐，普通metadata读则0。 此参数属于“fresh加载Top-K专家ID”。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 734,
+          "kind": "statement",
+          "explanation": "enable_constant_pad=false：是否启用前面asc_set_copy_pad_val常数padding。 此参数属于“fresh加载Top-K专家ID”。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 735,
+          "kind": "statement",
+          "explanation": "l2_cache_mode=static_cast<uint8_t>(LD_L2CacheType::L2_CACHE_HINT_NORMAL_FV)：显式L2 cache hint，控制缓存分配/优先或不分配清理策略；未声明L1。 此参数属于“fresh加载Top-K专家ID”。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 736,
+          "kind": "statement",
+          "explanation": "src_stride=static_cast<uint64_t>(kNumTopk) * sizeof(int64_t)：源相邻token字段起点的字节stride。 此参数属于“fresh加载Top-K专家ID”。",
+          "reads": [
+            "kNumTopk"
+          ],
+          "writes": []
+        },
+        {
+          "line": 737,
+          "kind": "statement",
+          "explanation": "dst_stride=num_metadata_bytes：UB/GM目标相邻token字段起点的字节stride。 此参数属于“fresh加载Top-K专家ID”。",
+          "reads": [
+            "num_metadata_bytes"
+          ],
+          "writes": []
+        },
+        {
+          "line": 738,
+          "kind": "brace",
+          "explanation": "闭合第728行“asc_copy_gm2ub_align(”的实参列表；fresh metadata带原始Top-K，cached不重发ID。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 739,
+          "kind": "brace",
+          "explanation": "结束由“if constexpr (not kCachedMode) {”开启的作用域；到此fresh加载Top-K专家ID对应状态更新完成，此括号不增加额外同步。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 740,
+          "kind": "branch",
+          "explanation": "加载可选weight并发布stage已读的分支条件为“if (topk_weights != nullptr)”；MTE2完成前不能让Scalar读取或修改同一metadata stage。",
+          "reads": [
+            "topk_weights"
+          ],
+          "writes": []
+        },
+        {
+          "line": 741,
+          "kind": "call",
+          "explanation": "通过MTE2把指定GM区读入AIV UB，burst、stride、padding和L2 hint由后续实参确定；调用本行“asc_copy_gm2ub_align(”。 非空则MTE2读每token K个float到UB weight字段；notify MTE2→S(stage_idx)。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 742,
+          "kind": "statement",
+          "explanation": "weight来源为topk_weights+token_idx*K，目标为UB metadata weight字段；每token搬K个float。",
+          "reads": [
+            "ub_metadata",
+            "topk_weights",
+            "token_idx",
+            "kNumTopk"
+          ],
+          "writes": [
+            "ub_metadata"
+          ]
+        },
+        {
+          "line": 743,
+          "kind": "statement",
+          "explanation": "n_burst=static_cast<uint16_t>(num_tokens_in_stage)：burst数量；决定当前stage有效token行或固定单行复制。 此参数属于“加载可选weight并发布stage已读”。",
+          "reads": [
+            "num_tokens_in_stage"
+          ],
+          "writes": []
+        },
+        {
+          "line": 744,
+          "kind": "statement",
+          "explanation": "len_burst=kNumTopk * sizeof(float)：每burst字节长度；决定该字段是hidden、Top-K、weight还是SF的有效extent。 此参数属于“加载可选weight并发布stage已读”。",
+          "reads": [
+            "kNumTopk"
+          ],
+          "writes": []
+        },
+        {
+          "line": 745,
+          "kind": "statement",
+          "explanation": "left_padding_num=0：左padding元素数；此处0表示无左补齐；right_padding_num=0：右padding元素数；Top-K扫描按int32数量补-1至UB对齐，普通metadata读则0。 此参数属于“加载可选weight并发布stage已读”。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 746,
+          "kind": "statement",
+          "explanation": "enable_constant_pad=false：是否启用前面asc_set_copy_pad_val常数padding。 此参数属于“加载可选weight并发布stage已读”。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 747,
+          "kind": "statement",
+          "explanation": "l2_cache_mode=static_cast<uint8_t>(LD_L2CacheType::L2_CACHE_HINT_NORMAL_FV)：显式L2 cache hint，控制缓存分配/优先或不分配清理策略；未声明L1。 此参数属于“加载可选weight并发布stage已读”。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 748,
+          "kind": "statement",
+          "explanation": "src_stride=static_cast<uint64_t>(kNumTopk) * sizeof(float)：源相邻token字段起点的字节stride。 此参数属于“加载可选weight并发布stage已读”。",
+          "reads": [
+            "kNumTopk"
+          ],
+          "writes": []
+        },
+        {
+          "line": 749,
+          "kind": "statement",
+          "explanation": "dst_stride=num_metadata_bytes：UB/GM目标相邻token字段起点的字节stride。 此参数属于“加载可选weight并发布stage已读”。",
+          "reads": [
+            "num_metadata_bytes"
+          ],
+          "writes": []
+        },
+        {
+          "line": 750,
+          "kind": "brace",
+          "explanation": "闭合第741行“asc_copy_gm2ub_align(”的实参列表；Scalar能修改src全局token字段并准备metadata写GM。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 751,
+          "kind": "brace",
+          "explanation": "结束由“if (topk_weights != nullptr) {”开启的作用域；到此加载可选weight并发布stage已读对应状态更新完成，此括号不增加额外同步。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 752,
+          "kind": "sync",
+          "explanation": "在第一管线完成前序动作后发布事件给第二管线；event_t区分循环stage；调用本行“asc_sync_notify(PIPE_MTE2, PIPE_S, static_cast<event_t>(stage_idx));”。 stage_idx：当前循环UB stage；对应事件ID用于防止提前覆盖。",
+          "reads": [
+            "stage_idx"
+          ],
+          "writes": []
+        },
+        {
+          "line": 753,
+          "kind": "brace",
+          "explanation": "结束由“auto preload_metadata = [&](const int token_idx, const int stage_idx) __aicore__ {”开启的作用域；到此加载可选weight并发布stage已读对应状态更新完成，此括号不增加额外同步。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 754,
+          "kind": "blank",
+          "explanation": "在预热metadata多stage中，分隔“};”与随后“// Start metadata and local copies as soon as SIMT publishes the local slots.”两步；此处没有数据写入。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 755,
+          "kind": "comment",
+          "explanation": "注释说明预热metadata多stage的实现意图（Start metadata and local copies as soon as SIMT publishes the local slots.）；num_metadata_batches=ceil(n/C)，num_active_stages=min(batches,stages)；先发布空stage再preload每个初始批。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 756,
+          "kind": "statement",
+          "explanation": "在编译期限制此实例的容量、索引或硬件协议假设；调用本行“EP_STATIC_ASSERT(kNumMetadataMTEStages <= 8, \"Insufficient metadata events\");”。 kNumMetadataMTEStages：metadata循环缓冲stage数，不超过8且受UB预算约束。",
+          "reads": [
+            "kNumMetadataMTEStages"
+          ],
+          "writes": []
+        },
+        {
+          "line": 757,
+          "kind": "statement",
+          "explanation": "在编译期限制此实例的容量、索引或硬件协议假设；调用本行“EP_STATIC_ASSERT(kNumHiddenMTEStages > 0 and kNumHiddenMTEStages <= 8, \"Insufficient hidden-buffer events\");”。 kNumHiddenMTEStages：self-copy hidden缓冲stage数，预算扣除metadata后确定。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 758,
+          "kind": "statement",
+          "explanation": "在编译期限制此实例的容量、索引或硬件协议假设；调用本行“EP_STATIC_ASSERT(kNumTokensPerMetadataMTE > 0);”。 kNumTokensPerMetadataMTE：一次metadata stage包含64或4个token，由可用UB至少能容纳的metadata决定。",
+          "reads": [
+            "kNumTokensPerMetadataMTE"
+          ],
+          "writes": []
+        },
+        {
+          "line": 759,
+          "kind": "declaration",
+          "explanation": "在预热metadata多stage中更新/计算“const auto num_tokens_for_vec_core = math::max(”。 num_tokens_for_vec_core：本AIV有效输入token数，末尾片段夹到[0,ceil(M/V)]。",
+          "reads": [],
+          "writes": [
+            "num_tokens_for_vec_core"
+          ]
+        },
+        {
+          "line": 760,
+          "kind": "statement",
+          "explanation": "本AIV有效token数=min(ceil(M/V),N-aiv*ceil(M/V))并夹到0；晚于N末端的核没有输入任务。",
+          "reads": [
+            "num_tokens",
+            "vec_core_idx"
+          ],
+          "writes": []
+        },
+        {
+          "line": 761,
+          "kind": "declaration",
+          "explanation": "在预热metadata多stage中更新/计算“const auto num_metadata_batches = math::ceil_div(num_tokens_for_vec_core, kNumTokensPerMetadataMTE);”。 num_metadata_batches：本AIV有效token数按metadata stage容量向上整除；num_tokens_for_vec_core：本AIV有效输入token数，末尾片段夹到[0,ceil(M/V)]；kNumTokensPerMetadataMTE：一次metadata stage包含64或4个token，由可用UB至少能容纳的metadata决定。",
+          "reads": [
+            "num_tokens_for_vec_core",
+            "kNumTokensPerMetadataMTE"
+          ],
+          "writes": [
+            "num_metadata_batches"
+          ]
+        },
+        {
+          "line": 762,
+          "kind": "declaration",
+          "explanation": "在预热metadata多stage中更新/计算“const auto num_active_stages = math::min(num_metadata_batches, kNumMetadataMTEStages);”。 num_active_stages：当前调用实际使用的metadata stage数，短输入可少于预算stage数；num_metadata_batches：本AIV有效token数按metadata stage容量向上整除；kNumMetadataMTEStages：metadata循环缓冲stage数，不超过8且受UB预算约束。",
+          "reads": [
+            "num_metadata_batches",
+            "kNumMetadataMTEStages"
+          ],
+          "writes": [
+            "num_active_stages"
+          ]
+        },
+        {
+          "line": 763,
+          "kind": "blank",
+          "explanation": "在预热metadata多stage中，分隔“const auto num_active_stages = math::min(num_metadata_batches, kNumMetadataMTEStages);”与随后“for (int stage_idx = 0; stage_idx < num_active_stages; ++ stage_idx)”两步；此处没有数据写入。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 764,
+          "kind": "loop",
+          "explanation": "首次使用metadata stage时遍历实际active stage，下一行发布空闲事件而不发GM读取。",
+          "reads": [
+            "stage_idx",
+            "num_active_stages"
+          ],
+          "writes": [
+            "stage_idx"
+          ]
+        },
+        {
+          "line": 765,
+          "kind": "sync",
+          "explanation": "初始化metadata stage的MTE3→MTE2空闲事件，让第一次preload无需等待不存在的旧输出。",
+          "reads": [
+            "stage_idx"
+          ],
+          "writes": []
+        },
+        {
+          "line": 766,
+          "kind": "loop",
+          "explanation": "在空闲事件已发布后再遍历active stage，调用preload_metadata发初始MTE2读取。",
+          "reads": [
+            "stage_idx",
+            "num_active_stages"
+          ],
+          "writes": [
+            "stage_idx"
+          ]
+        },
+        {
+          "line": 767,
+          "kind": "statement",
+          "explanation": "初始preload的GM首token为AIV块首+stage_idx*metadata stage容量，传stage_idx选择空闲UB循环槽。",
+          "reads": [
+            "preload_metadata",
+            "vec_core_idx",
+            "stage_idx",
+            "kNumTokensPerMetadataMTE"
+          ],
+          "writes": []
+        },
+        {
+          "line": 768,
+          "kind": "blank",
+          "explanation": "在预热metadata多stage中，分隔“preload_metadata(vec_core_idx * kNumMaxTokensPerVecCore + stage_idx * kNumTokensPerMetadataMTE, stage_idx);”与随后“// Prepare metadata while SIMT computes the routing slots.”两步；此处没有数据写入。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 769,
+          "kind": "comment",
+          "explanation": "注释说明打包src索引并流水写metadata GM的实现意图（Prepare metadata while SIMT computes the routing slots.）；等待MTE2→S；fresh写rank_idx*M+token_idx全局src；S→MTE3后写metadata_send_buffer；释放stage并提前读取环后下一批。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 770,
+          "kind": "loop",
+          "explanation": "打包src索引并流水写metadata GM的迭代条件为“for (int batch_idx = 0; batch_idx < num_metadata_batches; ++ batch_idx)”；URMA要把metadata与直接读取的x拼接，src全局索引用最大容量M作为跨Rank步长。",
+          "reads": [
+            "batch_idx",
+            "num_metadata_batches"
+          ],
+          "writes": [
+            "batch_idx"
+          ]
+        },
+        {
+          "line": 771,
+          "kind": "declaration",
+          "explanation": "在打包src索引并流水写metadata GM中更新/计算“const auto stage_idx = batch_idx % kNumMetadataMTEStages;”。 stage_idx：当前循环UB stage；对应事件ID用于防止提前覆盖；batch_idx：metadata批次号，取模映射到可循环复用UB stage；kNumMetadataMTEStages：metadata循环缓冲stage数，不超过8且受UB预算约束。",
+          "reads": [
+            "batch_idx",
+            "kNumMetadataMTEStages"
+          ],
+          "writes": [
+            "stage_idx"
+          ]
+        },
+        {
+          "line": 772,
+          "kind": "declaration",
+          "explanation": "在打包src索引并流水写metadata GM中更新/计算“const auto first_metadata_idx = batch_idx * kNumTokensPerMetadataMTE;”。 first_metadata_idx：当前metadata批次在本AIV连续片段中的相对首token；batch_idx：metadata批次号，取模映射到可循环复用UB stage；kNumTokensPerMetadataMTE：一次metadata stage包含64或4个token，由可用UB至少能容纳的metadata决定。",
+          "reads": [
+            "batch_idx",
+            "kNumTokensPerMetadataMTE"
+          ],
+          "writes": [
+            "first_metadata_idx"
+          ]
+        },
+        {
+          "line": 773,
+          "kind": "declaration",
+          "explanation": "在打包src索引并流水写metadata GM中更新/计算“const auto num_tokens_in_stage = math::min(kNumTokensPerMetadataMTE, num_tokens_for_vec_core - first_metadata_idx);”。 num_tokens_in_stage：本stage真实token数，不能超过本AIV连续片段或stage容量；kNumTokensPerMetadataMTE：一次metadata stage包含64或4个token，由可用UB至少能容纳的metadata决定；num_tokens_for_vec_core：本AIV有效输入token数，末尾片段夹到[0,ceil(M/V)]。",
+          "reads": [
+            "kNumTokensPerMetadataMTE",
+            "num_tokens_for_vec_core",
+            "first_metadata_idx"
+          ],
+          "writes": [
+            "num_tokens_in_stage"
+          ]
+        },
+        {
+          "line": 774,
+          "kind": "sync",
+          "explanation": "让第二管线等待第一管线发布的同一event，建立数据就绪或stage释放依赖；调用本行“asc_sync_wait(PIPE_MTE2, PIPE_S, static_cast<event_t>(stage_idx));”。 stage_idx：当前循环UB stage；对应事件ID用于防止提前覆盖。",
+          "reads": [
+            "stage_idx"
+          ],
+          "writes": []
+        },
+        {
+          "line": 775,
+          "kind": "branch",
+          "explanation": "打包src索引并流水写metadata GM的分支条件为“if constexpr (not kCachedMode)”；URMA要把metadata与直接读取的x拼接，src全局索引用最大容量M作为跨Rank步长。",
+          "reads": [
+            "kCachedMode"
+          ],
+          "writes": []
+        },
+        {
+          "line": 776,
+          "kind": "loop",
+          "explanation": "打包src索引并流水写metadata GM的迭代条件为“for (int i = 0; i < num_tokens_in_stage; ++ i)”；URMA要把metadata与直接读取的x拼接，src全局索引用最大容量M作为跨Rank步长。",
+          "reads": [
+            "num_tokens_in_stage",
+            "i"
+          ],
+          "writes": [
+            "i"
+          ]
+        },
+        {
+          "line": 777,
+          "kind": "declaration",
+          "explanation": "在打包src索引并流水写metadata GM中更新/计算“const auto token_idx = vec_core_idx * kNumMaxTokensPerVecCore + first_metadata_idx + i;”。 token_idx：输入token的Rank内索引，由AIV连续块基址加核内位置；vec_core_idx：当前AIV编号，是连续输入片段或接收流片段的owner；first_metadata_idx：当前metadata批次在本AIV连续片段中的相对首token。",
+          "reads": [
+            "vec_core_idx",
+            "first_metadata_idx"
+          ],
+          "writes": [
+            "token_idx"
+          ]
+        },
+        {
+          "line": 778,
+          "kind": "declaration",
+          "explanation": "在打包src索引并流水写metadata GM中更新/计算“const auto ub_metadata = ub_metadata_buffer.get_token_buffer(stage_idx * kNumTokensPerMetadataMTE + i);”。 ub_metadata：当前dispatch metadata TokenLayout字段视图，包含SF、weights和fresh Top-K/src索引；ub_metadata_buffer：按stage切分的UB metadata批次区；stage_idx：当前循环UB stage；对应事件ID用于防止提前覆盖。",
+          "reads": [
+            "ub_metadata_buffer",
+            "stage_idx",
+            "kNumTokensPerMetadataMTE"
+          ],
+          "writes": [
+            "ub_metadata"
+          ]
+        },
+        {
+          "line": 779,
+          "kind": "statement",
+          "explanation": "fresh把rank_idx*M+token_idx写入UB source-global-token字段；M是最大每Rank容量，而非当前num_tokens。",
+          "reads": [
+            "rank_idx",
+            "kNumMaxTokensPerRank",
+            "token_idx"
+          ],
+          "writes": [
+            "ub_metadata"
+          ]
+        },
+        {
+          "line": 780,
+          "kind": "brace",
+          "explanation": "结束由“for (int i = 0; i < num_tokens_in_stage; ++ i) {”开启的作用域；到此打包src索引并流水写metadata GM对应状态更新完成，此括号不增加额外同步。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 781,
+          "kind": "brace",
+          "explanation": "结束由“if constexpr (not kCachedMode) {”开启的作用域；到此打包src索引并流水写metadata GM对应状态更新完成，此括号不增加额外同步。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 782,
+          "kind": "declaration",
+          "explanation": "在打包src索引并流水写metadata GM中更新/计算“const auto first_token_idx = vec_core_idx * kNumMaxTokensPerVecCore + first_metadata_idx;”。 first_token_idx：当前metadata批次在输入Rank内的绝对首token；vec_core_idx：当前AIV编号，是连续输入片段或接收流片段的owner；first_metadata_idx：当前metadata批次在本AIV连续片段中的相对首token。",
+          "reads": [
+            "vec_core_idx",
+            "first_metadata_idx"
+          ],
+          "writes": [
+            "first_token_idx"
+          ]
+        },
+        {
+          "line": 783,
+          "kind": "declaration",
+          "explanation": "在打包src索引并流水写metadata GM中更新/计算“const auto num_metadata_bytes = static_cast<uint32_t>(metadata_token_layout.get_num_bytes());”。 num_metadata_bytes：紧凑metadata每token字节步长，与完整token hidden分离；metadata_token_layout：hidden长度为0的紧凑metadata布局。",
+          "reads": [
+            "metadata_token_layout"
+          ],
+          "writes": [
+            "num_metadata_bytes"
+          ]
+        },
+        {
+          "line": 784,
+          "kind": "sync",
+          "explanation": "在第一管线完成前序动作后发布事件给第二管线；event_t区分循环stage；调用本行“asc_sync_notify(PIPE_S, PIPE_MTE3, static_cast<event_t>(stage_idx));”。 stage_idx：当前循环UB stage；对应事件ID用于防止提前覆盖。",
+          "reads": [
+            "stage_idx"
+          ],
+          "writes": []
+        },
+        {
+          "line": 785,
+          "kind": "sync",
+          "explanation": "让第二管线等待第一管线发布的同一event，建立数据就绪或stage释放依赖；调用本行“asc_sync_wait(PIPE_S, PIPE_MTE3, static_cast<event_t>(stage_idx));”。 stage_idx：当前循环UB stage；对应事件ID用于防止提前覆盖。",
+          "reads": [
+            "stage_idx"
+          ],
+          "writes": []
+        },
+        {
+          "line": 786,
+          "kind": "call",
+          "explanation": "通过MTE3把AIV UB区写到指定GM输出，burst/stride控制多行搬运；调用本行“asc_copy_ub2gm_align(”。 等待MTE2→S；fresh写rank_idx*M+token_idx全局src；S→MTE3后写metadata_send_buffer；释放stage并提前读取环后下一批。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 787,
+          "kind": "statement",
+          "explanation": "metadata GM输出目的=metadata_send_buffer+first_token_idx*metadata字节步长，紧凑保存当前batch。",
+          "reads": [
+            "metadata_send_buffer",
+            "first_token_idx",
+            "num_metadata_bytes"
+          ],
+          "writes": [
+            "metadata_send_buffer"
+          ]
+        },
+        {
+          "line": 788,
+          "kind": "statement",
+          "explanation": "MTE3来源取当前stage的第一个UB metadata token首字节，后续burst沿相同metadata步长。",
+          "reads": [
+            "ub_metadata_buffer",
+            "stage_idx",
+            "kNumTokensPerMetadataMTE"
+          ],
+          "writes": []
+        },
+        {
+          "line": 789,
+          "kind": "statement",
+          "explanation": "MTE3 burst数为当前stage真实token数，每burst复制num_metadata_bytes，包含对齐后的完整metadata槽。",
+          "reads": [
+            "num_tokens_in_stage",
+            "num_metadata_bytes"
+          ],
+          "writes": []
+        },
+        {
+          "line": 790,
+          "kind": "call",
+          "explanation": "metadata GM写使用NOTALLOC_CLEAN L2 hint；没有隐含L1申请或额外token staging。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 791,
+          "kind": "statement",
+          "explanation": "源与目标token stride都等num_metadata_bytes，因此整batch在UB与metadata_send_buffer中均为紧凑相同布局。",
+          "reads": [
+            "num_metadata_bytes"
+          ],
+          "writes": []
+        },
+        {
+          "line": 792,
+          "kind": "sync",
+          "explanation": "metadata当前batch MTE3写GM完成后发stage释放事件，下一个循环批次的preload才能覆盖UB。",
+          "reads": [
+            "stage_idx"
+          ],
+          "writes": []
+        },
+        {
+          "line": 793,
+          "kind": "declaration",
+          "explanation": "在打包src索引并流水写metadata GM中更新/计算“const auto next_batch_idx = batch_idx + kNumMetadataMTEStages;”。 next_batch_idx：相隔kNumMetadataMTEStages的下一批，复用当前已释放stage；batch_idx：metadata批次号，取模映射到可循环复用UB stage；kNumMetadataMTEStages：metadata循环缓冲stage数，不超过8且受UB预算约束。",
+          "reads": [
+            "batch_idx",
+            "kNumMetadataMTEStages"
+          ],
+          "writes": [
+            "next_batch_idx"
+          ]
+        },
+        {
+          "line": 794,
+          "kind": "branch",
+          "explanation": "打包src索引并流水写metadata GM的分支条件为“if (next_batch_idx < num_metadata_batches)”；URMA要把metadata与直接读取的x拼接，src全局索引用最大容量M作为跨Rank步长。",
+          "reads": [
+            "next_batch_idx",
+            "num_metadata_batches"
+          ],
+          "writes": []
+        },
+        {
+          "line": 795,
+          "kind": "statement",
+          "explanation": "同一UB stage将在batch+kNumMetadataMTEStages再次使用；preload读取对应下批GM token，前面的MTE3释放事件防止覆盖。",
+          "reads": [
+            "preload_metadata",
+            "vec_core_idx",
+            "next_batch_idx",
+            "kNumTokensPerMetadataMTE",
+            "stage_idx"
+          ],
+          "writes": []
+        },
+        {
+          "line": 796,
+          "kind": "brace",
+          "explanation": "结束由“for (int batch_idx = 0; batch_idx < num_metadata_batches; ++ batch_idx) {”开启的作用域；到此打包src索引并流水写metadata GM对应状态更新完成，此括号不增加额外同步。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 797,
+          "kind": "loop",
+          "explanation": "发布metadata完成并等待本地槽的迭代条件为“for (int stage_idx = 0; stage_idx < num_active_stages; ++ stage_idx)”；metadata GM可读和local槽号就绪是两条独立握手，不能互相替代。",
+          "reads": [
+            "stage_idx",
+            "num_active_stages"
+          ],
+          "writes": [
+            "stage_idx"
+          ]
+        },
+        {
+          "line": 798,
+          "kind": "sync",
+          "explanation": "所有metadata批次发出后逐active stage等MTE3→MTE2释放，确保metadata_send_buffer已完整写回。",
+          "reads": [
+            "stage_idx"
+          ],
+          "writes": []
+        },
+        {
+          "line": 799,
+          "kind": "sync",
+          "explanation": "在第一管线完成前序动作后发布事件给第二管线；event_t区分循环stage；调用本行“asc_sync_notify(PIPE_MTE2, PIPE_S, EVENT_ID0);”。 等各stage MTE3释放事件，再MTE2→S汇合后metadata_ready=1；等待local_copy_ready并初始化hidden stage空闲事件。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 800,
+          "kind": "sync",
+          "explanation": "让第二管线等待第一管线发布的同一event，建立数据就绪或stage释放依赖；调用本行“asc_sync_wait(PIPE_MTE2, PIPE_S, EVENT_ID0);”。 等各stage MTE3释放事件，再MTE2→S汇合后metadata_ready=1；等待local_copy_ready并初始化hidden stage空闲事件。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 801,
+          "kind": "statement",
+          "explanation": "各metadata MTE3写回已通过stage释放事件与MTE2→S桥接完成后，Scalar发布metadata_ready=1给SIMT。",
+          "reads": [],
+          "writes": [
+            "ub_layout",
+            "metadata_ready"
+          ]
+        },
+        {
+          "line": 802,
+          "kind": "blank",
+          "explanation": "在发布metadata完成并等待本地槽中，分隔“ub_layout->metadata_ready = 1;”与随后“while (ub_layout->local_copy_ready != 1)”两步；此处没有数据写入。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 803,
+          "kind": "loop",
+          "explanation": "发布metadata完成并等待本地槽的迭代条件为“while (ub_layout->local_copy_ready != 1)”；metadata GM可读和local槽号就绪是两条独立握手，不能互相替代。",
+          "reads": [
+            "ub_layout",
+            "local_copy_ready"
+          ],
+          "writes": []
+        },
+        {
+          "line": 804,
+          "kind": "statement",
+          "explanation": "Scalar用volatile nop忙等local_copy_ready；此处不读hidden或发MTE，直到worker发布local槽分配结束。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 805,
+          "kind": "blank",
+          "explanation": "在发布metadata完成并等待本地槽中，分隔“asm volatile(\"nop\");”与随后“for (int stage_idx = 0; stage_idx < kNumHiddenMTEStages; ++ stage_idx)”两步；此处没有数据写入。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 806,
+          "kind": "loop",
+          "explanation": "发布metadata完成并等待本地槽的迭代条件为“for (int stage_idx = 0; stage_idx < kNumHiddenMTEStages; ++ stage_idx)”；metadata GM可读和local槽号就绪是两条独立握手，不能互相替代。",
+          "reads": [
+            "stage_idx",
+            "kNumHiddenMTEStages"
+          ],
+          "writes": [
+            "stage_idx"
+          ]
+        },
+        {
+          "line": 807,
+          "kind": "sync",
+          "explanation": "初始化所有hidden stage空闲事件，第一次本地hidden MTE2读取有可消费的释放信号。",
+          "reads": [
+            "stage_idx"
+          ],
+          "writes": []
+        },
+        {
+          "line": 808,
+          "kind": "blank",
+          "explanation": "在发布metadata完成并等待本地槽中，分隔“asc_sync_notify(PIPE_MTE3, PIPE_MTE2, static_cast<event_t>(stage_idx));”与随后“int hidden_stage_idx = 0;”两步；此处没有数据写入。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 809,
+          "kind": "declaration",
+          "explanation": "在self-copy hidden读取GM到UB中更新/计算“int hidden_stage_idx = 0;”。 hidden_stage_idx：self-copy hidden的循环stage，MTE3完成后才可重用。",
+          "reads": [],
+          "writes": [
+            "hidden_stage_idx"
+          ]
+        },
+        {
+          "line": 810,
+          "kind": "loop",
+          "explanation": "self-copy hidden读取GM到UB的迭代条件为“for (int i = 0; i < num_tokens_for_vec_core; ++ i)”；远端hidden由URMA直接读；只有本地路径使用这些UB hidden stage。",
+          "reads": [
+            "num_tokens_for_vec_core",
+            "i"
+          ],
+          "writes": [
+            "i"
+          ]
+        },
+        {
+          "line": 811,
+          "kind": "declaration",
+          "explanation": "在self-copy hidden读取GM到UB中更新/计算“const auto dst_slot_idx = ub_layout->local_copy_dst_slot_idx[i];”。 dst_slot_idx：目标Rank中当前源Rank接收切片内槽号，-1代表无有效路由；ub_layout：ub->workspace，Scalar和SIMT共享本AIV路由控制状态；local_copy_dst_slot_idx：每个本AIV token的本Rank接收槽，-1表示无self-copy。",
+          "reads": [
+            "ub_layout",
+            "local_copy_dst_slot_idx"
+          ],
+          "writes": [
+            "dst_slot_idx"
+          ]
+        },
+        {
+          "line": 812,
+          "kind": "branch",
+          "explanation": "self-copy hidden读取GM到UB的分支条件为“if (dst_slot_idx >= 0)”；远端hidden由URMA直接读；只有本地路径使用这些UB hidden stage。",
+          "reads": [
+            "dst_slot_idx"
+          ],
+          "writes": []
+        },
+        {
+          "line": 813,
+          "kind": "declaration",
+          "explanation": "在self-copy hidden读取GM到UB中更新/计算“const auto token_idx = vec_core_idx * kNumMaxTokensPerVecCore + i;”。 token_idx：输入token的Rank内索引，由AIV连续块基址加核内位置；vec_core_idx：当前AIV编号，是连续输入片段或接收流片段的owner。",
+          "reads": [
+            "vec_core_idx"
+          ],
+          "writes": [
+            "token_idx"
+          ]
+        },
+        {
+          "line": 814,
+          "kind": "declaration",
+          "explanation": "在self-copy hidden读取GM到UB中更新/计算“const auto ub_hidden = ub->hidden[hidden_stage_idx];”。 ub_hidden：当前hidden stage UB首址，长度kNumHiddenBytes；ub：从UB地址0开始的静态资源视图，不是GM空指针分配；hidden_stage_idx：self-copy hidden的循环stage，MTE3完成后才可重用。",
+          "reads": [
+            "ub",
+            "hidden_stage_idx"
+          ],
+          "writes": [
+            "ub_hidden"
+          ]
+        },
+        {
+          "line": 815,
+          "kind": "blank",
+          "explanation": "在self-copy hidden读取GM到UB中，分隔“const auto ub_hidden = ub->hidden[hidden_stage_idx];”与随后“// Copy token data into UB”两步；此处没有数据写入。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 816,
+          "kind": "comment",
+          "explanation": "注释说明self-copy hidden读取GM到UB的实现意图（Copy token data into UB）；循环本AIV token，等待hidden stage释放，MTE2读x+token_idx*H，共H字节，notify MTE2→MTE3。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 817,
+          "kind": "sync",
+          "explanation": "让第二管线等待第一管线发布的同一event，建立数据就绪或stage释放依赖；调用本行“asc_sync_wait(PIPE_MTE3, PIPE_MTE2, static_cast<event_t>(hidden_stage_idx));”。 hidden_stage_idx：self-copy hidden的循环stage，MTE3完成后才可重用。",
+          "reads": [
+            "hidden_stage_idx"
+          ],
+          "writes": []
+        },
+        {
+          "line": 818,
+          "kind": "call",
+          "explanation": "MTE2只读取本地命中token的H字节hidden到当前hidden_stage；源为x+token_idx*H，L2 NORMAL_FIRST_VICTIM。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 819,
+          "kind": "statement",
+          "explanation": "hidden self-copy MTE2目的为当前hidden_stage的UB地址ub_hidden，最多写H个有效字节。",
+          "reads": [
+            "ub_hidden"
+          ],
+          "writes": [
+            "ub_hidden"
+          ]
+        },
+        {
+          "line": 820,
+          "kind": "statement",
+          "explanation": "hidden MTE2源首址=x+token_idx*H，token_idx是当前AIV输入片段内选中的本地命中token。",
+          "reads": [
+            "x",
+            "token_idx",
+            "kNumHiddenBytes"
+          ],
+          "writes": []
+        },
+        {
+          "line": 821,
+          "kind": "statement",
+          "explanation": "n_burst=1：burst数量；决定当前stage有效token行或固定单行复制；len_burst=kNumHiddenBytes：每burst字节长度；决定该字段是hidden、Top-K、weight还是SF的有效extent。 此参数属于“self-copy hidden读取GM到UB”。",
+          "reads": [
+            "kNumHiddenBytes"
+          ],
+          "writes": []
+        },
+        {
+          "line": 822,
+          "kind": "statement",
+          "explanation": "left_padding_num=0：左padding元素数；此处0表示无左补齐；right_padding_num=0：右padding元素数；Top-K扫描按int32数量补-1至UB对齐，普通metadata读则0。 此参数属于“self-copy hidden读取GM到UB”。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 823,
+          "kind": "statement",
+          "explanation": "enable_constant_pad=false：是否启用前面asc_set_copy_pad_val常数padding。 此参数属于“self-copy hidden读取GM到UB”。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 824,
+          "kind": "statement",
+          "explanation": "l2_cache_mode=asc_load_l2_cache_mode::NORMAL_FIRST_VICTIM：显式L2 cache hint，控制缓存分配/优先或不分配清理策略；未声明L1。 此参数属于“self-copy hidden读取GM到UB”。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 825,
+          "kind": "statement",
+          "explanation": "src_gap=0：API源burst步长参数；具体整包/字段跨度由本行表达式确定；dst_gap=0：API目标burst步长参数；具体紧凑UB或输出布局由本行表达式确定。 此参数属于“self-copy hidden读取GM到UB”。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 826,
+          "kind": "brace",
+          "explanation": "闭合第818行“asc_copy_gm2ub_align(”的实参列表；ub_hidden中完整hidden可写入本Rankrecv。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 827,
+          "kind": "sync",
+          "explanation": "在第一管线完成前序动作后发布事件给第二管线；event_t区分循环stage；调用本行“asc_sync_notify(PIPE_MTE2, PIPE_MTE3, static_cast<event_t>(hidden_stage_idx));”。 hidden_stage_idx：self-copy hidden的循环stage，MTE3完成后才可重用。",
+          "reads": [
+            "hidden_stage_idx"
+          ],
+          "writes": []
+        },
+        {
+          "line": 828,
+          "kind": "blank",
+          "explanation": "在self-copy hidden写UB到本RankGM中，分隔“asc_sync_notify(PIPE_MTE2, PIPE_MTE3, static_cast<event_t>(hidden_stage_idx));”与随后“// Copy token data into the local receive buffer”两步；此处没有数据写入。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 829,
+          "kind": "comment",
+          "explanation": "注释说明self-copy hidden写UB到本RankGM的实现意图（Copy token data into the local receive buffer）；MTE3写recv_buffer[dst_slot_idx].hidden，释放stage循环复用；末尾逐stage等待再汇合S。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 830,
+          "kind": "sync",
+          "explanation": "让第二管线等待第一管线发布的同一event，建立数据就绪或stage释放依赖；调用本行“asc_sync_wait(PIPE_MTE2, PIPE_MTE3, static_cast<event_t>(hidden_stage_idx));”。 hidden_stage_idx：self-copy hidden的循环stage，MTE3完成后才可重用。",
+          "reads": [
+            "hidden_stage_idx"
+          ],
+          "writes": []
+        },
+        {
+          "line": 831,
+          "kind": "call",
+          "explanation": "MTE3把hidden_stage的H字节写到当前Rankrecv_buffer[dst_slot_idx].hidden，L2 NOTALLOC_CLEAN。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 832,
+          "kind": "statement",
+          "explanation": "hidden self-copy MTE3目标为当前Rank来源rank_idx切片中的dst_slot_idx hidden首址。",
+          "reads": [
+            "recv_buffer",
+            "dst_slot_idx"
+          ],
+          "writes": [
+            "recv_buffer"
+          ]
+        },
+        {
+          "line": 833,
+          "kind": "statement",
+          "explanation": "MTE3数据源为上一条MTE2填好的同一ub_hidden stage，事件保证读取完成后才写本RankGM。",
+          "reads": [
+            "ub_hidden"
+          ],
+          "writes": []
+        },
+        {
+          "line": 834,
+          "kind": "statement",
+          "explanation": "n_burst=1：burst数量；决定当前stage有效token行或固定单行复制；len_burst=kNumHiddenBytes：每burst字节长度；决定该字段是hidden、Top-K、weight还是SF的有效extent。 此参数属于“self-copy hidden写UB到本RankGM”。",
+          "reads": [
+            "kNumHiddenBytes"
+          ],
+          "writes": []
+        },
+        {
+          "line": 835,
+          "kind": "statement",
+          "explanation": "l2_cache_mode=asc_store_l2_cache_mode::NOTALLOC_CLEAN：显式L2 cache hint，控制缓存分配/优先或不分配清理策略；未声明L1。 此参数属于“self-copy hidden写UB到本RankGM”。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 836,
+          "kind": "statement",
+          "explanation": "dst_gap=0：API目标burst步长参数；具体紧凑UB或输出布局由本行表达式确定；src_gap=0：API源burst步长参数；具体整包/字段跨度由本行表达式确定。 此参数属于“self-copy hidden写UB到本RankGM”。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 837,
+          "kind": "brace",
+          "explanation": "闭合第831行“asc_copy_ub2gm_align(”的实参列表；本Rankrecv切片hidden已写完。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 838,
+          "kind": "sync",
+          "explanation": "在第一管线完成前序动作后发布事件给第二管线；event_t区分循环stage；调用本行“asc_sync_notify(PIPE_MTE3, PIPE_MTE2, static_cast<event_t>(hidden_stage_idx));”。 hidden_stage_idx：self-copy hidden的循环stage，MTE3完成后才可重用。",
+          "reads": [
+            "hidden_stage_idx"
+          ],
+          "writes": []
+        },
+        {
+          "line": 839,
+          "kind": "statement",
+          "explanation": "在self-copy hidden写UB到本RankGM中更新/计算“hidden_stage_idx = (hidden_stage_idx + 1) % kNumHiddenMTEStages;”。 hidden_stage_idx：self-copy hidden的循环stage，MTE3完成后才可重用；kNumHiddenMTEStages：self-copy hidden缓冲stage数，预算扣除metadata后确定。",
+          "reads": [
+            "kNumHiddenMTEStages",
+            "hidden_stage_idx"
+          ],
+          "writes": [
+            "hidden_stage_idx"
+          ]
+        },
+        {
+          "line": 840,
+          "kind": "brace",
+          "explanation": "结束由“if (dst_slot_idx >= 0) {”开启的作用域；到此self-copy hidden写UB到本RankGM对应状态更新完成，此括号不增加额外同步。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 841,
+          "kind": "brace",
+          "explanation": "结束由“for (int i = 0; i < num_tokens_for_vec_core; ++ i) {”开启的作用域；到此self-copy hidden写UB到本RankGM对应状态更新完成，此括号不增加额外同步。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 842,
+          "kind": "loop",
+          "explanation": "self-copy hidden写UB到本RankGM的迭代条件为“for (int stage_idx = 0; stage_idx < kNumHiddenMTEStages; ++ stage_idx)”；和SIMT metadata copy合成完整本地token；MTE3结束后才能进入最终通知阶段。",
+          "reads": [
+            "stage_idx",
+            "kNumHiddenMTEStages"
+          ],
+          "writes": [
+            "stage_idx"
+          ]
+        },
+        {
+          "line": 843,
+          "kind": "sync",
+          "explanation": "self-copy hidden尾部逐hidden stage等MTE3释放，确保本Rankrecv hidden写回全部完成。",
+          "reads": [
+            "stage_idx"
+          ],
+          "writes": []
+        },
+        {
+          "line": 844,
+          "kind": "sync",
+          "explanation": "在第一管线完成前序动作后发布事件给第二管线；event_t区分循环stage；调用本行“asc_sync_notify(PIPE_MTE2, PIPE_S, EVENT_ID0);”。 MTE3写recv_buffer[dst_slot_idx].hidden，释放stage循环复用；末尾逐stage等待再汇合S。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 845,
+          "kind": "sync",
+          "explanation": "让第二管线等待第一管线发布的同一event，建立数据就绪或stage释放依赖；调用本行“asc_sync_wait(PIPE_MTE2, PIPE_S, EVENT_ID0);”。 MTE3写recv_buffer[dst_slot_idx].hidden，释放stage循环复用；末尾逐stage等待再汇合S。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 846,
+          "kind": "blank",
+          "explanation": "在等待VF结束、推进SQ并ring doorbell中，分隔“asc_sync_wait(PIPE_MTE2, PIPE_S, EVENT_ID0);”与随后“// Wait until SIMT finishes routing and count reduction”两步；此处没有数据写入。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 847,
+          "kind": "comment",
+          "explanation": "注释说明等待VF结束、推进SQ并ring doorbell的实现意图（Wait until SIMT finishes routing and count reduction）；V→S事件等worker完成；有SQ时advance_sq(4*num_sqes)，检查head对齐并ring_doorbell；kDoBarrier可选执行drain+Rank/AIV barrier。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 848,
+          "kind": "comment",
+          "explanation": "注释说明等待VF结束、推进SQ并ring doorbell的实现意图（TODO: ring DB overlappingly）；V→S事件等worker完成；有SQ时advance_sq(4*num_sqes)，检查head对齐并ring_doorbell；kDoBarrier可选执行drain+Rank/AIV barrier。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 849,
+          "kind": "sync",
+          "explanation": "在第一管线完成前序动作后发布事件给第二管线；event_t区分循环stage；调用本行“asc_sync_notify(PIPE_V, PIPE_S, EVENT_ID0);”。 V→S事件等worker完成；有SQ时advance_sq(4*num_sqes)，检查head对齐并ring_doorbell；kDoBarrier可选执行drain+Rank/AIV barrier。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 850,
+          "kind": "sync",
+          "explanation": "等待PIPE_V到PIPE_S事件，确保SIMT worker的SQ写入、metadata self-copy与fresh计数归约全部结束。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 851,
+          "kind": "branch",
+          "explanation": "等待VF结束、推进SQ并ring doorbell的分支条件为“if constexpr (kNumRanks > 1)”；默认issue kernel退出不代表URMA完成；host决定issue尾或epilogue首做drain，并保活x/metadata至drain排队。",
+          "reads": [
+            "kNumRanks"
+          ],
+          "writes": []
+        },
+        {
+          "line": 852,
+          "kind": "statement",
+          "explanation": "在设备执行时检查运行值是否符合已编译布局；调用本行“EP_DEVICE_ASSERT(kNumMaxSQEs * kNumWQEBBsPerSQESlot <= handle::kSQDepth);”。 V→S事件等worker完成；有SQ时advance_sq(4*num_sqes)，检查head对齐并ring_doorbell；kDoBarrier可选执行drain+Rank/AIV barrier。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 853,
+          "kind": "declaration",
+          "explanation": "在等待VF结束、推进SQ并ring doorbell中更新/计算“const auto num_sqes = ub_layout->lsqe_counter;”。 num_sqes：本AIV全部远端逻辑SQE数量；ub_layout：ub->workspace，Scalar和SIMT共享本AIV路由控制状态；lsqe_counter：逻辑SQE总数，各远端Rank预留SQ区累计值。",
+          "reads": [
+            "ub_layout",
+            "lsqe_counter"
+          ],
+          "writes": [
+            "num_sqes"
+          ]
+        },
+        {
+          "line": 854,
+          "kind": "branch",
+          "explanation": "等待VF结束、推进SQ并ring doorbell的分支条件为“if (num_sqes > 0)”；默认issue kernel退出不代表URMA完成；host决定issue尾或epilogue首做drain，并保活x/metadata至drain排队。",
+          "reads": [
+            "num_sqes"
+          ],
+          "writes": []
+        },
+        {
+          "line": 855,
+          "kind": "statement",
+          "explanation": "advance_sq只修改UB jetty_info.packed_head：低32位SQ head加num_sqes*4，高32位预期completion加1；GM控制区仍在ring_doorbell时发布。",
+          "reads": [
+            "num_sqes"
+          ],
+          "writes": [
+            "jetty"
+          ]
+        },
+        {
+          "line": 856,
+          "kind": "statement",
+          "explanation": "在设备执行时检查运行值是否符合已编译布局；调用本行“EP_DEVICE_ASSERT(static_cast<uint32_t>(ub_layout->jetty_info.packed_head) % kSQEBBAlignment == 0);”。 ub_layout：ub->workspace，Scalar和SIMT共享本AIV路由控制状态；jetty_info：每AIV私有SQ/CQ/head/doorbell地址快照。",
+          "reads": [
+            "ub_layout",
+            "jetty_info"
+          ],
+          "writes": []
+        },
+        {
+          "line": 857,
+          "kind": "statement",
+          "explanation": "ring_doorbell把新的head写GM、执行设备DSB顺序屏障，再写doorbell MMIO；URMA从此消费已编码SQ并读取x/metadata GM。",
+          "reads": [],
+          "writes": [
+            "jetty"
+          ]
+        },
+        {
+          "line": 858,
+          "kind": "brace",
+          "explanation": "结束由“if (num_sqes > 0) {”开启的作用域；到此等待VF结束、推进SQ并ring doorbell对应状态更新完成，此括号不增加额外同步。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 859,
+          "kind": "blank",
+          "explanation": "空行分隔ring_doorbell提交与可选尾部drain屏障；没有新的通知或等待动作。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 860,
+          "kind": "comment",
+          "explanation": "源码在等待VF结束、推进SQ并ring doorbell旁记载“benchmark only: wait for all urma traffic to measure URMA latency”；这是源码备注，未在本作品对应硬件配置实测，不能当性能结论。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 861,
+          "kind": "branch",
+          "explanation": "等待VF结束、推进SQ并ring doorbell的分支条件为“if constexpr (kDoBarrier)”；默认issue kernel退出不代表URMA完成；host决定issue尾或epilogue首做drain，并保活x/metadata至drain排队。",
+          "reads": [
+            "kDoBarrier"
+          ],
+          "writes": []
+        },
+        {
+          "line": 862,
+          "kind": "statement",
+          "explanation": "调用跨Rank屏障；是否drain URMA和同步AIV由本次模板参数决定；调用本行“comm::scalar::barrier<”。 V→S事件等worker完成；有SQ时advance_sq(4*num_sqes)，检查head对齐并ring_doorbell；kDoBarrier可选执行drain+Rank/AIV barrier。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 863,
+          "kind": "statement",
+          "explanation": "尾屏障模板启用通信drain、跨Rank与跨AIV条件，AIV数与Jetty数用于共同完成通知。",
+          "reads": [
+            "kNumRanks",
+            "kNumTimeoutCycles",
+            "kNumVecCores"
+          ],
+          "writes": []
+        },
+        {
+          "line": 864,
+          "kind": "statement",
+          "explanation": "尾屏障绑定Context common_signals、当前AIV编号和Jetty地址数组，等待之前敲门铃发出的网络WRITE完成。",
+          "reads": [
+            "workspace_layout",
+            "vec_core_idx",
+            "jetty_ptrs"
+          ],
+          "writes": []
+        },
+        {
+          "line": 865,
+          "kind": "brace",
+          "explanation": "结束由“const int sf_hidden_stride) {”开启的作用域；到此等待VF结束、推进SQ并ring doorbell对应状态更新完成，此括号不增加额外同步。",
+          "reads": [],
+          "writes": []
+        }
+      ]
+    },
+    {
+      "id": "dispatch-preload-688",
+      "module_id": "metadata",
+      "name": "preload_metadata",
+      "start": 688,
+      "end": 753,
+      "summary": "按当前AIV连续token范围预取SF、fresh Top-K ID和可选weights到循环metadata UB stage。",
+      "inactive": false,
+      "inputs": [
+        "sf",
+        "topk_idx",
+        "topk_weights",
+        "token_idx",
+        "stage_idx",
+        "ub_metadata_buffer",
+        "metadata_token_layout",
+        "num_tokens",
+        "vec_core_idx",
+        "sf_token_stride",
+        "sf_hidden_stride"
+      ],
+      "outputs": [
+        "ub_metadata_buffer"
+      ],
+      "side_effects": [
+        "MTE2写当前UB metadata stage的SF/Top-K/weight字段",
+        "发布MTE2→S(stage_idx)使Scalar消费当前stage"
+      ],
+      "review": {
+        "function_id": "dispatch-preload-688",
+        "revision": 5,
+        "draft_author": "walkthrough-agent",
+        "reviewer": "independent-review",
+        "source_sha256": "25244c66d5937e9e7521400792c2e0ddc974512971f582e95d19c4828c31b678",
+        "draft_sha256": "c677c39bd97dd8d012890977136938a59e146388b03c68435c37786eb099ca82",
+        "function_content_sha256": "625f05fc0060000a6c709d3b8b308067c195f65092a89981b97b0a8ab8312005",
+        "line_range": [
+          688,
+          753
+        ],
+        "gaps": [],
+        "overlaps": [],
+        "unresolved": [],
+        "verdict": "PASS",
+        "status": "PASS",
+        "required_changes": [],
+        "verified": [
+          "token/stage双坐标与尾AIV夹取",
+          "SF stride1与二维NDDMA的element stride；fresh Top-K与可选weight输入范围",
+          "MTE3释放后复用UB，MTE2→S发布；TokenLayout视图不是(K+2)回程metadata",
+          "完整定义逐行含signature/comment/brace/blank复核；无fallback或错误跨域变量解释",
+          "caller/callee真实调用点、IO/成员/GM/UB/remote状态变化核对",
+          "allocator/owner/capacity/alignment/lifetime/cache边界详见独立PASS memory-review-r3",
+          "独立复审renderer整改：仅既有标识符周边空白，calls/notes/IO/ranges完全一致"
+        ],
+        "prior_function_content_sha256": "e98fdf26656e4bf01d81b5c0048acf7da3177e8210fd80e1fbaad62b298af8bc"
+      },
+      "segments": [
+        {
+          "start": 688,
+          "end": 696,
+          "title": "确定metadata stage边界并等待复用",
+          "detail": "stage首token=stage_idx*每stage容量；真实数量夹到本AIV末端；等MTE3→MTE2事件避免覆盖尚在写GM的UB。",
+          "kind": "input",
+          "input_state": [
+            "preload_metadata(token_idx,stage_idx)捕获本AIV布局"
+          ],
+          "mechanism": "UB stage首token槽=stage_idx*kNumTokensPerMetadataMTE；GM首token由形参token_idx给出；真实数量夹到本AIV末端；等MTE3→MTE2事件避免覆盖尚在写GM的UB。",
+          "output_state": [
+            "该stage可安全接收下一批metadata"
+          ],
+          "why": "最后AIV与最后stage都可能不足，不能越读相邻核token。",
+          "calls": [
+            {
+              "name": "asc_sync_wait",
+              "line": 696,
+              "type": "external"
+            }
+          ],
+          "id": "dispatch-preload-688-s1"
+        },
+        {
+          "start": 697,
+          "end": 726,
+          "title": "读取连续或跨stride SF",
+          "detail": "hidden_stride==1用burst MTE2；否则两维 nddma_desc 按token和pack维stride收集到metadata SF子区。",
+          "kind": "compute",
+          "input_state": [
+            "sf可能存在token_stride和hidden_stride"
+          ],
+          "mechanism": "hidden_stride==1用burst MTE2；否则两维 nddma_desc 按token和pack维stride收集到metadata SF子区。",
+          "output_state": [
+            "metadata UB中SF pack布局紧凑"
+          ],
+          "why": "支持输入SF的不同strided视图，输出epilogue另外强制连续pack。",
+          "calls": [
+            {
+              "name": "asc_copy_gm2ub_align",
+              "line": 701,
+              "type": "external"
+            },
+            {
+              "name": "nddma_out_to_ub",
+              "line": 720,
+              "type": "external"
+            }
+          ],
+          "id": "dispatch-preload-688-s2"
+        },
+        {
+          "start": 727,
+          "end": 739,
+          "title": "fresh加载Top-K专家ID",
+          "detail": "仅not kCachedMode读每token K*sizeof(int64)，按num_metadata_bytes stride放UB TokenLayout Top-K子区。",
+          "kind": "compute",
+          "input_state": [
+            "topk_idx是int64 [N,K]；cached handle已有路由"
+          ],
+          "mechanism": "仅not kCachedMode读每token K*sizeof(int64)，按num_metadata_bytes stride放UB TokenLayout Top-K子区。",
+          "output_state": [
+            "fresh metadata带原始Top-K，cached不重发ID"
+          ],
+          "why": "epilogue fresh需要在同Rank复制给多个专家，cached直接复用recv_src_metadata槽。",
+          "calls": [
+            {
+              "name": "asc_copy_gm2ub_align",
+              "line": 728,
+              "type": "external"
+            }
+          ],
+          "id": "dispatch-preload-688-s3"
+        },
+        {
+          "start": 740,
+          "end": 753,
+          "title": "加载可选weight并发布stage已读",
+          "detail": "非空则MTE2读每token K个float到UB weight字段；notify MTE2→S(stage_idx)。",
+          "kind": "sync",
+          "input_state": [
+            "topk_weights为空时无weight消费请求"
+          ],
+          "mechanism": "非空则MTE2读每token K个float到UB weight字段；notify MTE2→S(stage_idx)。",
+          "output_state": [
+            "Scalar能修改src全局token字段并准备metadata写GM"
+          ],
+          "why": "MTE2完成前不能让Scalar读取或修改同一metadata stage。",
+          "calls": [
+            {
+              "name": "asc_copy_gm2ub_align",
+              "line": 741,
+              "type": "external"
+            },
+            {
+              "name": "asc_sync_notify",
+              "line": 752,
+              "type": "external"
+            }
+          ],
+          "id": "dispatch-preload-688-s4"
+        }
+      ],
+      "line_notes": [
+        {
+          "line": 688,
+          "kind": "signature",
+          "explanation": "声明确定metadata stage边界并等待复用对应的模板/设备入口“auto preload_metadata = [&](const int token_idx, const int stage_idx) __aicore__ {”；preload_metadata(token_idx,stage_idx)捕获本AIV布局",
+          "reads": [
+            "token_idx",
+            "stage_idx"
+          ],
+          "writes": [
+            "preload_metadata"
+          ]
+        },
+        {
+          "line": 689,
+          "kind": "declaration",
+          "explanation": "在确定metadata stage边界并等待复用中更新/计算“const auto ub_metadata = ub_metadata_buffer.get_token_buffer(stage_idx * kNumTokensPerMetadataMTE);”。 ub_metadata：当前dispatch metadata TokenLayout字段视图，包含SF、weights和fresh Top-K/src索引；ub_metadata_buffer：按stage切分的UB metadata批次区；stage_idx：当前循环UB stage；对应事件ID用于防止提前覆盖。",
+          "reads": [
+            "ub_metadata_buffer",
+            "stage_idx",
+            "kNumTokensPerMetadataMTE"
+          ],
+          "writes": [
+            "ub_metadata"
+          ]
+        },
+        {
+          "line": 690,
+          "kind": "declaration",
+          "explanation": "在确定metadata stage边界并等待复用中更新/计算“const auto num_metadata_bytes = static_cast<uint32_t>(metadata_token_layout.get_num_bytes());”。 num_metadata_bytes：紧凑metadata每token字节步长，与完整token hidden分离；metadata_token_layout：hidden长度为0的紧凑metadata布局。",
+          "reads": [
+            "metadata_token_layout"
+          ],
+          "writes": [
+            "num_metadata_bytes"
+          ]
+        },
+        {
+          "line": 691,
+          "kind": "declaration",
+          "explanation": "在确定metadata stage边界并等待复用中更新/计算“const auto num_tokens_in_stage = math::min(”。 num_tokens_in_stage：本stage真实token数，不能超过本AIV连续片段或stage容量。",
+          "reads": [],
+          "writes": [
+            "num_tokens_in_stage"
+          ]
+        },
+        {
+          "line": 692,
+          "kind": "statement",
+          "explanation": "当前metadata batch最多kNumTokensPerMetadataMTE个token；这是stage容量上限而非总AIV token数。",
+          "reads": [
+            "kNumTokensPerMetadataMTE"
+          ],
+          "writes": []
+        },
+        {
+          "line": 693,
+          "kind": "statement",
+          "explanation": "stage真实数量还受本AIV末端min(N,(aiv+1)*ceil(M/V))约束，减token_idx后夹到0，避免尾AIV越读。",
+          "reads": [
+            "num_tokens",
+            "vec_core_idx",
+            "token_idx"
+          ],
+          "writes": []
+        },
+        {
+          "line": 694,
+          "kind": "blank",
+          "explanation": "在确定metadata stage边界并等待复用中，分隔“math::max(0, math::min(num_tokens, (vec_core_idx + 1) * kNumMaxTokensPerVecCore) - token_idx));”与随后“// Copy metadata within this AIV's contiguous token range”两步；此处没有数据写入。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 695,
+          "kind": "comment",
+          "explanation": "注释说明确定metadata stage边界并等待复用的实现意图（Copy metadata within this AIV's contiguous token range）；stage首token=stage_idx*每stage容量；真实数量夹到本AIV末端；等MTE3→MTE2事件避免覆盖尚在写GM的UB。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 696,
+          "kind": "sync",
+          "explanation": "metadata preload先等当前stage先前MTE3写发送GM完成，MTE2才能覆盖SF/ID/weight UB来源区。",
+          "reads": [
+            "stage_idx"
+          ],
+          "writes": []
+        },
+        {
+          "line": 697,
+          "kind": "branch",
+          "explanation": "读取连续或跨stride SF的分支条件为“if constexpr (kNumSFPacks > 0)”；支持输入SF的不同strided视图，输出epilogue另外强制连续pack。",
+          "reads": [
+            "kNumSFPacks"
+          ],
+          "writes": []
+        },
+        {
+          "line": 698,
+          "kind": "declaration",
+          "explanation": "在读取连续或跨stride SF中更新/计算“const auto gm_sf = math::advance_ptr<__gm__ sf_pack_t>(”。 gm_sf：sf+token_idx*sf_token_stride*sizeof(sf_pack_t)，支持源SF双维stride。",
+          "reads": [],
+          "writes": [
+            "gm_sf"
+          ]
+        },
+        {
+          "line": 699,
+          "kind": "statement",
+          "explanation": "输入SF首址=sf+token_idx*sf_token_stride*sizeof(sf_pack_t)，stride以SF pack数输入、这里转换成字节。",
+          "reads": [
+            "sf",
+            "token_idx",
+            "sf_token_stride"
+          ],
+          "writes": []
+        },
+        {
+          "line": 700,
+          "kind": "branch",
+          "explanation": "读取连续或跨stride SF的分支条件为“if (sf_hidden_stride == 1)”；支持输入SF的不同strided视图，输出epilogue另外强制连续pack。",
+          "reads": [
+            "sf_hidden_stride"
+          ],
+          "writes": []
+        },
+        {
+          "line": 701,
+          "kind": "call",
+          "explanation": "通过MTE2把指定GM区读入AIV UB，burst、stride、padding和L2 hint由后续实参确定；调用本行“asc_copy_gm2ub_align(”。 hidden_stride==1用burst MTE2；否则两维nddma_desc按token和pack维stride收集到metadata SF子区。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 702,
+          "kind": "statement",
+          "explanation": "连续SF的MTE2目的为UB metadata SF子字段、源为gm_sf；burst逐token从源stride收集到紧凑metadata stride。",
+          "reads": [
+            "ub_metadata",
+            "gm_sf"
+          ],
+          "writes": [
+            "ub_metadata"
+          ]
+        },
+        {
+          "line": 703,
+          "kind": "statement",
+          "explanation": "n_burst=static_cast<uint16_t>(num_tokens_in_stage)：burst数量；决定当前stage有效token行或固定单行复制。 此参数属于“读取连续或跨stride SF”。",
+          "reads": [
+            "num_tokens_in_stage"
+          ],
+          "writes": []
+        },
+        {
+          "line": 704,
+          "kind": "statement",
+          "explanation": "len_burst=kNumSFPacks * sizeof(sf_pack_t)：每burst字节长度；决定该字段是hidden、Top-K、weight还是SF的有效extent。 此参数属于“读取连续或跨stride SF”。",
+          "reads": [
+            "kNumSFPacks"
+          ],
+          "writes": []
+        },
+        {
+          "line": 705,
+          "kind": "statement",
+          "explanation": "left_padding_num=0：左padding元素数；此处0表示无左补齐；right_padding_num=0：右padding元素数；Top-K扫描按int32数量补-1至UB对齐，普通metadata读则0。 此参数属于“读取连续或跨stride SF”。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 706,
+          "kind": "statement",
+          "explanation": "enable_constant_pad=false：是否启用前面asc_set_copy_pad_val常数padding。 此参数属于“读取连续或跨stride SF”。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 707,
+          "kind": "statement",
+          "explanation": "l2_cache_mode=static_cast<uint8_t>(LD_L2CacheType::L2_CACHE_HINT_NORMAL_FV)：显式L2 cache hint，控制缓存分配/优先或不分配清理策略；未声明L1。 此参数属于“读取连续或跨stride SF”。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 708,
+          "kind": "statement",
+          "explanation": "src_stride=static_cast<uint64_t>(sf_token_stride) * sizeof(sf_pack_t)：源相邻token字段起点的字节stride。 此参数属于“读取连续或跨stride SF”。",
+          "reads": [
+            "sf_token_stride"
+          ],
+          "writes": []
+        },
+        {
+          "line": 709,
+          "kind": "statement",
+          "explanation": "dst_stride=num_metadata_bytes：UB/GM目标相邻token字段起点的字节stride。 此参数属于“读取连续或跨stride SF”。",
+          "reads": [
+            "num_metadata_bytes"
+          ],
+          "writes": []
+        },
+        {
+          "line": 710,
+          "kind": "brace",
+          "explanation": "闭合第701行“asc_copy_gm2ub_align(”的实参列表；metadata UB中SF pack布局紧凑。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 711,
+          "kind": "statement",
+          "explanation": "结束if (sf_hidden_stride == 1) {并进入else {，在读取连续或跨stride SF里处理相反/后续分支。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 712,
+          "kind": "declaration",
+          "explanation": "构造sf_desc双维NDDMA描述；随后nddma_out_to_ub用同一gm_sf与UB SF首址执行token×pack读取。",
+          "reads": [
+            "sf_desc"
+          ],
+          "writes": []
+        },
+        {
+          "line": 713,
+          "kind": "statement",
+          "explanation": "NDDMA第一个loop_desc对应token维，以下三项依次为token数量、UB目的element stride、GM源element stride。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 714,
+          "kind": "statement",
+          "explanation": "token维loop次数=num_tokens_in_stage，只有本AIV当前stage真实token参与SF读取。",
+          "reads": [
+            "num_tokens_in_stage"
+          ],
+          "writes": []
+        },
+        {
+          "line": 715,
+          "kind": "statement",
+          "explanation": "token维UB目的stride=num_metadata_bytes/sizeof(sf_pack_t)，单位是SF pack元素，跳到下一token metadata的同一SF字段。",
+          "reads": [
+            "num_metadata_bytes"
+          ],
+          "writes": []
+        },
+        {
+          "line": 716,
+          "kind": "statement",
+          "explanation": "token维GM源stride=sf_token_stride，单位是sf_pack_t元素；输入token维可非紧凑。",
+          "reads": [
+            "sf_token_stride"
+          ],
+          "writes": []
+        },
+        {
+          "line": 717,
+          "kind": "statement",
+          "explanation": "NDDMA第二个loop_desc对应token内SF pack维，与token维组成二维gather。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 718,
+          "kind": "statement",
+          "explanation": "SF pack维读取kNumSFPacks个元素，UB目的stride=1保证紧凑pack，GM源stride=sf_hidden_stride支持跨步源pack。",
+          "reads": [
+            "kNumSFPacks",
+            "sf_hidden_stride"
+          ],
+          "writes": []
+        },
+        {
+          "line": 719,
+          "kind": "brace",
+          "explanation": "闭合sf_desc构造，两个loop分别按token和pack维定义次数及源/目标元素stride。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 720,
+          "kind": "statement",
+          "explanation": "通过两维NDDMA从任意stride的SF GM读取到metadata UB；调用本行“nddma_out_to_ub(”。 hidden_stride==1用burst MTE2；否则两维nddma_desc按token和pack维stride收集到metadata SF子区。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 721,
+          "kind": "statement",
+          "explanation": "NDDMA目的与连续SF路径相同，都是UB当前metadata stage SF字段；gm_sf为该batch输入首token SF地址。",
+          "reads": [
+            "ub_metadata",
+            "gm_sf"
+          ],
+          "writes": [
+            "ub_metadata"
+          ]
+        },
+        {
+          "line": 722,
+          "kind": "statement",
+          "explanation": "sid=0, sf_desc：NDDMA stream选择；sf_desc定义两维搬运，pad_val设置填充值；pad_val=0, CONSTANT_PADDING：当前DMA实参。 此参数属于“读取连续或跨stride SF”。",
+          "reads": [
+            "sf_desc"
+          ],
+          "writes": []
+        },
+        {
+          "line": 723,
+          "kind": "statement",
+          "explanation": "l2_cache_ctl=static_cast<uint8_t>(LD_L2CacheType::L2_CACHE_HINT_NORMAL_FV)：NDDMA的显式L2 cache hint；不是新申请的片上缓存区。 此参数属于“读取连续或跨stride SF”。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 724,
+          "kind": "brace",
+          "explanation": "闭合第720行“nddma_out_to_ub(”的实参列表；metadata UB中SF pack布局紧凑。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 725,
+          "kind": "brace",
+          "explanation": "结束由“} else {”开启的作用域；到此读取连续或跨stride SF对应状态更新完成，此括号不增加额外同步。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 726,
+          "kind": "brace",
+          "explanation": "结束由“if constexpr (kNumSFPacks > 0) {”开启的作用域；到此读取连续或跨stride SF对应状态更新完成，此括号不增加额外同步。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 727,
+          "kind": "branch",
+          "explanation": "fresh加载Top-K专家ID的分支条件为“if constexpr (not kCachedMode)”；epilogue fresh需要在同Rank复制给多个专家，cached直接复用recv_src_metadata槽。",
+          "reads": [
+            "kCachedMode"
+          ],
+          "writes": []
+        },
+        {
+          "line": 728,
+          "kind": "call",
+          "explanation": "通过MTE2把指定GM区读入AIV UB，burst、stride、padding和L2 hint由后续实参确定；调用本行“asc_copy_gm2ub_align(”。 仅not kCachedMode读每token K*sizeof(int64)，按num_metadata_bytes stride放UB TokenLayout Top-K子区。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 729,
+          "kind": "statement",
+          "explanation": "fresh Top-K MTE2目的为UB metadata的int64专家ID字段，以uint8视图按字节写入。",
+          "reads": [
+            "ub_metadata"
+          ],
+          "writes": [
+            "ub_metadata"
+          ]
+        },
+        {
+          "line": 730,
+          "kind": "statement",
+          "explanation": "Top-K来源首址=topk_idx+token_idx*K个int64，math::advance_ptr的偏移参数是字节token_idx*K*8。",
+          "reads": [
+            "topk_idx",
+            "token_idx",
+            "kNumTopk"
+          ],
+          "writes": []
+        },
+        {
+          "line": 731,
+          "kind": "statement",
+          "explanation": "n_burst=static_cast<uint16_t>(num_tokens_in_stage)：burst数量；决定当前stage有效token行或固定单行复制。 此参数属于“fresh加载Top-K专家ID”。",
+          "reads": [
+            "num_tokens_in_stage"
+          ],
+          "writes": []
+        },
+        {
+          "line": 732,
+          "kind": "statement",
+          "explanation": "len_burst=kNumTopk * sizeof(int64_t)：每burst字节长度；决定该字段是hidden、Top-K、weight还是SF的有效extent。 此参数属于“fresh加载Top-K专家ID”。",
+          "reads": [
+            "kNumTopk"
+          ],
+          "writes": []
+        },
+        {
+          "line": 733,
+          "kind": "statement",
+          "explanation": "left_padding_num=0：左padding元素数；此处0表示无左补齐；right_padding_num=0：右padding元素数；Top-K扫描按int32数量补-1至UB对齐，普通metadata读则0。 此参数属于“fresh加载Top-K专家ID”。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 734,
+          "kind": "statement",
+          "explanation": "enable_constant_pad=false：是否启用前面asc_set_copy_pad_val常数padding。 此参数属于“fresh加载Top-K专家ID”。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 735,
+          "kind": "statement",
+          "explanation": "l2_cache_mode=static_cast<uint8_t>(LD_L2CacheType::L2_CACHE_HINT_NORMAL_FV)：显式L2 cache hint，控制缓存分配/优先或不分配清理策略；未声明L1。 此参数属于“fresh加载Top-K专家ID”。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 736,
+          "kind": "statement",
+          "explanation": "src_stride=static_cast<uint64_t>(kNumTopk) * sizeof(int64_t)：源相邻token字段起点的字节stride。 此参数属于“fresh加载Top-K专家ID”。",
+          "reads": [
+            "kNumTopk"
+          ],
+          "writes": []
+        },
+        {
+          "line": 737,
+          "kind": "statement",
+          "explanation": "dst_stride=num_metadata_bytes：UB/GM目标相邻token字段起点的字节stride。 此参数属于“fresh加载Top-K专家ID”。",
+          "reads": [
+            "num_metadata_bytes"
+          ],
+          "writes": []
+        },
+        {
+          "line": 738,
+          "kind": "brace",
+          "explanation": "闭合第728行“asc_copy_gm2ub_align(”的实参列表；fresh metadata带原始Top-K，cached不重发ID。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 739,
+          "kind": "brace",
+          "explanation": "结束由“if constexpr (not kCachedMode) {”开启的作用域；到此fresh加载Top-K专家ID对应状态更新完成，此括号不增加额外同步。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 740,
+          "kind": "branch",
+          "explanation": "加载可选weight并发布stage已读的分支条件为“if (topk_weights != nullptr)”；MTE2完成前不能让Scalar读取或修改同一metadata stage。",
+          "reads": [
+            "topk_weights"
+          ],
+          "writes": []
+        },
+        {
+          "line": 741,
+          "kind": "call",
+          "explanation": "通过MTE2把指定GM区读入AIV UB，burst、stride、padding和L2 hint由后续实参确定；调用本行“asc_copy_gm2ub_align(”。 非空则MTE2读每token K个float到UB weight字段；notify MTE2→S(stage_idx)。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 742,
+          "kind": "statement",
+          "explanation": "weight来源为topk_weights+token_idx*K，目标为UB metadata weight字段；每token搬K个float。",
+          "reads": [
+            "ub_metadata",
+            "topk_weights",
+            "token_idx",
+            "kNumTopk"
+          ],
+          "writes": [
+            "ub_metadata"
+          ]
+        },
+        {
+          "line": 743,
+          "kind": "statement",
+          "explanation": "n_burst=static_cast<uint16_t>(num_tokens_in_stage)：burst数量；决定当前stage有效token行或固定单行复制。 此参数属于“加载可选weight并发布stage已读”。",
+          "reads": [
+            "num_tokens_in_stage"
+          ],
+          "writes": []
+        },
+        {
+          "line": 744,
+          "kind": "statement",
+          "explanation": "len_burst=kNumTopk * sizeof(float)：每burst字节长度；决定该字段是hidden、Top-K、weight还是SF的有效extent。 此参数属于“加载可选weight并发布stage已读”。",
+          "reads": [
+            "kNumTopk"
+          ],
+          "writes": []
+        },
+        {
+          "line": 745,
+          "kind": "statement",
+          "explanation": "left_padding_num=0：左padding元素数；此处0表示无左补齐；right_padding_num=0：右padding元素数；Top-K扫描按int32数量补-1至UB对齐，普通metadata读则0。 此参数属于“加载可选weight并发布stage已读”。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 746,
+          "kind": "statement",
+          "explanation": "enable_constant_pad=false：是否启用前面asc_set_copy_pad_val常数padding。 此参数属于“加载可选weight并发布stage已读”。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 747,
+          "kind": "statement",
+          "explanation": "l2_cache_mode=static_cast<uint8_t>(LD_L2CacheType::L2_CACHE_HINT_NORMAL_FV)：显式L2 cache hint，控制缓存分配/优先或不分配清理策略；未声明L1。 此参数属于“加载可选weight并发布stage已读”。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 748,
+          "kind": "statement",
+          "explanation": "src_stride=static_cast<uint64_t>(kNumTopk) * sizeof(float)：源相邻token字段起点的字节stride。 此参数属于“加载可选weight并发布stage已读”。",
+          "reads": [
+            "kNumTopk"
+          ],
+          "writes": []
+        },
+        {
+          "line": 749,
+          "kind": "statement",
+          "explanation": "dst_stride=num_metadata_bytes：UB/GM目标相邻token字段起点的字节stride。 此参数属于“加载可选weight并发布stage已读”。",
+          "reads": [
+            "num_metadata_bytes"
+          ],
+          "writes": []
+        },
+        {
+          "line": 750,
+          "kind": "brace",
+          "explanation": "闭合第741行“asc_copy_gm2ub_align(”的实参列表；Scalar能修改src全局token字段并准备metadata写GM。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 751,
+          "kind": "brace",
+          "explanation": "结束由“if (topk_weights != nullptr) {”开启的作用域；到此加载可选weight并发布stage已读对应状态更新完成，此括号不增加额外同步。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 752,
+          "kind": "sync",
+          "explanation": "在第一管线完成前序动作后发布事件给第二管线；event_t区分循环stage；调用本行“asc_sync_notify(PIPE_MTE2, PIPE_S, static_cast<event_t>(stage_idx));”。 stage_idx：当前循环UB stage；对应事件ID用于防止提前覆盖。",
+          "reads": [
+            "stage_idx"
+          ],
+          "writes": []
+        },
+        {
+          "line": 753,
+          "kind": "brace",
+          "explanation": "结束由“auto preload_metadata = [&](const int token_idx, const int stage_idx) __aicore__ {”开启的作用域；到此加载可选weight并发布stage已读对应状态更新完成，此括号不增加额外同步。",
+          "reads": [],
+          "writes": []
+        }
+      ]
+    }
+  ]
+}

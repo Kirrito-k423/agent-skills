@@ -1,0 +1,5208 @@
+{
+  "source_sha256": "3666da791943b16986c7a0258c52cc022361c1a07d364098e0713036bd412a25",
+  "functions": [
+    {
+      "id": "epi-impl-176",
+      "module_id": "epilogue",
+      "name": "dispatch_copy_epilogue_impl",
+      "start": 176,
+      "end": 621,
+      "summary": "drain接收后按本Rank专家展开token，fresh构建回程metadata，cached复用槽，按需补零专家padding。",
+      "inactive": false,
+      "inputs": [
+        "buffer",
+        "workspace",
+        "jetty_ptrs",
+        "psum_num_recv_tokens_per_rank",
+        "psum_num_recv_tokens_per_expert",
+        "recv_src_metadata",
+        "rank_idx",
+        "recv_sf_token_stride",
+        "recv_sf_hidden_stride"
+      ],
+      "outputs": [
+        "recv_x",
+        "recv_sf",
+        "recv_topk_weights",
+        "recv_src_metadata"
+      ],
+      "side_effects": [
+        "配置MTE2 pad和MTE3 atomic/循环状态并恢复",
+        "fresh写EPSignals epilogue_expert_counter跨核排他前缀",
+        "写expert分段输出与recv_src_metadata handle",
+        "可选补零padding",
+        "默认入口drain barrier，host可移到issue尾部"
+      ],
+      "review": {
+        "function_id": "epi-impl-176",
+        "revision": 5,
+        "draft_author": "walkthrough-agent",
+        "reviewer": "independent-review",
+        "source_sha256": "3666da791943b16986c7a0258c52cc022361c1a07d364098e0713036bd412a25",
+        "draft_sha256": "dc01efb69a3429d1deae73490f57c535ea05bb5f6509f16613fce3dd9613ac6a",
+        "function_content_sha256": "18ab158c94816faa41c1a9cafa15eed022e8c53c5850689a29fa437974627043",
+        "line_range": [
+          176,
+          621
+        ],
+        "gaps": [],
+        "overlaps": [],
+        "unresolved": [],
+        "verdict": "PASS",
+        "status": "PASS",
+        "required_changes": [],
+        "verified": [
+          "入口drain/barrier与host配置；接收流按来源Rank切片",
+          "histogram与token staging分阶段复用，常驻expert两数组、metadata两stage、zero预算",
+          "clear barrier→atomic MTE3广播→cumsum barrier→GM prefix回读→SIMD aligned start",
+          "fresh分配专家绝对输出行，cached读取已保存slot；最后本地j master",
+          "hidden/SF MTE3与weight Scalar写，K+2回程metadata保存，stage事件回收",
+          "padding均分最多4part、重复zero源、SF整块与tail、状态恢复、关闭补零保持未定义",
+          "完整定义逐行含signature/comment/brace/blank复核；无fallback或错误跨域变量解释",
+          "caller/callee真实调用点、IO/成员/GM/UB/remote状态变化核对",
+          "allocator/owner/capacity/alignment/lifetime/cache边界详见独立PASS memory-review-r3",
+          "独立复审renderer整改：仅既有标识符周边空白，calls/notes/IO/ranges完全一致"
+        ],
+        "prior_function_content_sha256": "ebee62b34ee816371608dfc1c66eda0273f38fe0d9f201d149abf4ec742a8b47"
+      },
+      "segments": [
+        {
+          "start": 176,
+          "end": 222,
+          "title": "声明epilogue输出并选择drain屏障",
+          "detail": "InitSocState与AIV编号绑定；kDoBarrier启用时先执行drain URMA及跨核跨Rank屏障；编译检查输入实例正容量。",
+          "kind": "input",
+          "input_state": [
+            "buffer/workspace/jetty_ptrs来自Context；recv_*是host分配输出"
+          ],
+          "mechanism": "InitSocState与AIV编号绑定；kDoBarrier启用时先执行drain URMA及跨核跨Rank屏障；编译检查输入实例正容量。",
+          "output_state": [
+            "接收buffer payload可被epilogue消费"
+          ],
+          "why": "host barrier_in_prologue与这里的kDoBarrier互补，issue末尾和epilogue入口只选择一处drain。",
+          "calls": [
+            {
+              "name": "InitSocState",
+              "line": 195,
+              "type": "external"
+            },
+            {
+              "name": "EP_STATIC_ASSERT",
+              "line": 204,
+              "type": "external"
+            },
+            {
+              "name": "EP_STATIC_ASSERT",
+              "line": 205,
+              "type": "external"
+            },
+            {
+              "name": "EP_STATIC_ASSERT",
+              "line": 206,
+              "type": "external"
+            },
+            {
+              "name": "EP_STATIC_ASSERT",
+              "line": 207,
+              "type": "external"
+            },
+            {
+              "name": "EP_STATIC_ASSERT",
+              "line": 208,
+              "type": "external"
+            },
+            {
+              "name": "EP_STATIC_ASSERT",
+              "line": 209,
+              "type": "external"
+            },
+            {
+              "name": "EP_STATIC_ASSERT",
+              "line": 210,
+              "type": "external"
+            },
+            {
+              "name": "EP_STATIC_ASSERT",
+              "line": 211,
+              "type": "external"
+            },
+            {
+              "name": "barrier",
+              "line": 200,
+              "type": "external"
+            }
+          ],
+          "id": "epi-impl-176-s1"
+        },
+        {
+          "start": 223,
+          "end": 239,
+          "title": "估算histogram与token stage容量",
+          "detail": "histogram固定4×32768B，Top-K行补齐32B；hist bins为256或512；token stage目标64KiB，capacity=max(1,65536/T)；metadata记录K+2个int。",
+          "kind": "compute",
+          "input_state": [
+            "每Rank E/W个专家；通信TokenLayout长度T"
+          ],
+          "mechanism": "histogram固定4×32768B，Top-K行补齐32B；hist bins为256或512；token stage目标64KiB，capacity=max(1,65536/T)；metadata记录K+2个int。",
+          "output_state": [
+            "两阶段UB共享预算的基本形状确定"
+          ],
+          "why": "histogram扫描和完整token输出发生在不同阶段，可复用UB临时大块。",
+          "calls": [],
+          "id": "epi-impl-176-s2"
+        },
+        {
+          "start": 240,
+          "end": 264,
+          "title": "分配重叠UB资源与校验事件数",
+          "detail": "专家状态2*B*4B；token stage数=min(6,(UB-state-metadata-zero)/(T*C))；检查histogram16位上限和MTE事件，UB0绑定counter/psum/histogram后复用token与metadata区。",
+          "kind": "compute",
+          "input_state": [
+            "kNumUBBytes是每AIV预算，metadata用2事件"
+          ],
+          "mechanism": "专家状态2*B*4B；token stage数=min(6,(UB-state-metadata-zero)/(T*C))；检查histogram16位上限和MTE事件，UB0绑定counter/psum/histogram后复用token与metadata区。",
+          "output_state": [
+            "所有UB view均位于本AIV静态预算"
+          ],
+          "why": "kNumMTEStages必须>0；不能把histogram与token stage相加当同时驻留资源。",
+          "calls": [
+            {
+              "name": "EP_STATIC_ASSERT",
+              "line": 245,
+              "type": "external"
+            },
+            {
+              "name": "EP_STATIC_ASSERT",
+              "line": 246,
+              "type": "external"
+            },
+            {
+              "name": "EP_STATIC_ASSERT",
+              "line": 247,
+              "type": "external"
+            },
+            {
+              "name": "EP_STATIC_ASSERT",
+              "line": 248,
+              "type": "external"
+            },
+            {
+              "name": "EP_STATIC_ASSERT",
+              "line": 249,
+              "type": "external"
+            },
+            {
+              "name": "EP_STATIC_ASSERT",
+              "line": 250,
+              "type": "external"
+            },
+            {
+              "name": "EP_STATIC_ASSERT",
+              "line": 251,
+              "type": "external"
+            },
+            {
+              "name": "asc_set_copy_pad_val",
+              "line": 264,
+              "type": "external"
+            }
+          ],
+          "id": "epi-impl-176-s3"
+        },
+        {
+          "start": 265,
+          "end": 279,
+          "title": "fresh加载前一专家有效终点",
+          "detail": "单专家起点置0并S→V；多专家MTE2左补一个0读取E/W-1个终点，成为unaligned expert start。",
+          "kind": "compute",
+          "input_state": [
+            "psum_num_recv_tokens_per_expert是此前专家对齐容量+当前原始count"
+          ],
+          "mechanism": "单专家起点置0并S→V；多专家MTE2左补一个0读取E/W-1个终点，成为unaligned expert start。",
+          "output_state": [
+            "ub_psum_num_recv_tokens_per_expert[e]是前一专家有效终点"
+          ],
+          "why": "initialize_dst_slot_idx将其align后再加AIV前缀，cached不需新专家起点。",
+          "calls": [
+            {
+              "name": "asc_sync_notify",
+              "line": 269,
+              "type": "external"
+            },
+            {
+              "name": "asc_sync_wait",
+              "line": 270,
+              "type": "external"
+            },
+            {
+              "name": "asc_copy_gm2ub_align",
+              "line": 272,
+              "type": "external"
+            }
+          ],
+          "id": "epi-impl-176-s4"
+        },
+        {
+          "start": 280,
+          "end": 290,
+          "title": "划分接收流与初始化issue游标",
+          "detail": "按ceil(total/V)为每AIV截取[token_start_idx,token_end_idx)；issue_iter按来源Rank定位，stage长度/全局首token数组清零。",
+          "kind": "compute",
+          "input_state": [
+            "Rank cumsum末项给去重num_recv_tokens"
+          ],
+          "mechanism": "按ceil(total/V)为每AIV截取[token_start_idx,token_end_idx)；issue_iter按来源Rank定位，stage长度/全局首token数组清零。",
+          "output_state": [
+            "每个AIV拥有不重叠接收流片段"
+          ],
+          "why": "buffer按源Rank切片，不是已经按专家排序的输出；iterator负责跨片段定位。",
+          "calls": [
+            {
+              "name": "PSumIterator",
+              "line": 288,
+              "type": "internal",
+              "target": "epi-iter-139"
+            }
+          ],
+          "id": "epi-impl-176-s5"
+        },
+        {
+          "start": 291,
+          "end": 303,
+          "title": "选择同一来源Rank的连续token批次",
+          "detail": "finished则返回false； get_contiguous_count 同时限制源Rank余量、AIV余量、stage容量；构造load_ub_ptr与load_gm_ptr。",
+          "kind": "input",
+          "input_state": [
+            "issue_iter当前全局位置与来源Rank边界一致"
+          ],
+          "mechanism": "finished则返回false； get_contiguous_count 同时限制源Rank余量、AIV余量、stage容量；构造load_ub_ptr与load_gm_ptr。",
+          "output_state": [
+            "一次完整token读取不跨来源Rankbuffer"
+          ],
+          "why": "不同来源RankGM切片按最大容量M分隔，实际接收流不能跨Rank一口读取。",
+          "calls": [
+            {
+              "name": "finished",
+              "line": 292,
+              "type": "internal",
+              "target": "epi-iter-171"
+            },
+            {
+              "name": "get_contiguous_count",
+              "line": 295,
+              "type": "internal",
+              "target": "epi-iter-167"
+            },
+            {
+              "name": "get_local_idx",
+              "line": 301,
+              "type": "internal",
+              "target": "epi-iter-163"
+            }
+          ],
+          "id": "epi-impl-176-s6"
+        },
+        {
+          "start": 304,
+          "end": 324,
+          "title": "发出整包MTE2并记录stage描述",
+          "detail": "refill先等MTE3→MTE2释放；NOTALLOC_CLEAN读num_stage_tokens*T字节，发布MTE2→S，记录长度与接收流全局base，advance。",
+          "kind": "output",
+          "input_state": [
+            "load_stage_idx选择UB token stage，is_preload区分首次与refill"
+          ],
+          "mechanism": "refill先等MTE3→MTE2释放；NOTALLOC_CLEAN读num_stage_tokens*T字节，发布MTE2→S，记录长度与接收流全局base，advance。",
+          "output_state": [
+            "消费者知道stage真实长度和全局metadata索引"
+          ],
+          "why": "输入整包用一次MTE2读取，后续多专家MTE3共享此UB token；refill不能覆盖在途MTE3来源。",
+          "calls": [
+            {
+              "name": "asc_sync_wait",
+              "line": 306,
+              "type": "external"
+            },
+            {
+              "name": "asc_copy_gm2ub_align",
+              "line": 309,
+              "type": "external"
+            },
+            {
+              "name": "asc_sync_notify",
+              "line": 315,
+              "type": "external"
+            },
+            {
+              "name": "advance",
+              "line": 321,
+              "type": "internal",
+              "target": "epi-iter-150"
+            }
+          ],
+          "id": "epi-impl-176-s7"
+        },
+        {
+          "start": 325,
+          "end": 345,
+          "title": "清空AIV前缀行并预热hist stage",
+          "detail": " fill_ubuf 清counter；MTE3清本核GM epilogue_expert_counter行；到达cleared屏障；构造独立topk_iter并初始化4stage空闲事件。",
+          "kind": "sync",
+          "input_state": [
+            "fresh需要重新计算每AIV同专家命中数"
+          ],
+          "mechanism": " fill_ubuf 清counter；MTE3清本核GM epilogue_expert_counter行；到达cleared屏障；构造独立topk_iter并初始化4stage空闲事件。",
+          "output_state": [
+            "所有GM核前缀行等待全核清零"
+          ],
+          "why": "下一步原子广播只能发生在所有目标行清零之后，否则清零会覆盖贡献。",
+          "calls": [
+            {
+              "name": "fill_ubuf",
+              "line": 330,
+              "type": "internal",
+              "target": "epi-fill-21"
+            },
+            {
+              "name": "asc_sync_notify",
+              "line": 331,
+              "type": "external"
+            },
+            {
+              "name": "asc_sync_wait",
+              "line": 334,
+              "type": "external"
+            },
+            {
+              "name": "asc_copy_ub2gm_align",
+              "line": 335,
+              "type": "external"
+            },
+            {
+              "name": "asc_sync_inter_arrive",
+              "line": 340,
+              "type": "external"
+            },
+            {
+              "name": "PSumIterator",
+              "line": 342,
+              "type": "internal",
+              "target": "epi-iter-139"
+            },
+            {
+              "name": "asc_sync_notify",
+              "line": 345,
+              "type": "external"
+            }
+          ],
+          "id": "epi-impl-176-s8"
+        },
+        {
+          "start": 346,
+          "end": 380,
+          "title": "流水读取Top-K并累加本AIV专家频数",
+          "detail": "从源Rankbuffer读取K个ID，每行右补-1；MTE2→V后 histogram_accumulate_u32 以rank_idx*(E/W)为offset；V→MTE2释放，循环4stage。",
+          "kind": "compute",
+          "input_state": [
+            "topk_iter遍历当前AIV接收片段，Top-K仍是int64"
+          ],
+          "mechanism": "从源Rankbuffer读取K个ID，每行右补-1；MTE2→V后 histogram_accumulate_u32 以rank_idx*(E/W)为offset；V→MTE2释放，循环4stage。",
+          "output_state": [
+            "ub_expert_token_count统计本AIV每专家频数"
+          ],
+          "why": "256/512扩容桶可能含邻Rank相对ID；后续只用真实E/W个桶，不能声称helper排除全部远端ID。",
+          "calls": [
+            {
+              "name": "asc_set_copy_pad_val",
+              "line": 348,
+              "type": "external"
+            },
+            {
+              "name": "finished",
+              "line": 349,
+              "type": "internal",
+              "target": "epi-iter-171"
+            },
+            {
+              "name": "get_contiguous_count",
+              "line": 350,
+              "type": "internal",
+              "target": "epi-iter-167"
+            },
+            {
+              "name": "get_local_idx",
+              "line": 354,
+              "type": "internal",
+              "target": "epi-iter-163"
+            },
+            {
+              "name": "asc_sync_wait",
+              "line": 356,
+              "type": "external"
+            },
+            {
+              "name": "asc_copy_gm2ub_align",
+              "line": 357,
+              "type": "external"
+            },
+            {
+              "name": "asc_sync_notify",
+              "line": 368,
+              "type": "external"
+            },
+            {
+              "name": "asc_sync_wait",
+              "line": 370,
+              "type": "external"
+            },
+            {
+              "name": "histogram_accumulate_u32",
+              "line": 371,
+              "type": "internal",
+              "target": "epi-histogram-37"
+            },
+            {
+              "name": "asc_sync_notify",
+              "line": 376,
+              "type": "external"
+            },
+            {
+              "name": "advance",
+              "line": 379,
+              "type": "internal",
+              "target": "epi-iter-150"
+            }
+          ],
+          "id": "epi-impl-176-s9"
+        },
+        {
+          "start": 381,
+          "end": 394,
+          "title": "恢复padding常数并重叠整包预取",
+          "detail": "恢复pad=0，等所有hist stage V释放；V→MTE3；当MTE2  issue 槽>1时预取整包，保留一槽给前缀GM读取。",
+          "kind": "compute",
+          "input_state": [
+            "histogram V累加已发出；GM核前缀尚未回读"
+          ],
+          "mechanism": "恢复pad=0，等所有hist stage V释放；V→MTE3；当MTE2  issue 槽>1时预取整包，保留一槽给前缀GM读取。",
+          "output_state": [
+            "token stage读取与前缀计算重叠"
+          ],
+          "why": "只有histogram读取/向量使用完成后才可覆盖复用UB区。",
+          "calls": [
+            {
+              "name": "asc_set_copy_pad_val",
+              "line": 381,
+              "type": "external"
+            },
+            {
+              "name": "asc_sync_wait",
+              "line": 385,
+              "type": "external"
+            },
+            {
+              "name": "asc_sync_notify",
+              "line": 387,
+              "type": "external"
+            },
+            {
+              "name": "get_iqent",
+              "line": 390,
+              "type": "external"
+            },
+            {
+              "name": "issue_load",
+              "line": 391,
+              "type": "internal",
+              "target": "epi-issue-load-291"
+            }
+          ],
+          "id": "epi-impl-176-s10"
+        },
+        {
+          "start": 395,
+          "end": 414,
+          "title": "原子广播生成核排他专家前缀",
+          "detail": "跨核cleared wait后开启int atomic MTE3，把本核计数广播加到所有后续AIV行；恢复普通写并到达cumsum屏障。",
+          "kind": "sync",
+          "input_state": [
+            " ub_expert_token_count 含本AIV真实专家命中数；所有GM行已清零"
+          ],
+          "mechanism": "跨核cleared wait后开启int atomic MTE3，把本核计数广播加到所有后续AIV行；恢复普通写并到达cumsum屏障。",
+          "output_state": [
+            "GM row[c,e]累加所有AIV<c的count"
+          ],
+          "why": "排他前缀让每AIV随后在专家输出区域拥有独占连续槽，无需每token全局原子分配。",
+          "calls": [
+            {
+              "name": "asc_sync_wait",
+              "line": 395,
+              "type": "external"
+            },
+            {
+              "name": "asc_sync_inter_wait",
+              "line": 396,
+              "type": "external"
+            },
+            {
+              "name": "asc_set_atomic_add_int",
+              "line": 403,
+              "type": "external"
+            },
+            {
+              "name": "asc_copy_ub2gm_align",
+              "line": 404,
+              "type": "external"
+            },
+            {
+              "name": "asc_set_atomic_none",
+              "line": 411,
+              "type": "external"
+            },
+            {
+              "name": "asc_sync_inter_arrive",
+              "line": 413,
+              "type": "external"
+            },
+            {
+              "name": "asc_sync_notify",
+              "line": 414,
+              "type": "external"
+            }
+          ],
+          "id": "epi-impl-176-s11"
+        },
+        {
+          "start": 415,
+          "end": 430,
+          "title": "读取核前缀并生成绝对输出游标",
+          "detail": "MTE2等待屏障读取本核行到 ub_next_dst_slot_idx ；MTE2→V后initialize加入align(前一expert有效终点,A)；V→S。",
+          "kind": "compute",
+          "input_state": [
+            "所有AIV原子广播已到cumsum屏障"
+          ],
+          "mechanism": "MTE2等待屏障读取本核行到 ub_next_dst_slot_idx ；MTE2→V后initialize加入align(前一expert有效终点,A)；V→S。",
+          "output_state": [
+            " ub_next_dst_slot_idx 是可由Scalar递增的绝对输出行"
+          ],
+          "why": "counter UB原址从局部histogram复用为输出cursor，旧频数不再消费。",
+          "calls": [
+            {
+              "name": "asc_sync_inter_wait",
+              "line": 416,
+              "type": "external"
+            },
+            {
+              "name": "asc_sync_wait",
+              "line": 417,
+              "type": "external"
+            },
+            {
+              "name": "asc_copy_gm2ub_align",
+              "line": 418,
+              "type": "external"
+            },
+            {
+              "name": "asc_sync_notify",
+              "line": 424,
+              "type": "external"
+            },
+            {
+              "name": "asc_sync_wait",
+              "line": 425,
+              "type": "external"
+            },
+            {
+              "name": "initialize_dst_slot_idx",
+              "line": 426,
+              "type": "internal",
+              "target": "epi-init-slot-107"
+            },
+            {
+              "name": "asc_sync_notify",
+              "line": 427,
+              "type": "external"
+            },
+            {
+              "name": "asc_sync_wait",
+              "line": 428,
+              "type": "external"
+            }
+          ],
+          "id": "epi-impl-176-s12"
+        },
+        {
+          "start": 431,
+          "end": 449,
+          "title": "补齐预取与初始化输出循环",
+          "detail": "发剩余initial issue_load；需要padding则fill零向量并V→MTE3；fresh metadata两个stage发布空闲，设置消费计数。",
+          "kind": "compute",
+          "input_state": [
+            "部分token stage可能已预取；zero padding为模板选项"
+          ],
+          "mechanism": "发剩余initial issue_load；需要padding则fill零向量并V→MTE3；fresh metadata两个stage发布空闲，设置消费计数。",
+          "output_state": [
+            "整包多stage管线和可选零源就绪"
+          ],
+          "why": "cached沿用metadata route，不必在本次写新metadata记录。",
+          "calls": [
+            {
+              "name": "issue_load",
+              "line": 432,
+              "type": "internal",
+              "target": "epi-issue-load-291"
+            },
+            {
+              "name": "fill_ubuf",
+              "line": 436,
+              "type": "internal",
+              "target": "epi-fill-21"
+            },
+            {
+              "name": "asc_sync_notify",
+              "line": 437,
+              "type": "external"
+            },
+            {
+              "name": "asc_sync_notify",
+              "line": 445,
+              "type": "external"
+            }
+          ],
+          "id": "epi-impl-176-s13"
+        },
+        {
+          "start": 450,
+          "end": 469,
+          "title": "消费整包stage并定位metadata",
+          "detail": "S等待MTE2，fresh再等metadata MTE3释放；逐token取得UB TokenLayout，按全局recv token索引metadata_ptr，定位(K+2) UB记录。",
+          "kind": "input",
+          "input_state": [
+            "stage_num_tokens/base记录已加载接收流批次"
+          ],
+          "mechanism": "S等待MTE2，fresh再等metadata MTE3释放；逐token取得UB TokenLayout，按全局recv token索引metadata_ptr，定位(K+2) UB记录。",
+          "output_state": [
+            "token与metadata对应同一全局接收流位置"
+          ],
+          "why": "metadata索引不能误用来源Rank内local_idx，否则跨Rank覆盖handle。",
+          "calls": [
+            {
+              "name": "asc_sync_wait",
+              "line": 454,
+              "type": "external"
+            },
+            {
+              "name": "asc_sync_wait",
+              "line": 457,
+              "type": "external"
+            }
+          ],
+          "id": "epi-impl-176-s14"
+        },
+        {
+          "start": 470,
+          "end": 488,
+          "title": "fresh或cached分配专家输出槽",
+          "detail": "cached直接读metadata_ptr[j]>=0；fresh取expert-rank*(E/W)，范围合法才取UB cursor并+1， master_topk_slot_idx 反复赋j。",
+          "kind": "compute",
+          "input_state": [
+            "当前token可命中本Rank多个专家；遍历K route"
+          ],
+          "mechanism": "cached直接读metadata_ptr[j]>=0；fresh取expert-rank*(E/W)，范围合法才取UB cursor并+1， master_topk_slot_idx 反复赋j。",
+          "output_state": [
+            "每个本地命中有独立专家输出slot，master是最后命中j"
+          ],
+          "why": "发送Rank去重后接收token只一份，但本Rank不同专家必须展开多行。",
+          "calls": [],
+          "id": "epi-impl-176-s15"
+        },
+        {
+          "start": 489,
+          "end": 523,
+          "title": "按每个本地专家展开hidden、SF和weight",
+          "detail": "MTE3复制H字节hidden与可选P*sizeof(sf_pack_t) SF；Scalar bypass DCache写当前j的weight；fresh记录K个slot、src全局ID与最后本地j。",
+          "kind": "output",
+          "input_state": [
+            "has_dst_slot与dst_slot_idx已经确认有效"
+          ],
+          "mechanism": "MTE3复制H字节hidden与可选P*sizeof(sf_pack_t) SF；Scalar bypass DCache写当前j的weight；fresh记录K个slot、src全局ID与最后本地j。",
+          "output_state": [
+            "recv_x/recv_sf/recv_topk_weights按expert分段，UB metadata含回程映射"
+          ],
+          "why": "hidden/SF是同一token整包可多次消费，weights逐route不同；主slot不是第一个本地route。",
+          "calls": [
+            {
+              "name": "asc_copy_ub2gm_align",
+              "line": 492,
+              "type": "external"
+            },
+            {
+              "name": "asc_copy_ub2gm_align",
+              "line": 499,
+              "type": "external"
+            },
+            {
+              "name": "WriteGmByPassDCache",
+              "line": 507,
+              "type": "external"
+            }
+          ],
+          "id": "epi-impl-176-s16"
+        },
+        {
+          "start": 524,
+          "end": 545,
+          "title": "释放token stage、写handle并refill",
+          "detail": "MTE3→MTE2释放token stage；S→MTE3写num_stage_tokens*(K+2)*4B元数据再释放metadata stage；累计消费并issue_load复用当前stage，轮转。",
+          "kind": "output",
+          "input_state": [
+            "当前stage所有MTE3 payload已发出；fresh UB metadata完成"
+          ],
+          "mechanism": "MTE3→MTE2释放token stage；S→MTE3写num_stage_tokens*(K+2)*4B元数据再释放metadata stage；累计消费并issue_load复用当前stage，轮转。",
+          "output_state": [
+            "recv_src_metadata持久化route与来源索引，管线继续下一stage"
+          ],
+          "why": "producer refill等待payload MTE3完成，metadata stage另用独立事件以免互相覆盖。",
+          "calls": [
+            {
+              "name": "asc_sync_notify",
+              "line": 525,
+              "type": "external"
+            },
+            {
+              "name": "asc_sync_notify",
+              "line": 529,
+              "type": "external"
+            },
+            {
+              "name": "asc_sync_wait",
+              "line": 530,
+              "type": "external"
+            },
+            {
+              "name": "asc_copy_ub2gm_align",
+              "line": 531,
+              "type": "external"
+            },
+            {
+              "name": "asc_sync_notify",
+              "line": 536,
+              "type": "external"
+            },
+            {
+              "name": "issue_load",
+              "line": 541,
+              "type": "internal",
+              "target": "epi-issue-load-291"
+            }
+          ],
+          "id": "epi-impl-176-s17"
+        },
+        {
+          "start": 546,
+          "end": 574,
+          "title": "分割专家padding并写hidden零",
+          "detail": "每专家最多4part，余数分配保证分段不重叠；对有效expert end向A对齐得到pad数量；MTE3外层 num_part_tokens 重复零源，目标每行H步长，恢复loop=1。",
+          "kind": "output",
+          "input_state": [
+            "kDoZeroPadding启用且UB零源已经填好"
+          ],
+          "mechanism": "每专家最多4part，余数分配保证分段不重叠；对有效expert end向A对齐得到pad数量；MTE3外层 num_part_tokens 重复零源，目标每行H步长，恢复loop=1。",
+          "output_state": [
+            "recv_x当前part padding行清零"
+          ],
+          "why": "有效专家end不含本专家padding；补零只触及有效区之后、对齐边界之前。",
+          "calls": [
+            {
+              "name": "asc_sync_wait",
+              "line": 550,
+              "type": "external"
+            },
+            {
+              "name": "asc_set_ub2gm_loop_size",
+              "line": 565,
+              "type": "external"
+            },
+            {
+              "name": "asc_set_ub2gm_loop1_stride",
+              "line": 566,
+              "type": "external"
+            },
+            {
+              "name": "asc_copy_ub2gm_align",
+              "line": 567,
+              "type": "external"
+            },
+            {
+              "name": "asc_set_ub2gm_loop_size",
+              "line": 574,
+              "type": "external"
+            }
+          ],
+          "id": "epi-impl-176-s18"
+        },
+        {
+          "start": 575,
+          "end": 593,
+          "title": "补零weight与短SF",
+          "detail": "可选weight逐行Scalar写0；SF长度<=零向量宽度时按 num_part_tokens  burst重复同一UB零源。",
+          "kind": "output",
+          "input_state": [
+            " num_part_tokens 与padding首址已确定"
+          ],
+          "mechanism": "可选weight逐行Scalar写0；SF长度<=零向量宽度时按 num_part_tokens  burst重复同一UB零源。",
+          "output_state": [
+            "padding weight和短SF行清零"
+          ],
+          "why": "浮点weight以32位整数0写入，位表示即+0.0；host保证SF输出连续pack。",
+          "calls": [
+            {
+              "name": "WriteGmByPassDCache",
+              "line": 580,
+              "type": "external"
+            },
+            {
+              "name": "asc_copy_ub2gm_align",
+              "line": 588,
+              "type": "external"
+            }
+          ],
+          "id": "epi-impl-176-s19"
+        },
+        {
+          "start": 594,
+          "end": 621,
+          "title": "长SF整块与余数补零",
+          "detail": "设置每token SF stride外层循环，先写整块 kNumZeroBytes ，再有余数则写tail；每次恢复loop=1，结束所有专家part。",
+          "kind": "output",
+          "input_state": [
+            "kNumSFBytes超过零向量宽度时需要多块零源重复"
+          ],
+          "mechanism": "设置每token SF stride外层循环，先写整块 kNumZeroBytes ，再有余数则写tail；每次恢复loop=1，结束所有专家part。",
+          "output_state": [
+            "padding SF全长为零，MTE3 loop状态恢复"
+          ],
+          "why": "SF可能不是整向量倍数，不能只清整块而保留tail旧内容。",
+          "calls": [
+            {
+              "name": "asc_set_ub2gm_loop_size",
+              "line": 595,
+              "type": "external"
+            },
+            {
+              "name": "asc_set_ub2gm_loop1_stride",
+              "line": 596,
+              "type": "external"
+            },
+            {
+              "name": "asc_copy_ub2gm_align",
+              "line": 597,
+              "type": "external"
+            },
+            {
+              "name": "asc_set_ub2gm_loop_size",
+              "line": 603,
+              "type": "external"
+            },
+            {
+              "name": "asc_set_ub2gm_loop_size",
+              "line": 605,
+              "type": "external"
+            },
+            {
+              "name": "asc_set_ub2gm_loop1_stride",
+              "line": 606,
+              "type": "external"
+            },
+            {
+              "name": "asc_copy_ub2gm_align",
+              "line": 607,
+              "type": "external"
+            },
+            {
+              "name": "asc_set_ub2gm_loop_size",
+              "line": 614,
+              "type": "external"
+            }
+          ],
+          "id": "epi-impl-176-s20"
+        }
+      ],
+      "line_notes": [
+        {
+          "line": 176,
+          "kind": "signature",
+          "explanation": "本行声明当前设备入口参数/模板约束“template <int kNumRanks, int kNumExperts, int kNumTopk, int kExpertAlignment,”。 kNumRanks：通信域Rank数W；kNumExperts：全域专家数E，按Rank均分；kNumTopk：每token路由数K；kExpertAlignment：专家输出行对齐A，须为2幂",
+          "reads": [
+            "kNumRanks",
+            "kNumExperts",
+            "kNumTopk",
+            "kExpertAlignment"
+          ],
+          "writes": []
+        },
+        {
+          "line": 177,
+          "kind": "signature",
+          "explanation": "本行声明当前设备入口参数/模板约束“bool kCachedMode, bool kDoZeroPadding,”。 kCachedMode：复用首次handle并省略Top-K/src元数据；kDoZeroPadding：是否显式把expert alignment空行清零",
+          "reads": [
+            "kCachedMode",
+            "kDoZeroPadding"
+          ],
+          "writes": []
+        },
+        {
+          "line": 178,
+          "kind": "signature",
+          "explanation": "本行声明当前设备入口参数/模板约束“int kNumVecCores, int kNumHiddenBytes, int kNumSFPacks,”。 kNumVecCores：AIV并行核数V与私有Jetty数；kNumHiddenBytes：每token hidden字节H；kNumSFPacks：每token SF pack数P",
+          "reads": [
+            "kNumVecCores",
+            "kNumHiddenBytes",
+            "kNumSFPacks"
+          ],
+          "writes": []
+        },
+        {
+          "line": 179,
+          "kind": "signature",
+          "explanation": "本行声明当前设备入口参数/模板约束“int kNumMaxTokensPerRank, int kNumUBBytes,”。 kNumMaxTokensPerRank：每Rank最大输入容量M；kNumUBBytes：每AIV静态UB字节预算",
+          "reads": [
+            "kNumMaxTokensPerRank",
+            "kNumUBBytes"
+          ],
+          "writes": []
+        },
+        {
+          "line": 180,
+          "kind": "signature",
+          "explanation": "本行声明当前设备入口参数/模板约束“int64_t kNumTimeoutCycles, bool kDoBarrier = true>”。 kNumTimeoutCycles：通信/归约等待超时周期；kDoBarrier：选择在本kernel执行带drain的通信屏障",
+          "reads": [
+            "kNumTimeoutCycles"
+          ],
+          "writes": [
+            "kDoBarrier"
+          ]
+        },
+        {
+          "line": 181,
+          "kind": "signature",
+          "explanation": "声明声明epilogue输出并选择drain屏障对应的模板/设备入口“__global__ __vector__ void dispatch_copy_epilogue_impl(”；buffer/workspace/jetty_ptrs来自Context；recv_*是host分配输出",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 182,
+          "kind": "signature",
+          "explanation": "本行声明当前设备入口参数/模板约束“__gm__ void* buffer,”。 buffer：Context symmetric memory中的token接收GM子区",
+          "reads": [
+            "buffer"
+          ],
+          "writes": []
+        },
+        {
+          "line": 183,
+          "kind": "signature",
+          "explanation": "本行声明当前设备入口参数/模板约束“__gm__ void* workspace,”。 workspace：Context symmetric memory首址EPSignals GM",
+          "reads": [
+            "workspace"
+          ],
+          "writes": []
+        },
+        {
+          "line": 184,
+          "kind": "signature",
+          "explanation": "本行声明当前设备入口参数/模板约束“__gm__ void* jetty_ptrs,”。 jetty_ptrs：通信域peer描述符与每AIV Jetty地址数组",
+          "reads": [
+            "jetty_ptrs"
+          ],
+          "writes": []
+        },
+        {
+          "line": 185,
+          "kind": "signature",
+          "explanation": "本行声明当前设备入口参数/模板约束“__gm__ int* psum_num_recv_tokens_per_rank,”。 psum_num_recv_tokens_per_rank：来源Rank去重接收流的普通cumsum GM",
+          "reads": [
+            "psum_num_recv_tokens_per_rank"
+          ],
+          "writes": []
+        },
+        {
+          "line": 186,
+          "kind": "signature",
+          "explanation": "本行声明当前设备入口参数/模板约束“__gm__ int* psum_num_recv_tokens_per_expert,”。 psum_num_recv_tokens_per_expert：含此前专家对齐跨度的当前专家有效end GM",
+          "reads": [
+            "psum_num_recv_tokens_per_expert"
+          ],
+          "writes": []
+        },
+        {
+          "line": 187,
+          "kind": "signature",
+          "explanation": "本行声明当前设备入口参数/模板约束“__gm__ void* recv_x,”。 recv_x：按expert分段的hidden输出GM",
+          "reads": [
+            "recv_x"
+          ],
+          "writes": []
+        },
+        {
+          "line": 188,
+          "kind": "signature",
+          "explanation": "本行声明当前设备入口参数/模板约束“__gm__ sf_pack_t* recv_sf,”。 recv_sf：可选SF输出GM，host/launcher限制连续pack布局",
+          "reads": [
+            "recv_sf"
+          ],
+          "writes": []
+        },
+        {
+          "line": 189,
+          "kind": "signature",
+          "explanation": "本行声明当前设备入口参数/模板约束“__gm__ float* recv_topk_weights,”。 recv_topk_weights：每展开输出行一个float route weight GM",
+          "reads": [
+            "recv_topk_weights"
+          ],
+          "writes": []
+        },
+        {
+          "line": 190,
+          "kind": "signature",
+          "explanation": "本行声明当前设备入口参数/模板约束“__gm__ int* recv_src_metadata,”。 recv_src_metadata：接收流每token(K+2) int持久回程handle",
+          "reads": [
+            "recv_src_metadata"
+          ],
+          "writes": []
+        },
+        {
+          "line": 191,
+          "kind": "signature",
+          "explanation": "本行声明当前设备入口参数/模板约束“const int rank_idx,”。 rank_idx：当前Rank编号，用于expert归属和源接收切片",
+          "reads": [
+            "rank_idx"
+          ],
+          "writes": []
+        },
+        {
+          "line": 192,
+          "kind": "signature",
+          "explanation": "本行声明当前设备入口参数/模板约束“const int recv_sf_token_stride,”。 recv_sf_token_stride：输出SF token维pack步长，launcher要求P",
+          "reads": [
+            "recv_sf_token_stride"
+          ],
+          "writes": []
+        },
+        {
+          "line": 193,
+          "kind": "signature",
+          "explanation": "本行声明当前设备入口参数/模板约束“const int recv_sf_hidden_stride”。 recv_sf_hidden_stride：输出SF pack维步长，launcher要求1",
+          "reads": [
+            "recv_sf_hidden_stride"
+          ],
+          "writes": []
+        },
+        {
+          "line": 194,
+          "kind": "signature",
+          "explanation": "本行“) {”补全声明epilogue输出并选择drain屏障的对象、偏移或长度约束。 InitSocState与AIV编号绑定；kDoBarrier启用时先执行drain URMA及跨核跨Rank屏障；编译检查输入实例正容量。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 195,
+          "kind": "statement",
+          "explanation": "初始化本设备kernel的SoC执行状态；调用本行“AscendC::InitSocState();”。 InitSocState与AIV编号绑定；kDoBarrier启用时先执行drain URMA及跨核跨Rank屏障；编译检查输入实例正容量。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 196,
+          "kind": "blank",
+          "explanation": "在声明epilogue输出并选择drain屏障中，分隔“AscendC::InitSocState();”与随后“const auto vec_core_idx = static_cast<int>(AscendC::GetBlockIdx());”两步；此处没有数据写入。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 197,
+          "kind": "declaration",
+          "explanation": "在声明epilogue输出并选择drain屏障中更新/计算“const auto vec_core_idx = static_cast<int>(AscendC::GetBlockIdx());”。 vec_core_idx：当前AIV编号，是连续输入片段或接收流片段的owner。",
+          "reads": [],
+          "writes": [
+            "vec_core_idx"
+          ]
+        },
+        {
+          "line": 198,
+          "kind": "declaration",
+          "explanation": "在声明epilogue输出并选择drain屏障中更新/计算“const auto workspace_layout = layout::EPWorkspaceLayout(workspace);”。 workspace_layout：Context::workspace的EPSignals视图，不在kernel里malloc。",
+          "reads": [
+            "workspace"
+          ],
+          "writes": [
+            "workspace_layout"
+          ]
+        },
+        {
+          "line": 199,
+          "kind": "branch",
+          "explanation": "声明epilogue输出并选择drain屏障的分支条件为“if constexpr (kDoBarrier)”；host barrier_in_prologue与这里的kDoBarrier互补，issue末尾和epilogue入口只选择一处drain。",
+          "reads": [
+            "kDoBarrier"
+          ],
+          "writes": []
+        },
+        {
+          "line": 200,
+          "kind": "statement",
+          "explanation": "调用跨Rank屏障；是否drain URMA和同步AIV由本次模板参数决定；调用本行“comm::scalar::barrier<”。 InitSocState与AIV编号绑定；kDoBarrier启用时先执行drain URMA及跨核跨Rank屏障；编译检查输入实例正容量。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 201,
+          "kind": "statement",
+          "explanation": "入口barrier模板启用URMA drain与跨AIV/Rank同步，Jetty数与AIV数相同；host配置可把它移至issue尾。",
+          "reads": [
+            "kNumRanks",
+            "kNumTimeoutCycles",
+            "kNumVecCores"
+          ],
+          "writes": []
+        },
+        {
+          "line": 202,
+          "kind": "statement",
+          "explanation": "屏障使用EPSignals common_signals和jetty_ptrs，只有完成前次网络WRITE后才消费recv buffer。",
+          "reads": [
+            "workspace_layout",
+            "vec_core_idx",
+            "jetty_ptrs"
+          ],
+          "writes": []
+        },
+        {
+          "line": 203,
+          "kind": "blank",
+          "explanation": "空行分隔可选入口drain屏障与编译实例断言；此处没有barrier调用。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 204,
+          "kind": "statement",
+          "explanation": "在编译期限制此实例的容量、索引或硬件协议假设；调用本行“EP_STATIC_ASSERT(kNumRanks <= kNumMaxRanks);”。 InitSocState与AIV编号绑定；kDoBarrier启用时先执行drain URMA及跨核跨Rank屏障；编译检查输入实例正容量。",
+          "reads": [
+            "kNumRanks"
+          ],
+          "writes": []
+        },
+        {
+          "line": 205,
+          "kind": "statement",
+          "explanation": "在编译期限制此实例的容量、索引或硬件协议假设；调用本行“EP_STATIC_ASSERT(kNumExperts % kNumRanks == 0);”。 InitSocState与AIV编号绑定；kDoBarrier启用时先执行drain URMA及跨核跨Rank屏障；编译检查输入实例正容量。",
+          "reads": [
+            "kNumExperts",
+            "kNumRanks"
+          ],
+          "writes": []
+        },
+        {
+          "line": 206,
+          "kind": "statement",
+          "explanation": "在编译期限制此实例的容量、索引或硬件协议假设；调用本行“EP_STATIC_ASSERT(math::is_power_of_2(kExpertAlignment));”。 InitSocState与AIV编号绑定；kDoBarrier启用时先执行drain URMA及跨核跨Rank屏障；编译检查输入实例正容量。",
+          "reads": [
+            "kExpertAlignment"
+          ],
+          "writes": []
+        },
+        {
+          "line": 207,
+          "kind": "statement",
+          "explanation": "在编译期限制此实例的容量、索引或硬件协议假设；调用本行“EP_STATIC_ASSERT(kNumVecCores > 0);”。 InitSocState与AIV编号绑定；kDoBarrier启用时先执行drain URMA及跨核跨Rank屏障；编译检查输入实例正容量。",
+          "reads": [
+            "kNumVecCores"
+          ],
+          "writes": []
+        },
+        {
+          "line": 208,
+          "kind": "statement",
+          "explanation": "在编译期限制此实例的容量、索引或硬件协议假设；调用本行“EP_STATIC_ASSERT(kNumTopk > 0);”。 InitSocState与AIV编号绑定；kDoBarrier启用时先执行drain URMA及跨核跨Rank屏障；编译检查输入实例正容量。",
+          "reads": [
+            "kNumTopk"
+          ],
+          "writes": []
+        },
+        {
+          "line": 209,
+          "kind": "statement",
+          "explanation": "在编译期限制此实例的容量、索引或硬件协议假设；调用本行“EP_STATIC_ASSERT(kNumHiddenBytes > 0);”。 InitSocState与AIV编号绑定；kDoBarrier启用时先执行drain URMA及跨核跨Rank屏障；编译检查输入实例正容量。",
+          "reads": [
+            "kNumHiddenBytes"
+          ],
+          "writes": []
+        },
+        {
+          "line": 210,
+          "kind": "statement",
+          "explanation": "在编译期限制此实例的容量、索引或硬件协议假设；调用本行“EP_STATIC_ASSERT(kNumMaxTokensPerRank > 0);”。 InitSocState与AIV编号绑定；kDoBarrier启用时先执行drain URMA及跨核跨Rank屏障；编译检查输入实例正容量。",
+          "reads": [
+            "kNumMaxTokensPerRank"
+          ],
+          "writes": []
+        },
+        {
+          "line": 211,
+          "kind": "statement",
+          "explanation": "在编译期限制此实例的容量、索引或硬件协议假设；调用本行“EP_STATIC_ASSERT(kNumUBBytes > 0);”。 InitSocState与AIV编号绑定；kDoBarrier启用时先执行drain URMA及跨核跨Rank屏障；编译检查输入实例正容量。",
+          "reads": [
+            "kNumUBBytes"
+          ],
+          "writes": []
+        },
+        {
+          "line": 212,
+          "kind": "blank",
+          "explanation": "在声明epilogue输出并选择drain屏障中，分隔“EP_STATIC_ASSERT(kNumUBBytes > 0);”与随后“static constexpr int kNumMaxNotifyWaitStages = 8;”两步；此处没有数据写入。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 213,
+          "kind": "declaration",
+          "explanation": "最多8组notify/wait事件ID可用于本管线，两个metadata stage与完整token stage共享这一硬件预算。",
+          "reads": [],
+          "writes": [
+            "kNumMaxNotifyWaitStages"
+          ]
+        },
+        {
+          "line": 214,
+          "kind": "blank",
+          "explanation": "在声明epilogue输出并选择drain屏障中，分隔“static constexpr int kNumMaxNotifyWaitStages = 8;”与随后“static constexpr int kNumZeroBytes = sizeof(vector_u8);”两步；此处没有数据写入。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 215,
+          "kind": "declaration",
+          "explanation": "零源字节数取一个vector_u8宽度（本目标向量宽度256B）；MTE3可重复它清任意整向量hidden与SF。",
+          "reads": [],
+          "writes": [
+            "kNumZeroBytes"
+          ]
+        },
+        {
+          "line": 216,
+          "kind": "declaration",
+          "explanation": "SF有效字节数=P*sizeof(sf_pack_t)，用于TokenLayout与SF输出长度，不包括metadata对齐填充。",
+          "reads": [
+            "kNumSFPacks"
+          ],
+          "writes": [
+            "kNumSFBytes"
+          ]
+        },
+        {
+          "line": 217,
+          "kind": "declaration",
+          "explanation": "每Rank真实专家数量=全域E/Rank数W，host与编译断言保证等分；epilogue只消费这E/W个histogram桶。",
+          "reads": [
+            "kNumExperts",
+            "kNumRanks"
+          ],
+          "writes": [
+            "kNumExpertsPerRank"
+          ]
+        },
+        {
+          "line": 218,
+          "kind": "blank",
+          "explanation": "在声明epilogue输出并选择drain屏障中，分隔“static constexpr int kNumExpertsPerRank = kNumExperts / kNumRanks;”与随后“static constexpr int kNumHistogramStages = 4;”两步；此处没有数据写入。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 219,
+          "kind": "declaration",
+          "explanation": "Top-K统计采用4个UB循环stage，让MTE2读和SIMD频数累计交错执行。",
+          "reads": [],
+          "writes": [
+            "kNumHistogramStages"
+          ]
+        },
+        {
+          "line": 220,
+          "kind": "declaration",
+          "explanation": "每个histogram stage固定32768B，四stage共131072B，之后整片区域复用为完整token stage。",
+          "reads": [],
+          "writes": [
+            "kNumHistogramStageBytes"
+          ]
+        },
+        {
+          "line": 221,
+          "kind": "declaration",
+          "explanation": "histogram硬件实例仅256或512桶；按真实本地专家数选择扩容桶，超出的padding桶不会进入真实expert counter行。",
+          "reads": [],
+          "writes": [
+            "kNumHistogramBins"
+          ]
+        },
+        {
+          "line": 222,
+          "kind": "declaration",
+          "explanation": "每token Top-K int64行长度向32B/8=4元素对齐；右padding用-1保证未用lane不误计真实expert。",
+          "reads": [
+            "kNumTopk"
+          ],
+          "writes": [
+            "kNumHistogramTokenTopkElems"
+          ]
+        },
+        {
+          "line": 223,
+          "kind": "declaration",
+          "explanation": "每个32KiB histogram stage最多容纳4096个int64元素，这里单位是元素而非token。",
+          "reads": [],
+          "writes": [
+            "kNumHistogramMaxElems"
+          ]
+        },
+        {
+          "line": 224,
+          "kind": "declaration",
+          "explanation": "histogram stage token容量=4096/对齐Top-K元素数，限制MTE2扫描批长；最坏命中数另断言不超uint16 65535。",
+          "reads": [],
+          "writes": [
+            "kNumMaxHistogramTokensPerStage"
+          ]
+        },
+        {
+          "line": 225,
+          "kind": "blank",
+          "explanation": "在估算histogram与token stage容量中，分隔“static constexpr int kNumMaxHistogramTokensPerStage = kNumHistogramMaxElems / kNumHistogramTokenTopkElems;”与随后“static constexpr int kNumTokenBytes = static_cast<int>(layout::TokenLayout(kNumHiddenBytes, kNumSFBytes, kNumTopk, not kCachedMode).get_num_bytes());”两步；此处没有数据写入。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 226,
+          "kind": "declaration",
+          "explanation": "完整通信token步长由TokenLayout计算：H+对齐SF+对齐metadata；cached省Top-K/src字段，因此T随模式变化。",
+          "reads": [
+            "kNumHiddenBytes",
+            "kNumTopk",
+            "kCachedMode"
+          ],
+          "writes": [
+            "kNumTokenBytes"
+          ]
+        },
+        {
+          "line": 227,
+          "kind": "declaration",
+          "explanation": "整包token stage目标容量为64KiB，它是启发式目标，不保证stage精确64KiB。",
+          "reads": [],
+          "writes": [
+            "kNumTargetTokenStageBytes"
+          ]
+        },
+        {
+          "line": 228,
+          "kind": "declaration",
+          "explanation": "每token stage容量=max(1,65536/T)，实际stage字节=T*容量；T>64KiB时仍至少一token但UB/事件断言需可容纳。",
+          "reads": [],
+          "writes": [
+            "kNumTokensPerStage"
+          ]
+        },
+        {
+          "line": 229,
+          "kind": "blank",
+          "explanation": "在估算histogram与token stage容量中，分隔“static constexpr int kNumTokensPerStage = math::max(1, kNumTargetTokenStageBytes / kNumTokenBytes);”与随后“// metadata traffic is small, so 2 stage is enough”两步；此处没有数据写入。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 230,
+          "kind": "comment",
+          "explanation": "注释说明估算histogram与token stage容量的实现意图（metadata traffic is small, so 2 stage is enough）；histogram固定4×32768B，Top-K行补齐32B；hist bins为256或512；token stage目标64KiB，capacity=max(1,65536/T)；metadata记录K+2个int。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 231,
+          "kind": "declaration",
+          "explanation": "回程metadata使用两个循环UB stage；每stage有独立MTE3→S释放事件，与token stages事件分区。",
+          "reads": [],
+          "writes": [
+            "kNumMetadataStages"
+          ]
+        },
+        {
+          "line": 232,
+          "kind": "declaration",
+          "explanation": "每接收流token记录K个route输出slot，再加src全局token ID和master Top-K位置，共K+2个int。",
+          "reads": [
+            "kNumTopk"
+          ],
+          "writes": [
+            "kNumMetadataElemsPerToken"
+          ]
+        },
+        {
+          "line": 233,
+          "kind": "declaration",
+          "explanation": "每token回程metadata字节=(K+2)*sizeof(int)，用于GM handle长度与UB metadata行地址。",
+          "reads": [],
+          "writes": [
+            "kNumMetadataBytesPerToken"
+          ]
+        },
+        {
+          "line": 234,
+          "kind": "declaration",
+          "explanation": "metadata每stage字节为align(token stage容量*(K+2)*4,32B)，可覆盖满token stage并满足UB边界对齐。",
+          "reads": [],
+          "writes": [
+            "kNumMetadataStageBytes"
+          ]
+        },
+        {
+          "line": 235,
+          "kind": "blank",
+          "explanation": "在估算histogram与token stage容量中，分隔“static constexpr int kNumMetadataStageBytes = math::align(kNumTokensPerStage * kNumMetadataBytesPerToken, kNumUbAlignmentBytes);”与随后“// ExpertState: ub_expert_token_count, ub_psum_num_recv_tokens_per_expert, ub_next_dst_slot_idx”两步；此处没有数据写入。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 236,
+          "kind": "comment",
+          "explanation": "注释说明估算histogram与token stage容量的实现意图（ExpertState: ub_expert_token_count, ub_psum_num_recv_tokens_per_expert, ub_next_dst_slot_idx）；histogram固定4×32768B，Top-K行补齐32B；hist bins为256或512；token stage目标64KiB，capacity=max(1,65536/T)；metadata记录K+2个int。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 237,
+          "kind": "declaration",
+          "explanation": "常驻expert状态是两个uint32桶数组，共2*hist_bins*4B；expert_token_count与next_dst_slot_idx原址复用，不是第三数组。",
+          "reads": [],
+          "writes": [
+            "kNumExpertStateBytes"
+          ]
+        },
+        {
+          "line": 238,
+          "kind": "declaration",
+          "explanation": "两个metadata stage总驻留字节=kNumMetadataStages*kNumMetadataStageBytes，这项必须从token stage UB余量扣除。",
+          "reads": [],
+          "writes": [
+            "kNumMetadataPipelineBytes"
+          ]
+        },
+        {
+          "line": 239,
+          "kind": "blank",
+          "explanation": "在估算histogram与token stage容量中，分隔“static constexpr int kNumMetadataPipelineBytes = kNumMetadataStages * kNumMetadataStageBytes;”与随后“static constexpr int kNumMTEStages = math::min(”两步；此处没有数据写入。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 240,
+          "kind": "declaration",
+          "explanation": "token stage数量取事件上限与UB可容纳数量的最小值；下面分别计算8-2事件与扣常驻状态/metadata/零源后的字节余量。",
+          "reads": [],
+          "writes": [
+            "kNumMTEStages"
+          ]
+        },
+        {
+          "line": 241,
+          "kind": "statement",
+          "explanation": "可用token stage事件数=8-2：两个metadata stage占用独立事件，整包stage最多再用6个。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 242,
+          "kind": "statement",
+          "explanation": "UB空间预算先从kNumUBBytes扣2*hist_bins*4的expert状态和两个metadata stage，下一行再扣可选零向量。",
+          "reads": [
+            "kNumUBBytes"
+          ],
+          "writes": []
+        },
+        {
+          "line": 243,
+          "kind": "statement",
+          "explanation": "如需padding再扣kNumZeroBytes；余量除每stage完整token字节T*capacity得到可容纳的token stage数量。",
+          "reads": [
+            "kDoZeroPadding"
+          ],
+          "writes": []
+        },
+        {
+          "line": 244,
+          "kind": "blank",
+          "explanation": "在分配重叠UB资源与校验事件数中，分隔“(kDoZeroPadding ? kNumZeroBytes : 0)) / (kNumTokenBytes * kNumTokensPerStage));”与随后“EP_STATIC_ASSERT(not kDoZeroPadding or kNumHiddenBytes % kNumZeroBytes == 0);”两步；此处没有数据写入。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 245,
+          "kind": "statement",
+          "explanation": "在编译期限制此实例的容量、索引或硬件协议假设；调用本行“EP_STATIC_ASSERT(not kDoZeroPadding or kNumHiddenBytes % kNumZeroBytes == 0);”。 专家状态2*B*4B；token stage数=min(6,(UB-state-metadata-zero)/(T*C))；检查histogram16位上限和MTE事件，UB0绑定counter/psum/histogram后复用token与metadata区。",
+          "reads": [
+            "kDoZeroPadding",
+            "kNumHiddenBytes"
+          ],
+          "writes": []
+        },
+        {
+          "line": 246,
+          "kind": "statement",
+          "explanation": "在编译期限制此实例的容量、索引或硬件协议假设；调用本行“EP_STATIC_ASSERT(kNumExpertsPerRank <= 512);”。 专家状态2*B*4B；token stage数=min(6,(UB-state-metadata-zero)/(T*C))；检查histogram16位上限和MTE事件，UB0绑定counter/psum/histogram后复用token与metadata区。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 247,
+          "kind": "statement",
+          "explanation": "在编译期限制此实例的容量、索引或硬件协议假设；调用本行“EP_STATIC_ASSERT(kNumMaxHistogramTokensPerStage * kNumTopk <= 65535);”。 专家状态2*B*4B；token stage数=min(6,(UB-state-metadata-zero)/(T*C))；检查histogram16位上限和MTE事件，UB0绑定counter/psum/histogram后复用token与metadata区。",
+          "reads": [
+            "kNumTopk"
+          ],
+          "writes": []
+        },
+        {
+          "line": 248,
+          "kind": "statement",
+          "explanation": "在编译期限制此实例的容量、索引或硬件协议假设；调用本行“EP_STATIC_ASSERT(kNumExpertStateBytes + kNumHistogramStages * kNumHistogramStageBytes <= kNumUBBytes);”。 专家状态2*B*4B；token stage数=min(6,(UB-state-metadata-zero)/(T*C))；检查histogram16位上限和MTE事件，UB0绑定counter/psum/histogram后复用token与metadata区。",
+          "reads": [
+            "kNumUBBytes"
+          ],
+          "writes": []
+        },
+        {
+          "line": 249,
+          "kind": "statement",
+          "explanation": "在编译期限制此实例的容量、索引或硬件协议假设；调用本行“EP_STATIC_ASSERT(kNumExpertStateBytes + kNumMetadataPipelineBytes + (kDoZeroPadding ? kNumZeroBytes : 0) <= kNumUBBytes);”。 专家状态2*B*4B；token stage数=min(6,(UB-state-metadata-zero)/(T*C))；检查histogram16位上限和MTE事件，UB0绑定counter/psum/histogram后复用token与metadata区。",
+          "reads": [
+            "kDoZeroPadding",
+            "kNumUBBytes"
+          ],
+          "writes": []
+        },
+        {
+          "line": 250,
+          "kind": "statement",
+          "explanation": "在编译期限制此实例的容量、索引或硬件协议假设；调用本行“EP_STATIC_ASSERT(kNumMTEStages + kNumMetadataStages <= kNumMaxNotifyWaitStages, \"Insufficient events\");”。 专家状态2*B*4B；token stage数=min(6,(UB-state-metadata-zero)/(T*C))；检查histogram16位上限和MTE事件，UB0绑定counter/psum/histogram后复用token与metadata区。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 251,
+          "kind": "statement",
+          "explanation": "在编译期限制此实例的容量、索引或硬件协议假设；调用本行“EP_STATIC_ASSERT(kNumMTEStages > 0);”。 专家状态2*B*4B；token stage数=min(6,(UB-state-metadata-zero)/(T*C))；检查histogram16位上限和MTE事件，UB0绑定counter/psum/histogram后复用token与metadata区。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 252,
+          "kind": "blank",
+          "explanation": "在分配重叠UB资源与校验事件数中，分隔“EP_STATIC_ASSERT(kNumMTEStages > 0);”与随后“const auto ub_expert_token_count = reinterpret_cast<__ubuf__ uint32_t*>(0);”两步；此处没有数据写入。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 253,
+          "kind": "declaration",
+          "explanation": "UB地址0绑定ub_expert_token_count数组，容量为hist_bins个uint32；这是AIV UB静态view而非GM malloc。",
+          "reads": [],
+          "writes": [
+            "ub_expert_token_count"
+          ]
+        },
+        {
+          "line": 254,
+          "kind": "declaration",
+          "explanation": "ub_next_dst_slot_idx直接别名ub_expert_token_count，统计结束后复用其空间保存输出绝对cursor。",
+          "reads": [
+            "ub_expert_token_count"
+          ],
+          "writes": [
+            "ub_next_dst_slot_idx"
+          ]
+        },
+        {
+          "line": 255,
+          "kind": "declaration",
+          "explanation": "ub_psum_num_recv_tokens_per_expert位于UB计数数组之后hist_bins*4字节处，保存前一expert有效end。",
+          "reads": [
+            "ub_expert_token_count"
+          ],
+          "writes": [
+            "ub_psum_num_recv_tokens_per_expert"
+          ]
+        },
+        {
+          "line": 256,
+          "kind": "declaration",
+          "explanation": "ub_histogram放在第二个expert uint32数组之后，总偏移2*hist_bins*4字节；histogram阶段结束后此处复用token大块。",
+          "reads": [
+            "ub_psum_num_recv_tokens_per_expert"
+          ],
+          "writes": [
+            "ub_histogram"
+          ]
+        },
+        {
+          "line": 257,
+          "kind": "declaration",
+          "explanation": "构造本次完整token_layout，传H、SF字节、K与fresh标记；它决定GM接收和UB token整包的相同字段布局。",
+          "reads": [
+            "kNumHiddenBytes",
+            "kNumSFPacks",
+            "kNumTopk",
+            "kCachedMode"
+          ],
+          "writes": [
+            "token_layout"
+          ]
+        },
+        {
+          "line": 258,
+          "kind": "declaration",
+          "explanation": "GM recv_buffer覆盖全部W个来源Rank区，每区预留M个TokenLayout完整token；这里只创建buffer地址view。",
+          "reads": [
+            "token_layout",
+            "kNumRanks",
+            "kNumMaxTokensPerRank",
+            "buffer"
+          ],
+          "writes": [
+            "recv_buffer"
+          ]
+        },
+        {
+          "line": 259,
+          "kind": "declaration",
+          "explanation": "token UB BufferLayout从ub_histogram首址复用，按kNumMTEStages个stage、每stage kNumTokensPerStage容量切分。",
+          "reads": [
+            "token_layout",
+            "ub_histogram"
+          ],
+          "writes": [
+            "ub_token_buffer"
+          ]
+        },
+        {
+          "line": 260,
+          "kind": "declaration",
+          "explanation": "UB metadata双stage区紧接完整token循环区末端，get_buffer_end_ptr返回预算末端而非本次有效token末端。",
+          "reads": [
+            "ub_token_buffer"
+          ],
+          "writes": [
+            "ub_metadata_buffers"
+          ]
+        },
+        {
+          "line": 261,
+          "kind": "declaration",
+          "explanation": "UB全零向量放在两个metadata stage之后；仅kDoZeroPadding时预算需保留并使用它。",
+          "reads": [
+            "ub_metadata_buffers"
+          ],
+          "writes": [
+            "ub_zero_buffer"
+          ]
+        },
+        {
+          "line": 262,
+          "kind": "blank",
+          "explanation": "在分配重叠UB资源与校验事件数中，分隔“const auto ub_zero_buffer = math::advance_ptr<__ubuf__ uint8_t>(ub_metadata_buffers, kNumMetadataStages * kNumMetadataStageBytes);”与随后“if constexpr (not kCachedMode) {”两步；此处没有数据写入。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 263,
+          "kind": "branch",
+          "explanation": "分配重叠UB资源与校验事件数的分支条件为“if constexpr (not kCachedMode)”；kNumMTEStages必须>0；不能把histogram与token stage相加当同时驻留资源。",
+          "reads": [
+            "kCachedMode"
+          ],
+          "writes": []
+        },
+        {
+          "line": 264,
+          "kind": "call",
+          "explanation": "把MTE2常数padding值设0；多专家路径左补0建立第0专家起点，后面Top-K扫描临时改为-1。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 265,
+          "kind": "comment",
+          "explanation": "注释说明fresh加载前一专家有效终点的实现意图（expert-start[expert_id] = align(expert-end[expert_id - 1], kExpertAlignment)）；单专家起点置0并S→V；多专家MTE2左补一个0读取E/W-1个终点，成为unaligned expert start。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 266,
+          "kind": "comment",
+          "explanation": "注释说明fresh加载前一专家有效终点的实现意图（we first load ub_psum_num_recv_tokens_per_expert[expert_id] = expert-end[expert_id - 1]）；单专家起点置0并S→V；多专家MTE2左补一个0读取E/W-1个终点，成为unaligned expert start。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 267,
+          "kind": "branch",
+          "explanation": "只有一个本地专家时起点必为0，无需读取前一专家end或发空长度MTE2；直接写UB并S→V发布。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 268,
+          "kind": "statement",
+          "explanation": "该行“*ub_psum_num_recv_tokens_per_expert = 0;”写回GM/UB左值；ub_psum_num_recv_tokens_per_expert：前一专家有效终点数组，向上align后成为当前专家起点。 单专家起点置0并S→V；多专家MTE2左补一个0读取E/W-1个终点，成为unaligned expert start。",
+          "reads": [],
+          "writes": [
+            "ub_psum_num_recv_tokens_per_expert"
+          ]
+        },
+        {
+          "line": 269,
+          "kind": "sync",
+          "explanation": "在第一管线完成前序动作后发布事件给第二管线；event_t区分循环stage；调用本行“asc_sync_notify(PIPE_S, PIPE_V, EVENT_ID0);”。 单专家起点置0并S→V；多专家MTE2左补一个0读取E/W-1个终点，成为unaligned expert start。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 270,
+          "kind": "sync",
+          "explanation": "让第二管线等待第一管线发布的同一event，建立数据就绪或stage释放依赖；调用本行“asc_sync_wait(PIPE_S, PIPE_V, EVENT_ID0);”。 单专家起点置0并S→V；多专家MTE2左补一个0读取E/W-1个终点，成为unaligned expert start。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 271,
+          "kind": "statement",
+          "explanation": "结束if constexpr (kNumExpertsPerRank == 1) {并进入else {，在fresh加载前一专家有效终点里处理相反/后续分支。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 272,
+          "kind": "call",
+          "explanation": "通过MTE2把指定GM区读入AIV UB，burst、stride、padding和L2 hint由后续实参确定；调用本行“asc_copy_gm2ub_align(”。 单专家起点置0并S→V；多专家MTE2左补一个0读取E/W-1个终点，成为unaligned expert start。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 273,
+          "kind": "statement",
+          "explanation": "MTE2目标为UB expert前一有效end数组，源为GM psum_num_recv_tokens_per_expert的uint32视图。",
+          "reads": [
+            "ub_psum_num_recv_tokens_per_expert",
+            "psum_num_recv_tokens_per_expert"
+          ],
+          "writes": [
+            "ub_psum_num_recv_tokens_per_expert"
+          ]
+        },
+        {
+          "line": 274,
+          "kind": "statement",
+          "explanation": "发1个burst读前E/W-1个uint32，并左补1个0、右不补；这样UB[0]=0、UB[e]=GM expert_end[e-1]。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 275,
+          "kind": "statement",
+          "explanation": "expert起点MTE2使用L2 NORMAL_FV，单burst源/目标附加stride为0；左补1个uint32零由前一行参数给出。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 276,
+          "kind": "brace",
+          "explanation": "闭合第272行“asc_copy_gm2ub_align(”的实参列表；ub_psum_num_recv_tokens_per_expert[e]是前一专家有效终点。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 277,
+          "kind": "brace",
+          "explanation": "结束由“} else {”开启的作用域；到此fresh加载前一专家有效终点对应状态更新完成，此括号不增加额外同步。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 278,
+          "kind": "brace",
+          "explanation": "结束由“if constexpr (not kCachedMode) {”开启的作用域；到此fresh加载前一专家有效终点对应状态更新完成，此括号不增加额外同步。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 279,
+          "kind": "blank",
+          "explanation": "在fresh加载前一专家有效终点中，分隔“}”与随后“const auto num_recv_tokens = psum_num_recv_tokens_per_rank[kNumRanks - 1];”两步；此处没有数据写入。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 280,
+          "kind": "declaration",
+          "explanation": "来源Rank cumsum最后项是本Rank去重后的接收流总token数，不等于专家展开输出行数。",
+          "reads": [
+            "psum_num_recv_tokens_per_rank",
+            "kNumRanks"
+          ],
+          "writes": [
+            "num_recv_tokens"
+          ]
+        },
+        {
+          "line": 281,
+          "kind": "declaration",
+          "explanation": "接收流总数按V个AIV向上整除，得到每AIV连续处理片段容量，允许最后若干AIV空片段。",
+          "reads": [
+            "num_recv_tokens",
+            "kNumVecCores"
+          ],
+          "writes": [
+            "num_tokens_per_vec_core"
+          ]
+        },
+        {
+          "line": 282,
+          "kind": "declaration",
+          "explanation": "当前AIV接收流首token=min(total,core*每核capacity)，夹total防止空核越界。",
+          "reads": [
+            "num_recv_tokens",
+            "vec_core_idx",
+            "num_tokens_per_vec_core"
+          ],
+          "writes": [
+            "token_start_idx"
+          ]
+        },
+        {
+          "line": 283,
+          "kind": "declaration",
+          "explanation": "当前AIV接收流排他末端=min(total,start+每核capacity)，保证尾核不跨总接收长度。",
+          "reads": [
+            "num_recv_tokens",
+            "token_start_idx",
+            "num_tokens_per_vec_core"
+          ],
+          "writes": [
+            "token_end_idx"
+          ]
+        },
+        {
+          "line": 284,
+          "kind": "blank",
+          "explanation": "在划分接收流与初始化issue游标中，分隔“const auto token_end_idx = math::min(num_recv_tokens, token_start_idx + num_tokens_per_vec_core);”与随后“constexpr int64_t kExpertCountClearedBarrier = 0;”两步；此处没有数据写入。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 285,
+          "kind": "statement",
+          "explanation": "跨AIV barrier ID0用于所有epilogue expert counter行清零完成；原子广播必须在该屏障之后。",
+          "reads": [],
+          "writes": [
+            "kExpertCountClearedBarrier"
+          ]
+        },
+        {
+          "line": 286,
+          "kind": "statement",
+          "explanation": "跨AIV barrier ID1用于所有expert count原子广播完成；各核读取自己的排他前缀必须等待它。",
+          "reads": [],
+          "writes": [
+            "kExpertCountCumsumBarrier"
+          ]
+        },
+        {
+          "line": 287,
+          "kind": "blank",
+          "explanation": "在划分接收流与初始化issue游标中，分隔“constexpr int64_t kExpertCountCumsumBarrier = 1;”与随后“PSumIterator<kNumRanks> issue_iter(psum_num_recv_tokens_per_rank, token_start_idx, token_end_idx);”两步；此处没有数据写入。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 288,
+          "kind": "statement",
+          "explanation": "构造issue_iter并立即定位token_start_idx所在来源Rank；它用全局接收流区间限制本AIV整包预取。",
+          "reads": [
+            "kNumRanks",
+            "issue_iter",
+            "psum_num_recv_tokens_per_rank",
+            "token_start_idx",
+            "token_end_idx"
+          ],
+          "writes": []
+        },
+        {
+          "line": 289,
+          "kind": "declaration",
+          "explanation": "将每个token MTE stage的真实批长数组清0，issue_load发出有效读取时才设置对应stage_num_tokens。",
+          "reads": [],
+          "writes": [
+            "stage_num_tokens"
+          ]
+        },
+        {
+          "line": 290,
+          "kind": "declaration",
+          "explanation": "将每stage接收流全局起点数组清0，issue_load把当前游标token_idx写入其槽位供metadata索引。",
+          "reads": [],
+          "writes": [
+            "stage_token_base_idx"
+          ]
+        },
+        {
+          "line": 291,
+          "kind": "declaration",
+          "explanation": "声明选择同一来源Rank的连续token批次对应的模板/设备入口“const auto issue_load = [&](int load_stage_idx, bool is_preload) __aicore__ {”；issue_iter当前全局位置与来源Rank边界一致",
+          "reads": [
+            "load_stage_idx",
+            "is_preload"
+          ],
+          "writes": [
+            "issue_load"
+          ]
+        },
+        {
+          "line": 292,
+          "kind": "branch",
+          "explanation": "issue_iter.finished为true时没有剩余接收token，必须返回false并保持旧stage描述不被消费。",
+          "reads": [
+            "issue_iter"
+          ],
+          "writes": []
+        },
+        {
+          "line": 293,
+          "kind": "statement",
+          "explanation": "返回“false”；一次完整token读取不跨来源Rankbuffer finished则返回false；get_contiguous_count同时限制源Rank余量、AIV余量、stage容量；构造load_ub_ptr与load_gm_ptr。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 294,
+          "kind": "blank",
+          "explanation": "在选择同一来源Rank的连续token批次中，分隔“return false;”与随后“const auto num_stage_tokens = issue_iter.get_contiguous_count(kNumTokensPerStage);”两步；此处没有数据写入。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 295,
+          "kind": "declaration",
+          "explanation": "本stage长度取源Rank剩余、AIV剩余与kNumTokensPerStage最小值；读取不会跨过按最大M容量分隔的来源Rank切片。",
+          "reads": [
+            "issue_iter"
+          ],
+          "writes": [
+            "num_stage_tokens"
+          ]
+        },
+        {
+          "line": 296,
+          "kind": "declaration",
+          "explanation": "在选择同一来源Rank的连续token批次中更新/计算“const auto load_ub_ptr = ub_token_buffer”。 load_ub_ptr：ub_token_buffer第load_stage_idx个stage的UB整包目标；ub_token_buffer：recv token整包UB多stage，在统计阶段之后覆盖ub_histogram。",
+          "reads": [
+            "ub_token_buffer"
+          ],
+          "writes": [
+            "load_ub_ptr"
+          ]
+        },
+        {
+          "line": 297,
+          "kind": "statement",
+          "explanation": "按load_stage_idx*kNumTokensPerStage定位UB token buffer中当前stage第一个token。",
+          "reads": [
+            "load_stage_idx"
+          ],
+          "writes": []
+        },
+        {
+          "line": 298,
+          "kind": "statement",
+          "explanation": "将当前UB stage TokenLayout基址转换成uint8指针，作为整包MTE2目的。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 299,
+          "kind": "declaration",
+          "explanation": "在选择同一来源Rank的连续token批次中更新/计算“const auto load_gm_ptr = recv_buffer”。 load_gm_ptr：recv_buffer中issue_iter来源Rank与本地槽的完整通信token GM来源；recv_buffer：Context::buffer对称GM的接收区；按源Rank分区后每区最多M token。",
+          "reads": [
+            "recv_buffer"
+          ],
+          "writes": [
+            "load_gm_ptr"
+          ]
+        },
+        {
+          "line": 300,
+          "kind": "statement",
+          "explanation": "从GM recv_buffer选issue_iter当前来源Rank切片；每切片保留M*T字节而非实际recv长度。",
+          "reads": [
+            "issue_iter",
+            "rank_idx"
+          ],
+          "writes": []
+        },
+        {
+          "line": 301,
+          "kind": "statement",
+          "explanation": "在该来源Rank切片中选global token减rank_start_idx后的相对槽，避免用接收流全局编号越过切片。",
+          "reads": [
+            "issue_iter"
+          ],
+          "writes": []
+        },
+        {
+          "line": 302,
+          "kind": "statement",
+          "explanation": "取完整通信token首字节GM地址load_gm_ptr，MTE2将连续num_stage_tokens个token整包读取。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 303,
+          "kind": "blank",
+          "explanation": "在选择同一来源Rank的连续token批次中，分隔“.template get_base_ptr<__gm__ uint8_t>();”与随后“// refills wait until the consumer's MTE3 copies that read this stage have completed”两步；此处没有数据写入。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 304,
+          "kind": "comment",
+          "explanation": "注释说明发出整包MTE2并记录stage描述的实现意图（refills wait until the consumer's MTE3 copies that read this stage have completed）；refill先等MTE3→MTE2释放；NOTALLOC_CLEAN读num_stage_tokens*T字节，发布MTE2→S，记录长度与接收流全局base，advance。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 305,
+          "kind": "branch",
+          "explanation": "发出整包MTE2并记录stage描述的分支条件为“if (not is_preload)”；输入整包用一次MTE2读取，后续多专家MTE3共享此UB token；refill不能覆盖在途MTE3来源。",
+          "reads": [
+            "is_preload"
+          ],
+          "writes": []
+        },
+        {
+          "line": 306,
+          "kind": "sync",
+          "explanation": "让第二管线等待第一管线发布的同一event，建立数据就绪或stage释放依赖；调用本行“asc_sync_wait(PIPE_MTE3, PIPE_MTE2, static_cast<event_t>(kNumMetadataStages + load_stage_idx));”。 load_stage_idx：要写入的UB token stage号，事件ID加metadata stage偏移。",
+          "reads": [
+            "load_stage_idx"
+          ],
+          "writes": []
+        },
+        {
+          "line": 307,
+          "kind": "brace",
+          "explanation": "结束由“if (not is_preload) {”开启的作用域；到此发出整包MTE2并记录stage描述对应状态更新完成，此括号不增加额外同步。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 308,
+          "kind": "comment",
+          "explanation": "注释说明发出整包MTE2并记录stage描述的实现意图（we won't use the token data after this copy, so we use NOTALLOC_CLEAN to avoid polluting the L2 cache）；refill先等MTE3→MTE2释放；NOTALLOC_CLEAN读num_stage_tokens*T字节，发布MTE2→S，记录长度与接收流全局base，advance。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 309,
+          "kind": "call",
+          "explanation": "MTE2整包读取源Rank recv buffer的num_stage_tokens*T字节到load_stage_idx的token UB stage，L2用NOTALLOC_CLEAN。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 310,
+          "kind": "statement",
+          "explanation": "MTE2参数方向是load_gm_ptr→load_ub_ptr，长度见下一行；current stage已经释放或属于首次预取。",
+          "reads": [
+            "load_ub_ptr",
+            "load_gm_ptr"
+          ],
+          "writes": [
+            "load_ub_ptr"
+          ]
+        },
+        {
+          "line": 311,
+          "kind": "statement",
+          "explanation": "整包只发1个burst，长度num_stage_tokens*TokenLayout字节，左右padding均0；真实批长已被Rank和AIV终点截断。",
+          "reads": [
+            "num_stage_tokens",
+            "token_layout"
+          ],
+          "writes": []
+        },
+        {
+          "line": 312,
+          "kind": "statement",
+          "explanation": "整包GM读取使用L2 NOTALLOC_CLEAN，源/目的额外步长为0，因为只有一个连续burst。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 313,
+          "kind": "brace",
+          "explanation": "闭合第309行“asc_copy_gm2ub_align(”的实参列表；消费者知道stage真实长度和全局metadata索引。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 314,
+          "kind": "comment",
+          "explanation": "注释说明发出整包MTE2并记录stage描述的实现意图（load done: the consumer's S pipe waits on this before reading the stage）；refill先等MTE3→MTE2释放；NOTALLOC_CLEAN读num_stage_tokens*T字节，发布MTE2→S，记录长度与接收流全局base，advance。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 315,
+          "kind": "sync",
+          "explanation": "MTE2完成事件发给Scalar，消费者wait此event后才可从stage提取字段与分配slot。",
+          "reads": [
+            "load_stage_idx"
+          ],
+          "writes": []
+        },
+        {
+          "line": 316,
+          "kind": "blank",
+          "explanation": "在发出整包MTE2并记录stage描述中，分隔“asc_sync_notify(PIPE_MTE2, PIPE_S, static_cast<event_t>(kNumMetadataStages + load_stage_idx));”与随后“stage_num_tokens[load_stage_idx] = num_stage_tokens;”两步；此处没有数据写入。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 317,
+          "kind": "statement",
+          "explanation": "在发出整包MTE2并记录stage描述中更新/计算“stage_num_tokens[load_stage_idx] = num_stage_tokens;”。 stage_num_tokens：记录每个token stage真实长度，消费者不能假定stage满载；load_stage_idx：要写入的UB token stage号，事件ID加metadata stage偏移；num_stage_tokens：当前批次真实连续token数，限制在来源Rank/AIV/stage三边界。",
+          "reads": [
+            "num_stage_tokens"
+          ],
+          "writes": [
+            "stage_num_tokens"
+          ]
+        },
+        {
+          "line": 318,
+          "kind": "comment",
+          "explanation": "注释说明发出整包MTE2并记录stage描述的实现意图（global recv-stream position: recv_src_metadata is indexed by the global stream）；refill先等MTE3→MTE2释放；NOTALLOC_CLEAN读num_stage_tokens*T字节，发布MTE2→S，记录长度与接收流全局base，advance。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 319,
+          "kind": "statement",
+          "explanation": "记录当前stage接收流全局token起点；recv_src_metadata按全局流索引，不能用来源Rank内槽号索引。",
+          "reads": [
+            "issue_iter",
+            "token_idx"
+          ],
+          "writes": [
+            "stage_token_base_idx"
+          ]
+        },
+        {
+          "line": 320,
+          "kind": "blank",
+          "explanation": "在发出整包MTE2并记录stage描述中，分隔“stage_token_base_idx[load_stage_idx] = issue_iter.token_idx;”与随后“issue_iter.advance(num_stage_tokens);”两步；此处没有数据写入。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 321,
+          "kind": "statement",
+          "explanation": "将issue_iter前移本次stage真实token数，必要时跨过来源Rank累计边界；尚未消费UB只表示下次预取起点已更新。",
+          "reads": [
+            "issue_iter",
+            "num_stage_tokens"
+          ],
+          "writes": [
+            "issue_iter"
+          ]
+        },
+        {
+          "line": 322,
+          "kind": "blank",
+          "explanation": "在发出整包MTE2并记录stage描述中，分隔“issue_iter.advance(num_stage_tokens);”与随后“return true;”两步；此处没有数据写入。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 323,
+          "kind": "statement",
+          "explanation": "返回“true”；消费者知道stage真实长度和全局metadata索引 refill先等MTE3→MTE2释放；NOTALLOC_CLEAN读num_stage_tokens*T字节，发布MTE2→S，记录长度与接收流全局base，advance。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 324,
+          "kind": "brace",
+          "explanation": "结束由“const auto issue_load = [&](int load_stage_idx, bool is_preload) __aicore__ {”开启的作用域；到此发出整包MTE2并记录stage描述对应状态更新完成，此括号不增加额外同步。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 325,
+          "kind": "blank",
+          "explanation": "在清空AIV前缀行并预热hist stage中，分隔“};”与随后“int preload_stage_idx = 0;”两步；此处没有数据写入。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 326,
+          "kind": "declaration",
+          "explanation": "在清空AIV前缀行并预热hist stage中更新/计算“int preload_stage_idx = 0;”。 preload_stage_idx：已经发出的初始token stage数量，保留MTE2 issue槽给前缀读取。",
+          "reads": [],
+          "writes": [
+            "preload_stage_idx"
+          ]
+        },
+        {
+          "line": 327,
+          "kind": "blank",
+          "explanation": "在清空AIV前缀行并预热hist stage中，分隔“int preload_stage_idx = 0;”与随后“if constexpr (not kCachedMode) {”两步；此处没有数据写入。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 328,
+          "kind": "branch",
+          "explanation": "清空AIV前缀行并预热hist stage的分支条件为“if constexpr (not kCachedMode)”；下一步原子广播只能发生在所有目标行清零之后，否则清零会覆盖贡献。",
+          "reads": [
+            "kCachedMode"
+          ],
+          "writes": []
+        },
+        {
+          "line": 329,
+          "kind": "comment",
+          "explanation": "注释说明清空AIV前缀行并预热hist stage的实现意图（Clear this core's prefix row before issuing metadata loads）；fill_ubuf清counter；MTE3清本核GM epilogue_expert_counter行；到达cleared屏障；构造独立topk_iter并初始化4stage空闲事件。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 330,
+          "kind": "statement",
+          "explanation": "调用fill_ubuf将本AIV UB专家计数清零，后续histogram累计频数与MTE3清GM核前缀行均使用它。",
+          "reads": [
+            "ub_expert_token_count"
+          ],
+          "writes": [
+            "ub_expert_token_count"
+          ]
+        },
+        {
+          "line": 331,
+          "kind": "sync",
+          "explanation": "在第一管线完成前序动作后发布事件给第二管线；event_t区分循环stage；调用本行“asc_sync_notify(PIPE_V, PIPE_MTE3, EVENT_ID0);”。 fill_ubuf清counter；MTE3清本核GM epilogue_expert_counter行；到达cleared屏障；构造独立topk_iter并初始化4stage空闲事件。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 332,
+          "kind": "blank",
+          "explanation": "在清空AIV前缀行并预热hist stage中，分隔“asc_sync_notify(PIPE_V, PIPE_MTE3, EVENT_ID0);”与随后“// Clear the cumsum buffer in global memory”两步；此处没有数据写入。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 333,
+          "kind": "comment",
+          "explanation": "注释说明清空AIV前缀行并预热hist stage的实现意图（Clear the cumsum buffer in global memory）；fill_ubuf清counter；MTE3清本核GM epilogue_expert_counter行；到达cleared屏障；构造独立topk_iter并初始化4stage空闲事件。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 334,
+          "kind": "sync",
+          "explanation": "让第二管线等待第一管线发布的同一event，建立数据就绪或stage释放依赖；调用本行“asc_sync_wait(PIPE_V, PIPE_MTE3, EVENT_ID0);”。 fill_ubuf清counter；MTE3清本核GM epilogue_expert_counter行；到达cleared屏障；构造独立topk_iter并初始化4stage空闲事件。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 335,
+          "kind": "call",
+          "explanation": "通过MTE3把AIV UB区写到指定GM输出，burst/stride控制多行搬运；调用本行“asc_copy_ub2gm_align(”。 fill_ubuf清counter；MTE3清本核GM epilogue_expert_counter行；到达cleared屏障；构造独立topk_iter并初始化4stage空闲事件。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 336,
+          "kind": "statement",
+          "explanation": "清零MTE3目的为EPSignals中当前AIV的真实E/W个epilogue expert counter行。",
+          "reads": [
+            "workspace_layout",
+            "vec_core_idx"
+          ],
+          "writes": [
+            "workspace_layout"
+          ]
+        },
+        {
+          "line": 337,
+          "kind": "statement",
+          "explanation": "清零数据源是刚由SIMD fill变成0的UB expert计数区，不读取旧GM计数。",
+          "reads": [
+            "ub_expert_token_count"
+          ],
+          "writes": []
+        },
+        {
+          "line": 338,
+          "kind": "statement",
+          "explanation": "MTE3清零长度=(E/W)*sizeof(int)，只清当前AIV真实专家列，扩容histogram桶不写共享counter行。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 339,
+          "kind": "brace",
+          "explanation": "闭合第335行“asc_copy_ub2gm_align(”的实参列表；所有GM核前缀行等待全核清零。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 340,
+          "kind": "sync",
+          "explanation": "当前AIV的MTE3清零达到cleared跨核屏障；后续原子广播等所有核清零，避免先加后被清掉。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 341,
+          "kind": "blank",
+          "explanation": "在清空AIV前缀行并预热hist stage中，分隔“asc_sync_inter_arrive(PIPE_MTE3, kExpertCountClearedBarrier);”与随后“PSumIterator<kNumRanks> topk_iter(psum_num_recv_tokens_per_rank, token_start_idx, token_end_idx);”两步；此处没有数据写入。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 342,
+          "kind": "statement",
+          "explanation": "构造独立topk_iter扫描同一AIV接收区間；它只读取Top-K统计，不改变整包预取issue_iter。",
+          "reads": [
+            "kNumRanks",
+            "topk_iter",
+            "psum_num_recv_tokens_per_rank",
+            "token_start_idx",
+            "token_end_idx"
+          ],
+          "writes": []
+        },
+        {
+          "line": 343,
+          "kind": "preprocessor",
+          "explanation": "预处理/编译指示#pragma unroll作用于清空AIV前缀行并预热hist stage；循环界限由模板已知，unroll要求编译器展开下一段。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 344,
+          "kind": "loop",
+          "explanation": "清空AIV前缀行并预热hist stage的迭代条件为“for (int histogram_stage_idx = 0; histogram_stage_idx < kNumHistogramStages; ++ histogram_stage_idx)”；下一步原子广播只能发生在所有目标行清零之后，否则清零会覆盖贡献。",
+          "reads": [
+            "histogram_stage_idx"
+          ],
+          "writes": [
+            "histogram_stage_idx"
+          ]
+        },
+        {
+          "line": 345,
+          "kind": "sync",
+          "explanation": "预热四个histogram stage的V→MTE2空闲事件；第一次读取尚不存在旧SIMD消费者。",
+          "reads": [
+            "histogram_stage_idx"
+          ],
+          "writes": []
+        },
+        {
+          "line": 346,
+          "kind": "blank",
+          "explanation": "在流水读取Top-K并累加本AIV专家频数中，分隔“asc_sync_notify(PIPE_V, PIPE_MTE2, static_cast<event_t>(histogram_stage_idx));”与随后“uint8_t histogram_stage_idx = 0;”两步；此处没有数据写入。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 347,
+          "kind": "declaration",
+          "explanation": "在流水读取Top-K并累加本AIV专家频数中更新/计算“uint8_t histogram_stage_idx = 0;”。 histogram_stage_idx：四个Top-K UB stage循环编号，以V/MTE2事件控制复用。",
+          "reads": [],
+          "writes": [
+            "histogram_stage_idx"
+          ]
+        },
+        {
+          "line": 348,
+          "kind": "call",
+          "explanation": "设置MTE2 padding常数，Top-K扫描用-1、计数加载用0；调用本行“asc_set_copy_pad_val(static_cast<int32_t>(-1));”。 从源Rankbuffer读取K个ID，每行右补-1；MTE2→V后histogram_accumulate_u32以rank_idx*(E/W)为offset；V→MTE2释放，循环4stage。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 349,
+          "kind": "loop",
+          "explanation": "流水读取Top-K并累加本AIV专家频数的迭代条件为“while (not topk_iter.finished())”；256/512扩容桶可能含邻Rank相对ID；后续只用真实E/W个桶，不能声称helper排除全部远端ID。",
+          "reads": [
+            "topk_iter"
+          ],
+          "writes": []
+        },
+        {
+          "line": 350,
+          "kind": "declaration",
+          "explanation": "在流水读取Top-K并累加本AIV专家频数中更新/计算“const auto num_stage_tokens = topk_iter.get_contiguous_count(kNumMaxHistogramTokensPerStage);”。 num_stage_tokens：当前批次真实连续token数，限制在来源Rank/AIV/stage三边界；topk_iter：只扫描Top-K metadata的独立来源Rank游标，不推进整包issue_iter。",
+          "reads": [
+            "topk_iter"
+          ],
+          "writes": [
+            "num_stage_tokens"
+          ]
+        },
+        {
+          "line": 351,
+          "kind": "declaration",
+          "explanation": "在流水读取Top-K并累加本AIV专家频数中更新/计算“const auto ub_hist_ptr = math::advance_ptr<__ubuf__ int64_t>(ub_histogram, histogram_stage_idx * kNumHistogramStageBytes);”。 ub_hist_ptr：当前histogram stage UB首址，token Top-K行右侧补-1；ub_histogram：histogram临时四个32KiB stage；随后复用为token整包stage；histogram_stage_idx：四个Top-K UB stage循环编号，以V/MTE2事件控制复用。",
+          "reads": [
+            "ub_histogram",
+            "histogram_stage_idx"
+          ],
+          "writes": [
+            "ub_hist_ptr"
+          ]
+        },
+        {
+          "line": 352,
+          "kind": "declaration",
+          "explanation": "在流水读取Top-K并累加本AIV专家频数中更新/计算“const auto buffer_token = recv_buffer”。 buffer_token：当前来源Rank接收GM槽的TokenLayout视图；recv_buffer：Context::buffer对称GM的接收区；按源Rank分区后每区最多M token。",
+          "reads": [
+            "recv_buffer"
+          ],
+          "writes": [
+            "buffer_token"
+          ]
+        },
+        {
+          "line": 353,
+          "kind": "statement",
+          "explanation": "Top-K扫描从topk_iter当前来源Rank接收切片取得token布局。",
+          "reads": [
+            "topk_iter",
+            "rank_idx"
+          ],
+          "writes": []
+        },
+        {
+          "line": 354,
+          "kind": "statement",
+          "explanation": "在该Rank切片中用topk_iter.get_local_idx()取相对token槽，其Top-K字段是下面MTE2来源。",
+          "reads": [
+            "topk_iter"
+          ],
+          "writes": []
+        },
+        {
+          "line": 355,
+          "kind": "blank",
+          "explanation": "在流水读取Top-K并累加本AIV专家频数中，分隔“.get_token_buffer(topk_iter.get_local_idx());”与随后“asc_sync_wait(PIPE_V, PIPE_MTE2, static_cast<event_t>(histogram_stage_idx));”两步；此处没有数据写入。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 356,
+          "kind": "sync",
+          "explanation": "Top-K扫描读取前等待当前histogram stage的V→MTE2空闲事件，防止覆盖仍在累加的ID块。",
+          "reads": [
+            "histogram_stage_idx"
+          ],
+          "writes": []
+        },
+        {
+          "line": 357,
+          "kind": "call",
+          "explanation": "MTE2只读每token K个Top-K int64，GM token行间按完整T步长，UB行右补-1到32B对齐Top-K长度。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 358,
+          "kind": "statement",
+          "explanation": "Top-K MTE2目的ub_hist_ptr按int32视图接收padding；每个int64由两个32位字保存。",
+          "reads": [
+            "ub_hist_ptr"
+          ],
+          "writes": [
+            "ub_hist_ptr"
+          ]
+        },
+        {
+          "line": 359,
+          "kind": "statement",
+          "explanation": "Top-K MTE2源是当前接收GM token内的int64专家ID字段，以int32视图传给copy参数接口。",
+          "reads": [
+            "buffer_token"
+          ],
+          "writes": []
+        },
+        {
+          "line": 360,
+          "kind": "statement",
+          "explanation": "n_burst=num_stage_tokens：burst数量；决定当前stage有效token行或固定单行复制；len_burst=kNumTopk * sizeof(int64_t)：每burst字节长度；决定该字段是hidden、Top-K、weight还是SF的有效extent。 此参数属于“流水读取Top-K并累加本AIV专家频数”。",
+          "reads": [
+            "num_stage_tokens",
+            "kNumTopk"
+          ],
+          "writes": []
+        },
+        {
+          "line": 361,
+          "kind": "statement",
+          "explanation": "left_padding_num=0：左padding元素数；此处0表示无左补齐。 此参数属于“流水读取Top-K并累加本AIV专家频数”。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 362,
+          "kind": "statement",
+          "explanation": "right_padding_num=(kNumHistogramTokenTopkElems - kNumTopk) * 2：右padding元素数；Top-K扫描按int32数量补-1至UB对齐，普通metadata读则0。 此参数属于“流水读取Top-K并累加本AIV专家频数”。",
+          "reads": [
+            "kNumTopk"
+          ],
+          "writes": []
+        },
+        {
+          "line": 363,
+          "kind": "statement",
+          "explanation": "enable_constant_pad=true：是否启用前面asc_set_copy_pad_val常数padding。 此参数属于“流水读取Top-K并累加本AIV专家频数”。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 364,
+          "kind": "statement",
+          "explanation": "Top-K会在后续整包阶段再次使用，MTE2明确选L2 NORMAL_FV以保留缓存；该行是实参而不是纯注释。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 365,
+          "kind": "statement",
+          "explanation": "src_gap=token_layout.get_num_bytes()：API源burst步长参数；具体整包/字段跨度由本行表达式确定。 此参数属于“流水读取Top-K并累加本AIV专家频数”。",
+          "reads": [
+            "token_layout"
+          ],
+          "writes": []
+        },
+        {
+          "line": 366,
+          "kind": "statement",
+          "explanation": "dst_gap=kNumHistogramTokenTopkElems * sizeof(int64_t)：API目标burst步长参数；具体紧凑UB或输出布局由本行表达式确定。 此参数属于“流水读取Top-K并累加本AIV专家频数”。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 367,
+          "kind": "brace",
+          "explanation": "闭合第357行“asc_copy_gm2ub_align(”的实参列表；ub_expert_token_count统计本AIV每专家频数。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 368,
+          "kind": "sync",
+          "explanation": "在第一管线完成前序动作后发布事件给第二管线；event_t区分循环stage；调用本行“asc_sync_notify(PIPE_MTE2, PIPE_V, static_cast<event_t>(histogram_stage_idx));”。 histogram_stage_idx：四个Top-K UB stage循环编号，以V/MTE2事件控制复用。",
+          "reads": [
+            "histogram_stage_idx"
+          ],
+          "writes": []
+        },
+        {
+          "line": 369,
+          "kind": "blank",
+          "explanation": "在流水读取Top-K并累加本AIV专家频数中，分隔“asc_sync_notify(PIPE_MTE2, PIPE_V, static_cast<event_t>(histogram_stage_idx));”与随后“asc_sync_wait(PIPE_MTE2, PIPE_V, static_cast<event_t>(histogram_stage_idx));”两步；此处没有数据写入。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 370,
+          "kind": "sync",
+          "explanation": "让第二管线等待第一管线发布的同一event，建立数据就绪或stage释放依赖；调用本行“asc_sync_wait(PIPE_MTE2, PIPE_V, static_cast<event_t>(histogram_stage_idx));”。 histogram_stage_idx：四个Top-K UB stage循环编号，以V/MTE2事件控制复用。",
+          "reads": [
+            "histogram_stage_idx"
+          ],
+          "writes": []
+        },
+        {
+          "line": 371,
+          "kind": "statement",
+          "explanation": "SIMD统计减去本Rank全局专家起点后的256/512个桶；填充桶可能有邻Rank计数，后续只消费真实E/W桶。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 372,
+          "kind": "statement",
+          "explanation": "histogram输入是刚完成MTE2的ub_hist_ptr，输出是累加的ub_expert_token_count，两者均属于当前AIV UB。",
+          "reads": [
+            "ub_hist_ptr",
+            "ub_expert_token_count"
+          ],
+          "writes": [
+            "ub_expert_token_count"
+          ]
+        },
+        {
+          "line": 373,
+          "kind": "statement",
+          "explanation": "SIMD扫描元素数=stage真实token数×对齐后Top-K int64行长；右padding的-1一起参与但不进入有效真实专家桶。",
+          "reads": [
+            "num_stage_tokens"
+          ],
+          "writes": []
+        },
+        {
+          "line": 374,
+          "kind": "statement",
+          "explanation": "offset=rank_idx*(E/W)，转换int16广播；全局专家ID减它后成为相对本Rank起点候选桶。",
+          "reads": [
+            "rank_idx"
+          ],
+          "writes": []
+        },
+        {
+          "line": 375,
+          "kind": "brace",
+          "explanation": "闭合第371行“histogram_accumulate_u32<kNumHistogramBins>(”的实参列表；ub_expert_token_count统计本AIV每专家频数。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 376,
+          "kind": "sync",
+          "explanation": "当前histogram stage的SIMD桶累加完成后V→MTE2释放该stage，下一轮MTE2才可覆盖ID UB数据。",
+          "reads": [
+            "histogram_stage_idx"
+          ],
+          "writes": []
+        },
+        {
+          "line": 377,
+          "kind": "blank",
+          "explanation": "在流水读取Top-K并累加本AIV专家频数中，分隔“asc_sync_notify(PIPE_V, PIPE_MTE2, static_cast<event_t>(histogram_stage_idx));”与随后“histogram_stage_idx = (histogram_stage_idx + 1) % kNumHistogramStages;”两步；此处没有数据写入。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 378,
+          "kind": "statement",
+          "explanation": "在流水读取Top-K并累加本AIV专家频数中更新/计算“histogram_stage_idx = (histogram_stage_idx + 1) % kNumHistogramStages;”。 histogram_stage_idx：四个Top-K UB stage循环编号，以V/MTE2事件控制复用。",
+          "reads": [
+            "histogram_stage_idx"
+          ],
+          "writes": [
+            "histogram_stage_idx"
+          ]
+        },
+        {
+          "line": 379,
+          "kind": "statement",
+          "explanation": "按真实stage token数前移topk_iter，必要时跳过来源Rank边界；四stage的下次读仍不跨切片。",
+          "reads": [
+            "topk_iter",
+            "num_stage_tokens"
+          ],
+          "writes": [
+            "topk_iter"
+          ]
+        },
+        {
+          "line": 380,
+          "kind": "brace",
+          "explanation": "结束由“while (not topk_iter.finished()) {”开启的作用域；到此流水读取Top-K并累加本AIV专家频数对应状态更新完成，此括号不增加额外同步。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 381,
+          "kind": "call",
+          "explanation": "设置MTE2 padding常数，Top-K扫描用-1、计数加载用0；调用本行“asc_set_copy_pad_val(static_cast<int32_t>(0));”。 恢复pad=0，等所有hist stage V释放；V→MTE3；当MTE2 issue槽>1时预取整包，保留一槽给前缀GM读取。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 382,
+          "kind": "blank",
+          "explanation": "在恢复padding常数并重叠整包预取中，分隔“asc_set_copy_pad_val(static_cast<int32_t>(0));”与随后“#pragma unroll”两步；此处没有数据写入。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 383,
+          "kind": "preprocessor",
+          "explanation": "预处理/编译指示#pragma unroll作用于恢复padding常数并重叠整包预取；循环界限由模板已知，unroll要求编译器展开下一段。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 384,
+          "kind": "loop",
+          "explanation": "恢复padding常数并重叠整包预取的迭代条件为“for (int histogram_stage_idx = 0; histogram_stage_idx < kNumHistogramStages; ++ histogram_stage_idx)”；只有histogram读取/向量使用完成后才可覆盖复用UB区。",
+          "reads": [
+            "histogram_stage_idx"
+          ],
+          "writes": [
+            "histogram_stage_idx"
+          ]
+        },
+        {
+          "line": 385,
+          "kind": "sync",
+          "explanation": "Top-K全部扫描发出后，逐histogram stage等SIMD消费完成，之后才可把UB大块复用为完整token stages。",
+          "reads": [
+            "histogram_stage_idx"
+          ],
+          "writes": []
+        },
+        {
+          "line": 386,
+          "kind": "blank",
+          "explanation": "在恢复padding常数并重叠整包预取中，分隔“asc_sync_wait(PIPE_V, PIPE_MTE2, static_cast<event_t>(histogram_stage_idx));”与随后“asc_sync_notify(PIPE_V, PIPE_MTE3, EVENT_ID0);”两步；此处没有数据写入。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 387,
+          "kind": "sync",
+          "explanation": "在第一管线完成前序动作后发布事件给第二管线；event_t区分循环stage；调用本行“asc_sync_notify(PIPE_V, PIPE_MTE3, EVENT_ID0);”。 恢复pad=0，等所有hist stage V释放；V→MTE3；当MTE2 issue槽>1时预取整包，保留一槽给前缀GM读取。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 388,
+          "kind": "blank",
+          "explanation": "在恢复padding常数并重叠整包预取中，分隔“asc_sync_notify(PIPE_V, PIPE_MTE3, EVENT_ID0);”与随后“// reserve 1 issue slot for the later gm2ub copy”两步；此处没有数据写入。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 389,
+          "kind": "comment",
+          "explanation": "注释说明恢复padding常数并重叠整包预取的实现意图（reserve 1 issue slot for the later gm2ub copy）；恢复pad=0，等所有hist stage V释放；V→MTE3；当MTE2 issue槽>1时预取整包，保留一槽给前缀GM读取。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 390,
+          "kind": "loop",
+          "explanation": "只在MTE2 issue剩余槽数>1时发initial整包预取，保留一槽给后续GM核前缀读取，避免队列被预取占满。",
+          "reads": [
+            "preload_stage_idx"
+          ],
+          "writes": []
+        },
+        {
+          "line": 391,
+          "kind": "statement",
+          "explanation": "向当前尚未填充的preload_stage_idx发initial整包读取，is_preload=true不用等旧消费者释放。",
+          "reads": [
+            "preload_stage_idx"
+          ],
+          "writes": []
+        },
+        {
+          "line": 392,
+          "kind": "statement",
+          "explanation": "记录已发出initial token stage数量；不表示这些读取已经完成，消费端仍会等待MTE2事件。",
+          "reads": [
+            "preload_stage_idx"
+          ],
+          "writes": [
+            "preload_stage_idx"
+          ]
+        },
+        {
+          "line": 393,
+          "kind": "brace",
+          "explanation": "结束由“while (preload_stage_idx < kNumMTEStages and get_iqent(PIPE_MTE2) > 1) {”开启的作用域；到此恢复padding常数并重叠整包预取对应状态更新完成，此括号不增加额外同步。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 394,
+          "kind": "blank",
+          "explanation": "在恢复padding常数并重叠整包预取中，分隔“}”与随后“asc_sync_wait(PIPE_V, PIPE_MTE3, EVENT_ID0);”两步；此处没有数据写入。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 395,
+          "kind": "sync",
+          "explanation": "让第二管线等待第一管线发布的同一event，建立数据就绪或stage释放依赖；调用本行“asc_sync_wait(PIPE_V, PIPE_MTE3, EVENT_ID0);”。 跨核cleared wait后开启int atomic MTE3，把本核计数广播加到所有后续AIV行；恢复普通写并到达cumsum屏障。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 396,
+          "kind": "sync",
+          "explanation": "等所有AIV到达对应跨核屏障，再消费共享GM计数；调用本行“asc_sync_inter_wait(PIPE_MTE3, kExpertCountClearedBarrier);”。 跨核cleared wait后开启int atomic MTE3，把本核计数广播加到所有后续AIV行；恢复普通写并到达cumsum屏障。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 397,
+          "kind": "branch",
+          "explanation": "原子广播生成核排他专家前缀的分支条件为“if (vec_core_idx + 1 < kNumVecCores)”；排他前缀让每AIV随后在专家输出区域拥有独占连续槽，无需每token全局原子分配。",
+          "reads": [
+            "vec_core_idx",
+            "kNumVecCores"
+          ],
+          "writes": []
+        },
+        {
+          "line": 398,
+          "kind": "comment",
+          "explanation": "注释说明原子广播生成核排他专家前缀的实现意图（Atomic & Broadcast Trick）；跨核cleared wait后开启int atomic MTE3，把本核计数广播加到所有后续AIV行；恢复普通写并到达cumsum屏障。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 399,
+          "kind": "comment",
+          "explanation": "注释说明原子广播生成核排他专家前缀的实现意图（）；跨核cleared wait后开启int atomic MTE3，把本核计数广播加到所有后续AIV行；恢复普通写并到达cumsum屏障。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 400,
+          "kind": "comment",
+          "explanation": "注释说明原子广播生成核排他专家前缀的实现意图（int expert_count[kNumVecCores][kNumExperts];）；跨核cleared wait后开启int atomic MTE3，把本核计数广播加到所有后续AIV行；恢复普通写并到达cumsum屏障。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 401,
+          "kind": "comment",
+          "explanation": "注释说明原子广播生成核排他专家前缀的实现意图（for (int i = my_vec_core_idx + 1; i < kNumVecCores; ++i)  // n_burst = kNumVecCores - my_vec_core_idx - 1）；跨核cleared wait后开启int atomic MTE3，把本核计数广播加到所有后续AIV行；恢复普通写并到达cumsum屏障。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 402,
+          "kind": "comment",
+          "explanation": "注释说明原子广播生成核排他专家前缀的实现意图（expert_count[i][:] += my_expert_count[:];              // burst_len = kNumExpertsPerRank * sizeof(int)）；跨核cleared wait后开启int atomic MTE3，把本核计数广播加到所有后续AIV行；恢复普通写并到达cumsum屏障。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 403,
+          "kind": "call",
+          "explanation": "把随后MTE3写切到int原子加模式，使广播计数累加到后续AIV行；调用本行“asc_set_atomic_add_int();”。 跨核cleared wait后开启int atomic MTE3，把本核计数广播加到所有后续AIV行；恢复普通写并到达cumsum屏障。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 404,
+          "kind": "call",
+          "explanation": "开启atomic add模式后的MTE3把本AIV计数行广播到vec_core_idx+1及所有后续AIV，目标burst stride=E/W*4，UB源stride为0。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 405,
+          "kind": "statement",
+          "explanation": "atomic MTE3目标首址是当前AIV之后第一核的expert counter行，后续burst覆盖所有更晚AIV。",
+          "reads": [
+            "workspace_layout",
+            "vec_core_idx"
+          ],
+          "writes": [
+            "workspace_layout"
+          ]
+        },
+        {
+          "line": 406,
+          "kind": "statement",
+          "explanation": "广播source始终是本AIV ub_expert_token_count行；源stride=0让每个目标核得到相同贡献。",
+          "reads": [
+            "ub_expert_token_count"
+          ],
+          "writes": []
+        },
+        {
+          "line": 407,
+          "kind": "statement",
+          "explanation": "广播burst数量=V-aiv-1；每个burst写E/W个int的原子加，精确给所有后序核贡献同expert前缀。",
+          "reads": [
+            "kNumVecCores",
+            "vec_core_idx"
+          ],
+          "writes": []
+        },
+        {
+          "line": 408,
+          "kind": "statement",
+          "explanation": "expert counter原子MTE3写使用L2 NORMAL_FV，属于小控制数据而非输出hidden。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 409,
+          "kind": "statement",
+          "explanation": "每个目标burst前移(E/W)*4字节跳到下一AIV row，UB源burst步长0以重复同一计数行。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 410,
+          "kind": "brace",
+          "explanation": "闭合第404行“asc_copy_ub2gm_align(”的实参列表；GM row[c,e]累加所有AIV<c的count。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 411,
+          "kind": "call",
+          "explanation": "恢复MTE3普通写模式，防止后续payload输出意外做原子加；调用本行“asc_set_atomic_none();”。 跨核cleared wait后开启int atomic MTE3，把本核计数广播加到所有后续AIV行；恢复普通写并到达cumsum屏障。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 412,
+          "kind": "brace",
+          "explanation": "结束由“if (vec_core_idx + 1 < kNumVecCores) {”开启的作用域；到此原子广播生成核排他专家前缀对应状态更新完成，此括号不增加额外同步。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 413,
+          "kind": "sync",
+          "explanation": "发布当前AIV原子广播MTE3完成并到达cumsum跨核屏障；所有核贡献齐后才能读自己的排他前缀。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 414,
+          "kind": "sync",
+          "explanation": "在第一管线完成前序动作后发布事件给第二管线；event_t区分循环stage；调用本行“asc_sync_notify(PIPE_MTE3, PIPE_MTE2, EVENT_ID0);”。 跨核cleared wait后开启int atomic MTE3，把本核计数广播加到所有后续AIV行；恢复普通写并到达cumsum屏障。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 415,
+          "kind": "blank",
+          "explanation": "在读取核前缀并生成绝对输出游标中，分隔“asc_sync_notify(PIPE_MTE3, PIPE_MTE2, EVENT_ID0);”与随后“asc_sync_inter_wait(PIPE_MTE2, kExpertCountCumsumBarrier);”两步；此处没有数据写入。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 416,
+          "kind": "sync",
+          "explanation": "等所有AIV到达对应跨核屏障，再消费共享GM计数；调用本行“asc_sync_inter_wait(PIPE_MTE2, kExpertCountCumsumBarrier);”。 MTE2等待屏障读取本核行到ub_next_dst_slot_idx；MTE2→V后initialize加入align(前一expert有效终点,A)；V→S。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 417,
+          "kind": "sync",
+          "explanation": "让第二管线等待第一管线发布的同一event，建立数据就绪或stage释放依赖；调用本行“asc_sync_wait(PIPE_MTE3, PIPE_MTE2, EVENT_ID0);”。 MTE2等待屏障读取本核行到ub_next_dst_slot_idx；MTE2→V后initialize加入align(前一expert有效终点,A)；V→S。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 418,
+          "kind": "call",
+          "explanation": "通过MTE2把指定GM区读入AIV UB，burst、stride、padding和L2 hint由后续实参确定；调用本行“asc_copy_gm2ub_align(”。 MTE2等待屏障读取本核行到ub_next_dst_slot_idx；MTE2→V后initialize加入align(前一expert有效终点,A)；V→S。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 419,
+          "kind": "statement",
+          "explanation": "本AIV前缀MTE2目标是ub_next_dst_slot_idx，别名覆盖此前UB expert count区，局部直方图此后不再使用。",
+          "reads": [
+            "ub_next_dst_slot_idx"
+          ],
+          "writes": [
+            "ub_next_dst_slot_idx"
+          ]
+        },
+        {
+          "line": 420,
+          "kind": "statement",
+          "explanation": "MTE2源是当前AIV对应GM expert counter row，已经累加所有前序AIV的真实expert计数。",
+          "reads": [
+            "workspace_layout",
+            "vec_core_idx"
+          ],
+          "writes": []
+        },
+        {
+          "line": 421,
+          "kind": "statement",
+          "explanation": "发1个burst读(E/W)*sizeof(int)，左右padding0；copy允许padding但这里实际不补元素。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 422,
+          "kind": "statement",
+          "explanation": "前缀GM读取使用L2 NORMAL_FV且仅一个burst，源目的额外步长0。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 423,
+          "kind": "brace",
+          "explanation": "闭合第418行“asc_copy_gm2ub_align(”的实参列表；ub_next_dst_slot_idx是可由Scalar递增的绝对输出行。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 424,
+          "kind": "sync",
+          "explanation": "在第一管线完成前序动作后发布事件给第二管线；event_t区分循环stage；调用本行“asc_sync_notify(PIPE_MTE2, PIPE_V, EVENT_ID0);”。 MTE2等待屏障读取本核行到ub_next_dst_slot_idx；MTE2→V后initialize加入align(前一expert有效终点,A)；V→S。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 425,
+          "kind": "sync",
+          "explanation": "让第二管线等待第一管线发布的同一event，建立数据就绪或stage释放依赖；调用本行“asc_sync_wait(PIPE_MTE2, PIPE_V, EVENT_ID0);”。 MTE2等待屏障读取本核行到ub_next_dst_slot_idx；MTE2→V后initialize加入align(前一expert有效终点,A)；V→S。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 426,
+          "kind": "statement",
+          "explanation": "SIMD把ub_next_dst_slot_idx中的前序AIV同专家count加上align(前一expert end,A)，形成绝对输出cursor。",
+          "reads": [
+            "kExpertAlignment",
+            "ub_next_dst_slot_idx",
+            "ub_psum_num_recv_tokens_per_expert"
+          ],
+          "writes": [
+            "ub_next_dst_slot_idx"
+          ]
+        },
+        {
+          "line": 427,
+          "kind": "sync",
+          "explanation": "在第一管线完成前序动作后发布事件给第二管线；event_t区分循环stage；调用本行“asc_sync_notify(PIPE_V, PIPE_S, EVENT_ID0);”。 MTE2等待屏障读取本核行到ub_next_dst_slot_idx；MTE2→V后initialize加入align(前一expert有效终点,A)；V→S。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 428,
+          "kind": "sync",
+          "explanation": "让第二管线等待第一管线发布的同一event，建立数据就绪或stage释放依赖；调用本行“asc_sync_wait(PIPE_V, PIPE_S, EVENT_ID0);”。 MTE2等待屏障读取本核行到ub_next_dst_slot_idx；MTE2→V后initialize加入align(前一expert有效终点,A)；V→S。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 429,
+          "kind": "brace",
+          "explanation": "结束由“if constexpr (not kCachedMode) {”开启的作用域；到此读取核前缀并生成绝对输出游标对应状态更新完成，此括号不增加额外同步。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 430,
+          "kind": "blank",
+          "explanation": "在读取核前缀并生成绝对输出游标中，分隔“}”与随后“for (int i = preload_stage_idx; i < kNumMTEStages; ++ i) {”两步；此处没有数据写入。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 431,
+          "kind": "loop",
+          "explanation": "补齐预取与初始化输出循环的迭代条件为“for (int i = preload_stage_idx; i < kNumMTEStages; ++ i)”；cached沿用metadata route，不必在本次写新metadata记录。",
+          "reads": [
+            "preload_stage_idx",
+            "i"
+          ],
+          "writes": [
+            "i"
+          ]
+        },
+        {
+          "line": 432,
+          "kind": "statement",
+          "explanation": "对未在histogram尾预取的每个stage发issue_load(i,true)；无接收余量时lambda返回false，不发越界MTE2。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 433,
+          "kind": "brace",
+          "explanation": "结束由“for (int i = preload_stage_idx; i < kNumMTEStages; ++ i) {”开启的作用域；到此补齐预取与初始化输出循环对应状态更新完成，此括号不增加额外同步。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 434,
+          "kind": "blank",
+          "explanation": "在补齐预取与初始化输出循环中，分隔“}”与随后“if constexpr (kDoZeroPadding) {”两步；此处没有数据写入。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 435,
+          "kind": "branch",
+          "explanation": "补齐预取与初始化输出循环的分支条件为“if constexpr (kDoZeroPadding)”；cached沿用metadata route，不必在本次写新metadata记录。",
+          "reads": [
+            "kDoZeroPadding"
+          ],
+          "writes": []
+        },
+        {
+          "line": 436,
+          "kind": "statement",
+          "explanation": "SIMD fill把ub_zero_buffer中一向量的kNumZeroBytes/4个int全置0，MTE3随后重复此零源。",
+          "reads": [
+            "ub_zero_buffer"
+          ],
+          "writes": [
+            "ub_zero_buffer"
+          ]
+        },
+        {
+          "line": 437,
+          "kind": "sync",
+          "explanation": "在第一管线完成前序动作后发布事件给第二管线；event_t区分循环stage；调用本行“asc_sync_notify(PIPE_V, PIPE_MTE3, EVENT_ID0);”。 发剩余initial issue_load；需要padding则fill零向量并V→MTE3；fresh metadata两个stage发布空闲，设置消费计数。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 438,
+          "kind": "brace",
+          "explanation": "结束由“if constexpr (kDoZeroPadding) {”开启的作用域；到此补齐预取与初始化输出循环对应状态更新完成，此括号不增加额外同步。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 439,
+          "kind": "blank",
+          "explanation": "在补齐预取与初始化输出循环中，分隔“}”与随后“uint8_t stage_idx = 0;”两步；此处没有数据写入。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 440,
+          "kind": "declaration",
+          "explanation": "在补齐预取与初始化输出循环中更新/计算“uint8_t stage_idx = 0;”。 stage_idx：当前循环UB stage；对应事件ID用于防止提前覆盖。",
+          "reads": [],
+          "writes": [
+            "stage_idx"
+          ]
+        },
+        {
+          "line": 441,
+          "kind": "declaration",
+          "explanation": "在补齐预取与初始化输出循环中更新/计算“uint8_t metadata_buffer_idx = 0;”。 metadata_buffer_idx：两个metadata UB stage循环编号，MTE3读完后才可Scalar写。",
+          "reads": [],
+          "writes": [
+            "metadata_buffer_idx"
+          ]
+        },
+        {
+          "line": 442,
+          "kind": "branch",
+          "explanation": "补齐预取与初始化输出循环的分支条件为“if constexpr (not kCachedMode)”；cached沿用metadata route，不必在本次写新metadata记录。",
+          "reads": [
+            "kCachedMode"
+          ],
+          "writes": []
+        },
+        {
+          "line": 443,
+          "kind": "preprocessor",
+          "explanation": "预处理/编译指示#pragma unroll作用于补齐预取与初始化输出循环；循环界限由模板已知，unroll要求编译器展开下一段。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 444,
+          "kind": "loop",
+          "explanation": "补齐预取与初始化输出循环的迭代条件为“for (int i = 0; i < kNumMetadataStages; ++ i)”；cached沿用metadata route，不必在本次写新metadata记录。",
+          "reads": [
+            "i"
+          ],
+          "writes": [
+            "i"
+          ]
+        },
+        {
+          "line": 445,
+          "kind": "sync",
+          "explanation": "在第一管线完成前序动作后发布事件给第二管线；event_t区分循环stage；调用本行“asc_sync_notify(PIPE_MTE3, PIPE_S, static_cast<event_t>(i));”。 发剩余initial issue_load；需要padding则fill零向量并V→MTE3；fresh metadata两个stage发布空闲，设置消费计数。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 446,
+          "kind": "brace",
+          "explanation": "结束由“if constexpr (not kCachedMode) {”开启的作用域；到此补齐预取与初始化输出循环对应状态更新完成，此括号不增加额外同步。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 447,
+          "kind": "blank",
+          "explanation": "在补齐预取与初始化输出循环中，分隔“}”与随后“const auto num_range_tokens = token_end_idx - token_start_idx;”两步；此处没有数据写入。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 448,
+          "kind": "declaration",
+          "explanation": "在补齐预取与初始化输出循环中更新/计算“const auto num_range_tokens = token_end_idx - token_start_idx;”。 num_range_tokens：当前AIV接收流区间长度token_end_idx-token_start_idx；token_end_idx：本AIV接收流排他终点，保证最后一核范围不越界；token_start_idx：本AIV接收流起点，夹到num_recv_tokens。",
+          "reads": [
+            "token_end_idx",
+            "token_start_idx"
+          ],
+          "writes": [
+            "num_range_tokens"
+          ]
+        },
+        {
+          "line": 449,
+          "kind": "declaration",
+          "explanation": "在补齐预取与初始化输出循环中更新/计算“int num_consumed_tokens = 0;”。 num_consumed_tokens：当前AIV整包stage已消费token累计量。",
+          "reads": [],
+          "writes": [
+            "num_consumed_tokens"
+          ]
+        },
+        {
+          "line": 450,
+          "kind": "loop",
+          "explanation": "消费整包stage并定位metadata的迭代条件为“while (num_consumed_tokens < num_range_tokens)”；metadata索引不能误用来源Rank内local_idx，否则跨Rank覆盖handle。",
+          "reads": [
+            "num_consumed_tokens",
+            "num_range_tokens"
+          ],
+          "writes": []
+        },
+        {
+          "line": 451,
+          "kind": "declaration",
+          "explanation": "在消费整包stage并定位metadata中更新/计算“const auto num_stage_tokens = stage_num_tokens[stage_idx];”。 num_stage_tokens：当前批次真实连续token数，限制在来源Rank/AIV/stage三边界；stage_num_tokens：记录每个token stage真实长度，消费者不能假定stage满载；stage_idx：当前循环UB stage；对应事件ID用于防止提前覆盖。",
+          "reads": [
+            "stage_num_tokens",
+            "stage_idx"
+          ],
+          "writes": [
+            "num_stage_tokens"
+          ]
+        },
+        {
+          "line": 452,
+          "kind": "declaration",
+          "explanation": "在消费整包stage并定位metadata中更新/计算“const auto token_base_idx = stage_token_base_idx[stage_idx];”。 token_base_idx：当前已加载stage的接收流全局起点，索引recv_src_metadata；stage_token_base_idx：记录每个stage对应接收流全局首token，元数据必须按此索引；stage_idx：当前循环UB stage；对应事件ID用于防止提前覆盖。",
+          "reads": [
+            "stage_token_base_idx",
+            "stage_idx"
+          ],
+          "writes": [
+            "token_base_idx"
+          ]
+        },
+        {
+          "line": 453,
+          "kind": "comment",
+          "explanation": "注释说明消费整包stage并定位metadata的实现意图（wait for this stage's load to complete）；S等待MTE2，fresh再等metadata MTE3释放；逐token取得UB TokenLayout，按全局recv token索引metadata_ptr，定位(K+2) UB记录。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 454,
+          "kind": "sync",
+          "explanation": "让第二管线等待第一管线发布的同一event，建立数据就绪或stage释放依赖；调用本行“asc_sync_wait(PIPE_MTE2, PIPE_S, static_cast<event_t>(kNumMetadataStages + stage_idx));”。 stage_idx：当前循环UB stage；对应事件ID用于防止提前覆盖。",
+          "reads": [
+            "stage_idx"
+          ],
+          "writes": []
+        },
+        {
+          "line": 455,
+          "kind": "branch",
+          "explanation": "消费整包stage并定位metadata的分支条件为“if constexpr (not kCachedMode)”；metadata索引不能误用来源Rank内local_idx，否则跨Rank覆盖handle。",
+          "reads": [
+            "kCachedMode"
+          ],
+          "writes": []
+        },
+        {
+          "line": 456,
+          "kind": "comment",
+          "explanation": "注释说明消费整包stage并定位metadata的实现意图（wait metadata buffer to be ready for writing）；S等待MTE2，fresh再等metadata MTE3释放；逐token取得UB TokenLayout，按全局recv token索引metadata_ptr，定位(K+2) UB记录。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 457,
+          "kind": "sync",
+          "explanation": "让第二管线等待第一管线发布的同一event，建立数据就绪或stage释放依赖；调用本行“asc_sync_wait(PIPE_MTE3, PIPE_S, static_cast<event_t>(metadata_buffer_idx));”。 metadata_buffer_idx：两个metadata UB stage循环编号，MTE3读完后才可Scalar写。",
+          "reads": [
+            "metadata_buffer_idx"
+          ],
+          "writes": []
+        },
+        {
+          "line": 458,
+          "kind": "brace",
+          "explanation": "结束由“if constexpr (not kCachedMode) {”开启的作用域；到此消费整包stage并定位metadata对应状态更新完成，此括号不增加额外同步。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 459,
+          "kind": "loop",
+          "explanation": "消费整包stage并定位metadata的迭代条件为“for (int token_in_stage = 0; token_in_stage < num_stage_tokens; ++ token_in_stage)”；metadata索引不能误用来源Rank内local_idx，否则跨Rank覆盖handle。",
+          "reads": [
+            "token_in_stage",
+            "num_stage_tokens"
+          ],
+          "writes": [
+            "token_in_stage"
+          ]
+        },
+        {
+          "line": 460,
+          "kind": "declaration",
+          "explanation": "在消费整包stage并定位metadata中更新/计算“const auto token_idx = token_base_idx + token_in_stage;”。 token_idx：全局接收流token编号，由当前stage全局首token加stage内相对位置；token_base_idx：当前已加载stage的接收流全局起点，索引recv_src_metadata；token_in_stage：当前stage内token相对位置。",
+          "reads": [
+            "token_base_idx",
+            "token_in_stage"
+          ],
+          "writes": [
+            "token_idx"
+          ]
+        },
+        {
+          "line": 461,
+          "kind": "declaration",
+          "explanation": "在消费整包stage并定位metadata中更新/计算“const auto token = ub_token_buffer”。 ub_token_buffer：recv token整包UB多stage，在统计阶段之后覆盖ub_histogram。",
+          "reads": [
+            "ub_token_buffer"
+          ],
+          "writes": [
+            "token"
+          ]
+        },
+        {
+          "line": 462,
+          "kind": "statement",
+          "explanation": "消费者定位当前stage内token_in_stage的UB完整token，而非输入GM token号；hidden/SF/weight均从这里读取。",
+          "reads": [
+            "stage_idx",
+            "token_in_stage"
+          ],
+          "writes": []
+        },
+        {
+          "line": 463,
+          "kind": "comment",
+          "explanation": "注释说明消费整包stage并定位metadata的实现意图（Source metadata）；S等待MTE2，fresh再等metadata MTE3释放；逐token取得UB TokenLayout，按全局recv token索引metadata_ptr，定位(K+2) UB记录。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 464,
+          "kind": "declaration",
+          "explanation": "在消费整包stage并定位metadata中更新/计算“const auto metadata_ptr = recv_src_metadata + token_idx * kNumMetadataElemsPerToken;”。 metadata_ptr：recv_src_metadata+global_recv_token*(K+2)，cached路由槽来源；token_idx：全局接收流token编号，由当前stage全局首token加stage内相对位置。",
+          "reads": [
+            "recv_src_metadata",
+            "token_idx"
+          ],
+          "writes": [
+            "metadata_ptr"
+          ]
+        },
+        {
+          "line": 465,
+          "kind": "declaration",
+          "explanation": "在消费整包stage并定位metadata中更新/计算“const auto ub_metadata = math::advance_ptr<__ubuf__ int>(”。 ub_metadata：当前metadata stage的每token(K+2)整型记录。",
+          "reads": [],
+          "writes": [
+            "ub_metadata"
+          ]
+        },
+        {
+          "line": 466,
+          "kind": "statement",
+          "explanation": "元数据UB首址为两个stage的ub_metadata_buffers，下面偏移在同一大块内选择stage和token记录。",
+          "reads": [
+            "ub_metadata_buffers"
+          ],
+          "writes": []
+        },
+        {
+          "line": 467,
+          "kind": "statement",
+          "explanation": "元数据字节偏移=metadata_buffer_idx*stage字节+token_in_stage*(K+2)*4，保证输出route记录不重叠。",
+          "reads": [
+            "metadata_buffer_idx",
+            "token_in_stage"
+          ],
+          "writes": []
+        },
+        {
+          "line": 468,
+          "kind": "declaration",
+          "explanation": "在消费整包stage并定位metadata中更新/计算“int master_topk_slot_idx = -1;”。 master_topk_slot_idx：最后一个命中本Rank专家的Top-K位置；fresh合并回程使用。",
+          "reads": [],
+          "writes": [
+            "master_topk_slot_idx"
+          ]
+        },
+        {
+          "line": 469,
+          "kind": "blank",
+          "explanation": "在消费整包stage并定位metadata中，分隔“int master_topk_slot_idx = -1;”与随后“#pragma unroll”两步；此处没有数据写入。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 470,
+          "kind": "preprocessor",
+          "explanation": "预处理/编译指示#pragma unroll作用于fresh或cached分配专家输出槽；循环界限由模板已知，unroll要求编译器展开下一段。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 471,
+          "kind": "loop",
+          "explanation": "fresh或cached分配专家输出槽的迭代条件为“for (int j = 0; j < kNumTopk; ++ j)”；发送Rank去重后接收token只一份，但本Rank不同专家必须展开多行。",
+          "reads": [
+            "kNumTopk",
+            "j"
+          ],
+          "writes": [
+            "j"
+          ]
+        },
+        {
+          "line": 472,
+          "kind": "comment",
+          "explanation": "注释说明fresh或cached分配专家输出槽的实现意图（Allocate destination slots）；cached直接读metadata_ptr[j]>=0；fresh取expert-rank*(E/W)，范围合法才取UB cursor并+1，master_topk_slot_idx反复赋j。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 473,
+          "kind": "declaration",
+          "explanation": "声明dst_slot_idx而不初始化或读取旧值；cached分支或fresh分支都会先赋值再判断和写输出。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 474,
+          "kind": "declaration",
+          "explanation": "声明has_dst_slot布尔变量，两个模板分支都会明确设置它后才用于MTE3条件。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 475,
+          "kind": "branch",
+          "explanation": "fresh或cached分配专家输出槽的分支条件为“if constexpr (kCachedMode)”；发送Rank去重后接收token只一份，但本Rank不同专家必须展开多行。",
+          "reads": [
+            "kCachedMode"
+          ],
+          "writes": []
+        },
+        {
+          "line": 476,
+          "kind": "statement",
+          "explanation": "cached从持久recv_src_metadata的K个slot字段复用首次输出路由，不读取本次token Top-K ID。",
+          "reads": [
+            "metadata_ptr"
+          ],
+          "writes": [
+            "dst_slot_idx"
+          ]
+        },
+        {
+          "line": 477,
+          "kind": "statement",
+          "explanation": "在fresh或cached分配专家输出槽中更新/计算“has_dst_slot = dst_slot_idx >= 0;”。 has_dst_slot：该route能否写本Rank输出：fresh检查本地expert范围，cached检查slot>=0；dst_slot_idx：当前Rank recv_x/recv_sf/recv_topk_weights专家展开后的绝对输出行号，-1表示此route不属于本地专家。",
+          "reads": [
+            "dst_slot_idx"
+          ],
+          "writes": [
+            "has_dst_slot"
+          ]
+        },
+        {
+          "line": 478,
+          "kind": "statement",
+          "explanation": "结束if constexpr (kCachedMode) {并进入else {，在fresh或cached分配专家输出槽里处理相反/后续分支。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 479,
+          "kind": "declaration",
+          "explanation": "在fresh或cached分配专家输出槽中更新/计算“const auto dst_expert_idx = static_cast<int>(token.get_topk_idx_ptr<__ubuf__ int64_t>()[j]);”。 dst_expert_idx：输入Top-K全局专家ID或目标owner内专家索引。",
+          "reads": [],
+          "writes": [
+            "dst_expert_idx"
+          ]
+        },
+        {
+          "line": 480,
+          "kind": "declaration",
+          "explanation": "fresh全局expert ID减rank_idx*(E/W)，得到本Rank局部expert候选，下一行检查是否落本地范围。",
+          "reads": [
+            "dst_expert_idx",
+            "rank_idx"
+          ],
+          "writes": [
+            "local_expert_idx"
+          ]
+        },
+        {
+          "line": 481,
+          "kind": "statement",
+          "explanation": "在fresh或cached分配专家输出槽中更新/计算“dst_slot_idx = -1;”。 dst_slot_idx：当前Rank recv_x/recv_sf/recv_topk_weights专家展开后的绝对输出行号，-1表示此route不属于本地专家。",
+          "reads": [],
+          "writes": [
+            "dst_slot_idx"
+          ]
+        },
+        {
+          "line": 482,
+          "kind": "statement",
+          "explanation": "在fresh或cached分配专家输出槽中更新/计算“has_dst_slot = 0 <= local_expert_idx and local_expert_idx < kNumExpertsPerRank;”。 has_dst_slot：该route能否写本Rank输出：fresh检查本地expert范围，cached检查slot>=0；local_expert_idx：全局expert减rank_idx*(E/W)，必须在[0,E/W)才是本地专家。",
+          "reads": [
+            "local_expert_idx"
+          ],
+          "writes": [
+            "has_dst_slot"
+          ]
+        },
+        {
+          "line": 483,
+          "kind": "branch",
+          "explanation": "fresh或cached分配专家输出槽的分支条件为“if (has_dst_slot)”；发送Rank去重后接收token只一份，但本Rank不同专家必须展开多行。",
+          "reads": [
+            "has_dst_slot"
+          ],
+          "writes": []
+        },
+        {
+          "line": 484,
+          "kind": "statement",
+          "explanation": "在fresh或cached分配专家输出槽中更新/计算“dst_slot_idx = static_cast<int>(ub_next_dst_slot_idx[local_expert_idx]);”。 dst_slot_idx：当前Rank recv_x/recv_sf/recv_topk_weights专家展开后的绝对输出行号，-1表示此route不属于本地专家；ub_next_dst_slot_idx：每专家当前输出游标，初值=对齐expert起点+此前AIV同专家计数；local_expert_idx：全局expert减rank_idx*(E/W)，必须在[0,E/W)才是本地专家。",
+          "reads": [
+            "ub_next_dst_slot_idx",
+            "local_expert_idx"
+          ],
+          "writes": [
+            "dst_slot_idx"
+          ]
+        },
+        {
+          "line": 485,
+          "kind": "statement",
+          "explanation": "递增本AIV UB中当前专家cursor；核前缀已保证不同AIV独占范围，这里无需全局atomic。",
+          "reads": [
+            "dst_slot_idx"
+          ],
+          "writes": [
+            "ub_next_dst_slot_idx"
+          ]
+        },
+        {
+          "line": 486,
+          "kind": "statement",
+          "explanation": "每次本地专家命中都更新master_topk_slot_idx=j，循环结束它是最后一个本地命中，而不是第一个。",
+          "reads": [],
+          "writes": [
+            "master_topk_slot_idx"
+          ]
+        },
+        {
+          "line": 487,
+          "kind": "brace",
+          "explanation": "结束由“if (has_dst_slot) {”开启的作用域；到此fresh或cached分配专家输出槽对应状态更新完成，此括号不增加额外同步。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 488,
+          "kind": "brace",
+          "explanation": "结束由“} else {”开启的作用域；到此fresh或cached分配专家输出槽对应状态更新完成，此括号不增加额外同步。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 489,
+          "kind": "blank",
+          "explanation": "在按每个本地专家展开hidden、SF和weight中，分隔“}”与随后“// Issue MTE3”两步；此处没有数据写入。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 490,
+          "kind": "comment",
+          "explanation": "注释说明按每个本地专家展开hidden、SF和weight的实现意图（Issue MTE3）；MTE3复制H字节hidden与可选P*sizeof(sf_pack_t) SF；Scalar bypass DCache写当前j的weight；fresh记录K个slot、src全局ID与最后本地j。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 491,
+          "kind": "branch",
+          "explanation": "按每个本地专家展开hidden、SF和weight的分支条件为“if (has_dst_slot)”；hidden/SF是同一token整包可多次消费，weights逐route不同；主slot不是第一个本地route。",
+          "reads": [
+            "has_dst_slot"
+          ],
+          "writes": []
+        },
+        {
+          "line": 492,
+          "kind": "call",
+          "explanation": "MTE3将UB token hidden的H字节写recv_x+dst_slot_idx*H；同token命中多个本地专家时会发多个不同slot输出。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 493,
+          "kind": "statement",
+          "explanation": "hidden输出GM地址=recv_x+dst_slot_idx*H，dst_slot_idx是本Rank专家展开后的绝对行号。",
+          "reads": [
+            "recv_x",
+            "dst_slot_idx",
+            "kNumHiddenBytes"
+          ],
+          "writes": [
+            "recv_x"
+          ]
+        },
+        {
+          "line": 494,
+          "kind": "statement",
+          "explanation": "hidden MTE3来源是当前UB整包token的hidden首址；同token多专家命中共享这一UB来源。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 495,
+          "kind": "statement",
+          "explanation": "每个本地专家hidden输出发1个burst，恰好H字节，不写TokenLayout metadata。",
+          "reads": [
+            "kNumHiddenBytes"
+          ],
+          "writes": []
+        },
+        {
+          "line": 496,
+          "kind": "statement",
+          "explanation": "expert hidden输出MTE3使用L2 NOTALLOC_CI，源/目标额外步长0因为每次单token单burst。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 497,
+          "kind": "brace",
+          "explanation": "闭合第492行“asc_copy_ub2gm_align(”的实参列表；recv_x/recv_sf/recv_topk_weights按expert分段，UB metadata含回程映射。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 498,
+          "kind": "branch",
+          "explanation": "按每个本地专家展开hidden、SF和weight的分支条件为“if constexpr (kNumSFPacks > 0)”；hidden/SF是同一token整包可多次消费，weights逐route不同；主slot不是第一个本地route。",
+          "reads": [
+            "kNumSFPacks"
+          ],
+          "writes": []
+        },
+        {
+          "line": 499,
+          "kind": "call",
+          "explanation": "MTE3将当前UB token SF复制到recv_sf+dst_slot_idx*recv_sf_token_stride*sizeof(sf_pack_t)，长度P*sizeof(sf_pack_t)。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 500,
+          "kind": "statement",
+          "explanation": "开始计算SF目标地址，使用sf_pack_t类型的GM指针；偏移参数下一行转换为字节。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 501,
+          "kind": "statement",
+          "explanation": "SF输出GM首址=recv_sf+dst_slot_idx*recv_sf_token_stride*sizeof(sf_pack_t)字节；launcher限制token stride=P和pack stride=1。",
+          "reads": [
+            "recv_sf",
+            "dst_slot_idx",
+            "recv_sf_token_stride"
+          ],
+          "writes": [
+            "recv_sf"
+          ]
+        },
+        {
+          "line": 502,
+          "kind": "statement",
+          "explanation": "SF MTE3来源是当前UB完整token的SF字段，不从hidden末尾直接猜测未对齐偏移。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 503,
+          "kind": "statement",
+          "explanation": "SF有效写回长度=kNumSFBytes=P*sizeof(sf_pack_t)，不把metadata对齐padding写到输出tensor。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 504,
+          "kind": "brace",
+          "explanation": "闭合第499行“asc_copy_ub2gm_align(”的实参列表；recv_x/recv_sf/recv_topk_weights按expert分段，UB metadata含回程映射。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 505,
+          "kind": "brace",
+          "explanation": "结束由“if constexpr (kNumSFPacks > 0) {”开启的作用域；到此按每个本地专家展开hidden、SF和weight对应状态更新完成，此括号不增加额外同步。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 506,
+          "kind": "branch",
+          "explanation": "按每个本地专家展开hidden、SF和weight的分支条件为“if (recv_topk_weights != nullptr)”；hidden/SF是同一token整包可多次消费，weights逐route不同；主slot不是第一个本地route。",
+          "reads": [
+            "recv_topk_weights"
+          ],
+          "writes": []
+        },
+        {
+          "line": 507,
+          "kind": "statement",
+          "explanation": "Scalar绕DCache把UB第j个float weight的32位位表示写到recv_topk_weights[dst_slot_idx]，不做数值转换。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 508,
+          "kind": "statement",
+          "explanation": "weight输出以int视图定位recv_topk_weights[dst_slot_idx]，保留float的32位位表示。",
+          "reads": [
+            "recv_topk_weights",
+            "dst_slot_idx"
+          ],
+          "writes": [
+            "recv_topk_weights"
+          ]
+        },
+        {
+          "line": 509,
+          "kind": "statement",
+          "explanation": "读取当前route j的UB weight原始32位值；不同expert展开行使用各自route权重。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 510,
+          "kind": "brace",
+          "explanation": "闭合第507行“AscendC::WriteGmByPassDCache(”的实参列表；recv_x/recv_sf/recv_topk_weights按expert分段，UB metadata含回程映射。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 511,
+          "kind": "brace",
+          "explanation": "结束由“if (recv_topk_weights != nullptr) {”开启的作用域；到此按每个本地专家展开hidden、SF和weight对应状态更新完成，此括号不增加额外同步。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 512,
+          "kind": "brace",
+          "explanation": "结束由“if (has_dst_slot) {”开启的作用域；到此按每个本地专家展开hidden、SF和weight对应状态更新完成，此括号不增加额外同步。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 513,
+          "kind": "blank",
+          "explanation": "在按每个本地专家展开hidden、SF和weight中，分隔“}”与随后“if constexpr (not kCachedMode)”两步；此处没有数据写入。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 514,
+          "kind": "branch",
+          "explanation": "只有fresh模式保存当前route j的dst_slot_idx到UB metadata[j]；cached沿用旧handle不改slot字段。",
+          "reads": [
+            "kCachedMode"
+          ],
+          "writes": []
+        },
+        {
+          "line": 515,
+          "kind": "statement",
+          "explanation": "fresh保存第j个route对应专家输出slot；非本地route记录-1供cached和combine判断。",
+          "reads": [
+            "dst_slot_idx"
+          ],
+          "writes": [
+            "ub_metadata"
+          ]
+        },
+        {
+          "line": 516,
+          "kind": "brace",
+          "explanation": "结束由“for (int j = 0; j < kNumTopk; ++ j) {”开启的作用域；到此按每个本地专家展开hidden、SF和weight对应状态更新完成，此括号不增加额外同步。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 517,
+          "kind": "blank",
+          "explanation": "在按每个本地专家展开hidden、SF和weight中，分隔“}”与随后“// Write metadata”两步；此处没有数据写入。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 518,
+          "kind": "comment",
+          "explanation": "注释说明按每个本地专家展开hidden、SF和weight的实现意图（Write metadata）；MTE3复制H字节hidden与可选P*sizeof(sf_pack_t) SF；Scalar bypass DCache写当前j的weight；fresh记录K个slot、src全局ID与最后本地j。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 519,
+          "kind": "branch",
+          "explanation": "fresh模式在所有K route处理完后写src全局token ID与最后本地master j，cached不重写这两项。",
+          "reads": [
+            "kCachedMode"
+          ],
+          "writes": []
+        },
+        {
+          "line": 520,
+          "kind": "statement",
+          "explanation": "把通信token中的src全局token ID写UB metadata第K项，供combine找到原Rank和原token。",
+          "reads": [],
+          "writes": [
+            "ub_metadata"
+          ]
+        },
+        {
+          "line": 521,
+          "kind": "statement",
+          "explanation": "把最后本地命中j写UB metadata第K+1项，回程将此作为master route。",
+          "reads": [
+            "master_topk_slot_idx"
+          ],
+          "writes": [
+            "ub_metadata"
+          ]
+        },
+        {
+          "line": 522,
+          "kind": "brace",
+          "explanation": "结束由“if constexpr (not kCachedMode) {”开启的作用域；到此按每个本地专家展开hidden、SF和weight对应状态更新完成，此括号不增加额外同步。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 523,
+          "kind": "brace",
+          "explanation": "结束由“for (int token_in_stage = 0; token_in_stage < num_stage_tokens; ++ token_in_stage) {”开启的作用域；到此按每个本地专家展开hidden、SF和weight对应状态更新完成，此括号不增加额外同步。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 524,
+          "kind": "comment",
+          "explanation": "注释说明释放token stage、写handle并refill的实现意图（stage consumed: the producer's next load for this stage waits on this signal）；MTE3→MTE2释放token stage；S→MTE3写num_stage_tokens*(K+2)*4B元数据再释放metadata stage；累计消费并issue_load复用当前stage，轮转。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 525,
+          "kind": "sync",
+          "explanation": "MTE3在读完当前UB token stage后通知MTE2可以refill；该event不代表网络完成，网络早在入口屏障drain。",
+          "reads": [
+            "stage_idx"
+          ],
+          "writes": []
+        },
+        {
+          "line": 526,
+          "kind": "blank",
+          "explanation": "在释放token stage、写handle并refill中，分隔“asc_sync_notify(PIPE_MTE3, PIPE_MTE2, static_cast<event_t>(kNumMetadataStages + stage_idx));”与随后“// flush metadata buffer to global memory”两步；此处没有数据写入。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 527,
+          "kind": "comment",
+          "explanation": "注释说明释放token stage、写handle并refill的实现意图（flush metadata buffer to global memory）；MTE3→MTE2释放token stage；S→MTE3写num_stage_tokens*(K+2)*4B元数据再释放metadata stage；累计消费并issue_load复用当前stage，轮转。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 528,
+          "kind": "branch",
+          "explanation": "释放token stage、写handle并refill的分支条件为“if constexpr (not kCachedMode)”；producer refill等待payload MTE3完成，metadata stage另用独立事件以免互相覆盖。",
+          "reads": [
+            "kCachedMode"
+          ],
+          "writes": []
+        },
+        {
+          "line": 529,
+          "kind": "sync",
+          "explanation": "在第一管线完成前序动作后发布事件给第二管线；event_t区分循环stage；调用本行“asc_sync_notify(PIPE_S, PIPE_MTE3, static_cast<event_t>(metadata_buffer_idx));”。 metadata_buffer_idx：两个metadata UB stage循环编号，MTE3读完后才可Scalar写。",
+          "reads": [
+            "metadata_buffer_idx"
+          ],
+          "writes": []
+        },
+        {
+          "line": 530,
+          "kind": "sync",
+          "explanation": "让第二管线等待第一管线发布的同一event，建立数据就绪或stage释放依赖；调用本行“asc_sync_wait(PIPE_S, PIPE_MTE3, static_cast<event_t>(metadata_buffer_idx));”。 metadata_buffer_idx：两个metadata UB stage循环编号，MTE3读完后才可Scalar写。",
+          "reads": [
+            "metadata_buffer_idx"
+          ],
+          "writes": []
+        },
+        {
+          "line": 531,
+          "kind": "call",
+          "explanation": "MTE3把当前UB metadata stage按全局接收流起点写recv_src_metadata，长度num_stage_tokens*(K+2)*sizeof(int)。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 532,
+          "kind": "statement",
+          "explanation": "handle输出GM首址=recv_src_metadata+token_base_idx*(K+2)，token_base_idx是全局接收流编号。",
+          "reads": [
+            "recv_src_metadata",
+            "token_base_idx"
+          ],
+          "writes": [
+            "recv_src_metadata"
+          ]
+        },
+        {
+          "line": 533,
+          "kind": "statement",
+          "explanation": "MTE3来源是当前metadata_buffer_idx的UB记录stage首址，已经包含K个slot与src/master两项。",
+          "reads": [
+            "ub_metadata_buffers",
+            "metadata_buffer_idx"
+          ],
+          "writes": []
+        },
+        {
+          "line": 534,
+          "kind": "statement",
+          "explanation": "handle批量写字节数=真实stage token数*(K+2)*sizeof(int)，不会写满未使用stage尾部。",
+          "reads": [
+            "num_stage_tokens"
+          ],
+          "writes": []
+        },
+        {
+          "line": 535,
+          "kind": "brace",
+          "explanation": "闭合第531行“asc_copy_ub2gm_align(”的实参列表；recv_src_metadata持久化route与来源索引，管线继续下一stage。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 536,
+          "kind": "sync",
+          "explanation": "在第一管线完成前序动作后发布事件给第二管线；event_t区分循环stage；调用本行“asc_sync_notify(PIPE_MTE3, PIPE_S, static_cast<event_t>(metadata_buffer_idx));”。 metadata_buffer_idx：两个metadata UB stage循环编号，MTE3读完后才可Scalar写。",
+          "reads": [
+            "metadata_buffer_idx"
+          ],
+          "writes": []
+        },
+        {
+          "line": 537,
+          "kind": "statement",
+          "explanation": "在释放token stage、写handle并refill中更新/计算“metadata_buffer_idx = (metadata_buffer_idx + 1) % kNumMetadataStages;”。 metadata_buffer_idx：两个metadata UB stage循环编号，MTE3读完后才可Scalar写。",
+          "reads": [
+            "metadata_buffer_idx"
+          ],
+          "writes": [
+            "metadata_buffer_idx"
+          ]
+        },
+        {
+          "line": 538,
+          "kind": "brace",
+          "explanation": "结束由“if constexpr (not kCachedMode) {”开启的作用域；到此释放token stage、写handle并refill对应状态更新完成，此括号不增加额外同步。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 539,
+          "kind": "blank",
+          "explanation": "在释放token stage、写handle并refill中，分隔“}”与随后“num_consumed_tokens += num_stage_tokens;”两步；此处没有数据写入。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 540,
+          "kind": "statement",
+          "explanation": "在释放token stage、写handle并refill中更新/计算“num_consumed_tokens += num_stage_tokens;”。 num_consumed_tokens：当前AIV整包stage已消费token累计量；num_stage_tokens：当前批次真实连续token数，限制在来源Rank/AIV/stage三边界。",
+          "reads": [
+            "num_consumed_tokens",
+            "num_stage_tokens"
+          ],
+          "writes": [
+            "num_consumed_tokens"
+          ]
+        },
+        {
+          "line": 541,
+          "kind": "statement",
+          "explanation": "消费当前stage后尝试issue_load(stage_idx,false)，若还有token则先等该stage MTE3释放后复用；已结束则返回false。",
+          "reads": [
+            "stage_idx"
+          ],
+          "writes": []
+        },
+        {
+          "line": 542,
+          "kind": "blank",
+          "explanation": "在释放token stage、写handle并refill中，分隔“issue_load(stage_idx, false);”与随后“// Advance MTE stages”两步；此处没有数据写入。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 543,
+          "kind": "comment",
+          "explanation": "注释说明释放token stage、写handle并refill的实现意图（Advance MTE stages）；MTE3→MTE2释放token stage；S→MTE3写num_stage_tokens*(K+2)*4B元数据再释放metadata stage；累计消费并issue_load复用当前stage，轮转。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 544,
+          "kind": "statement",
+          "explanation": "在释放token stage、写handle并refill中更新/计算“stage_idx = stage_idx + 1 == kNumMTEStages ? 0 : stage_idx + 1;”。 stage_idx：当前循环UB stage；对应事件ID用于防止提前覆盖。",
+          "reads": [
+            "stage_idx"
+          ],
+          "writes": [
+            "stage_idx"
+          ]
+        },
+        {
+          "line": 545,
+          "kind": "brace",
+          "explanation": "结束由“while (num_consumed_tokens < num_range_tokens) {”开启的作用域；到此释放token stage、写handle并refill对应状态更新完成，此括号不增加额外同步。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 546,
+          "kind": "blank",
+          "explanation": "在分割专家padding并写hidden零中，分隔“}”与随后“if constexpr (kDoZeroPadding) {”两步；此处没有数据写入。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 547,
+          "kind": "branch",
+          "explanation": "分割专家padding并写hidden零的分支条件为“if constexpr (kDoZeroPadding)”；有效专家end不含本专家padding；补零只触及有效区之后、对齐边界之前。",
+          "reads": [
+            "kDoZeroPadding"
+          ],
+          "writes": []
+        },
+        {
+          "line": 548,
+          "kind": "comment",
+          "explanation": "注释说明分割专家padding并写hidden零的实现意图（Divide each expert into up to four padding parts）；每专家最多4part，余数分配保证分段不重叠；对有效expert end向A对齐得到pad数量；MTE3外层num_part_tokens重复零源，目标每行H步长，恢复loop=1。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 549,
+          "kind": "declaration",
+          "explanation": "在分割专家padding并写hidden零中更新/计算“static constexpr int kNumPaddingParts = math::min(4, kNumVecCores);”。 每专家最多4part，余数分配保证分段不重叠；对有效expert end向A对齐得到pad数量；MTE3外层num_part_tokens重复零源，目标每行H步长，恢复loop=1。",
+          "reads": [
+            "kNumVecCores"
+          ],
+          "writes": [
+            "kNumPaddingParts"
+          ]
+        },
+        {
+          "line": 550,
+          "kind": "sync",
+          "explanation": "让第二管线等待第一管线发布的同一event，建立数据就绪或stage释放依赖；调用本行“asc_sync_wait(PIPE_V, PIPE_MTE3, EVENT_ID0);”。 每专家最多4part，余数分配保证分段不重叠；对有效expert end向A对齐得到pad数量；MTE3外层num_part_tokens重复零源，目标每行H步长，恢复loop=1。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 551,
+          "kind": "blank",
+          "explanation": "在分割专家padding并写hidden零中，分隔“asc_sync_wait(PIPE_V, PIPE_MTE3, EVENT_ID0);”与随后“#pragma unroll”两步；此处没有数据写入。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 552,
+          "kind": "preprocessor",
+          "explanation": "预处理/编译指示#pragma unroll作用于分割专家padding并写hidden零；循环界限由模板已知，unroll要求编译器展开下一段。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 553,
+          "kind": "loop",
+          "explanation": "分割专家padding并写hidden零的迭代条件为“for (int part_idx = 0; part_idx < kNumPaddingParts; ++ part_idx)”；有效专家end不含本专家padding；补零只触及有效区之后、对齐边界之前。",
+          "reads": [
+            "part_idx"
+          ],
+          "writes": [
+            "part_idx"
+          ]
+        },
+        {
+          "line": 554,
+          "kind": "declaration",
+          "explanation": "在分割专家padding并写hidden零中更新/计算“const auto first_expert_idx = (vec_core_idx + part_idx * kNumVecCores / kNumPaddingParts) % kNumVecCores;”。 first_expert_idx：轮转AIV分工起点，使最多四part分散处理专家padding；vec_core_idx：当前AIV编号，是连续输入片段或接收流片段的owner。",
+          "reads": [
+            "vec_core_idx",
+            "kNumVecCores"
+          ],
+          "writes": [
+            "first_expert_idx"
+          ]
+        },
+        {
+          "line": 555,
+          "kind": "loop",
+          "explanation": "分割专家padding并写hidden零的迭代条件为“for (int expert_idx = first_expert_idx; expert_idx < kNumExpertsPerRank; expert_idx += kNumVecCores)”；有效专家end不含本专家padding；补零只触及有效区之后、对齐边界之前。",
+          "reads": [
+            "first_expert_idx",
+            "kNumVecCores",
+            "expert_idx"
+          ],
+          "writes": [
+            "expert_idx"
+          ]
+        },
+        {
+          "line": 556,
+          "kind": "declaration",
+          "explanation": "在分割专家padding并写hidden零中更新/计算“const auto expert_token_end_idx = psum_num_recv_tokens_per_expert[expert_idx];”。 expert_token_end_idx：当前expert有效末端，含前序expert对齐容量但不含当前padding。",
+          "reads": [
+            "psum_num_recv_tokens_per_expert"
+          ],
+          "writes": [
+            "expert_token_end_idx"
+          ]
+        },
+        {
+          "line": 557,
+          "kind": "declaration",
+          "explanation": "专家padding数量=align(有效end,A)-有效end；有效end已包含前序专家对齐跨度，所以只补当前专家尾部。",
+          "reads": [
+            "expert_token_end_idx",
+            "kExpertAlignment"
+          ],
+          "writes": [
+            "num_pad_tokens"
+          ]
+        },
+        {
+          "line": 558,
+          "kind": "declaration",
+          "explanation": "在分割专家padding并写hidden零中更新/计算“const auto num_tokens_per_part = num_pad_tokens / kNumPaddingParts;”。 num_tokens_per_part：专家padding行数按最多4part均分的基本份额；num_pad_tokens：align(expert有效末端,A)-有效末端，当前专家待补零行数。",
+          "reads": [
+            "num_pad_tokens"
+          ],
+          "writes": [
+            "num_tokens_per_part"
+          ]
+        },
+        {
+          "line": 559,
+          "kind": "declaration",
+          "explanation": "在分割专家padding并写hidden零中更新/计算“const auto num_extra_tokens = num_pad_tokens % kNumPaddingParts;”。 num_extra_tokens：均分padding后的余数，给最前num_extra_tokens个part多一行；num_pad_tokens：align(expert有效末端,A)-有效末端，当前专家待补零行数。",
+          "reads": [
+            "num_pad_tokens"
+          ],
+          "writes": [
+            "num_extra_tokens"
+          ]
+        },
+        {
+          "line": 560,
+          "kind": "declaration",
+          "explanation": "当前part起点=part_idx*均分份额+min(part_idx,余数)，保证多part分段连续且无重叠。",
+          "reads": [
+            "num_tokens_per_part",
+            "num_extra_tokens"
+          ],
+          "writes": [
+            "pad_token_start_idx"
+          ]
+        },
+        {
+          "line": 561,
+          "kind": "declaration",
+          "explanation": "前num_extra_tokens个part比基本份额多一行，所有part行数之和精确等于num_pad_tokens。",
+          "reads": [
+            "num_tokens_per_part",
+            "num_extra_tokens"
+          ],
+          "writes": [
+            "num_part_tokens"
+          ]
+        },
+        {
+          "line": 562,
+          "kind": "branch",
+          "explanation": "分割专家padding并写hidden零的分支条件为“if (num_part_tokens == 0)”；有效专家end不含本专家padding；补零只触及有效区之后、对齐边界之前。",
+          "reads": [
+            "num_part_tokens"
+          ],
+          "writes": []
+        },
+        {
+          "line": 563,
+          "kind": "statement",
+          "explanation": "当前expert padding part无行需要清零时continue，跳过MTE loop配置、hidden、weight与SF写入。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 564,
+          "kind": "blank",
+          "explanation": "在分割专家padding并写hidden零中，分隔“continue;”与随后“asc_set_ub2gm_loop_size(num_part_tokens, 1);”两步；此处没有数据写入。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 565,
+          "kind": "call",
+          "explanation": "为hidden padding设置外层num_part_tokens次MTE3循环，每次写一完整hidden行。",
+          "reads": [
+            "num_part_tokens"
+          ],
+          "writes": []
+        },
+        {
+          "line": 566,
+          "kind": "call",
+          "explanation": "设MTE3外层源/目标字节步长，零源不前移而GM按token stride前移；调用本行“asc_set_ub2gm_loop1_stride(0, kNumHiddenBytes);”。 每专家最多4part，余数分配保证分段不重叠；对有效expert end向A对齐得到pad数量；MTE3外层num_part_tokens重复零源，目标每行H步长，恢复loop=1。",
+          "reads": [
+            "kNumHiddenBytes"
+          ],
+          "writes": []
+        },
+        {
+          "line": 567,
+          "kind": "call",
+          "explanation": "MTE3以一向量零源重复填充每行H字节hidden，并用外层循环复制num_part_tokens行；UB零源保持不前移。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 568,
+          "kind": "statement",
+          "explanation": "padding hidden目标为recv_x+(expert有效end+part内相对起点)*H，只覆盖当前专家有效行之后的尾部。",
+          "reads": [
+            "recv_x",
+            "expert_token_end_idx",
+            "pad_token_start_idx",
+            "kNumHiddenBytes"
+          ],
+          "writes": [
+            "recv_x"
+          ]
+        },
+        {
+          "line": 569,
+          "kind": "statement",
+          "explanation": "padding hidden来源为全零ub_zero_buffer，外层/内层循环重复它而不前移源。",
+          "reads": [
+            "ub_zero_buffer"
+          ],
+          "writes": []
+        },
+        {
+          "line": 570,
+          "kind": "statement",
+          "explanation": "每行hidden的burst数=H/零向量宽度，编译断言保证hidden整除零向量字节数。",
+          "reads": [
+            "kNumHiddenBytes"
+          ],
+          "writes": []
+        },
+        {
+          "line": 571,
+          "kind": "statement",
+          "explanation": "每个hidden burst长度=kNumZeroBytes，以一个UB全零向量填一个输出向量块。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 572,
+          "kind": "statement",
+          "explanation": "hidden补零用L2 NORMAL_FV，GM每burst前移一个零向量字节宽度，UB源burst步长0保持相同零源。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 573,
+          "kind": "brace",
+          "explanation": "闭合第567行“asc_copy_ub2gm_align(”的实参列表；recv_x当前part padding行清零。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 574,
+          "kind": "call",
+          "explanation": "把UB→GM外层loop次数恢复(1,1)，避免随后weight/SF或下一专家继承hidden padding的num_part_tokens循环。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 575,
+          "kind": "blank",
+          "explanation": "在补零weight与短SF中，分隔“asc_set_ub2gm_loop_size(1, 1);”与随后“if (recv_topk_weights != nullptr) {”两步；此处没有数据写入。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 576,
+          "kind": "branch",
+          "explanation": "补零weight与短SF的分支条件为“if (recv_topk_weights != nullptr)”；浮点weight以32位整数0写入，位表示即+0.0；host保证SF输出连续pack。",
+          "reads": [
+            "recv_topk_weights"
+          ],
+          "writes": []
+        },
+        {
+          "line": 577,
+          "kind": "declaration",
+          "explanation": "在补零weight与短SF中更新/计算“const auto gm_recv_topk_weights = reinterpret_cast<__gm__ int*>(recv_topk_weights) +”。 gm_recv_topk_weights：padding区域weight输出首址，用32位零store清浮点位表示。",
+          "reads": [
+            "recv_topk_weights"
+          ],
+          "writes": [
+            "gm_recv_topk_weights"
+          ]
+        },
+        {
+          "line": 578,
+          "kind": "statement",
+          "explanation": "weight padding首位置=expert有效end+part内padding起点，类型为int视图所以索引单位是输出float/int元素。",
+          "reads": [
+            "expert_token_end_idx",
+            "pad_token_start_idx"
+          ],
+          "writes": []
+        },
+        {
+          "line": 579,
+          "kind": "loop",
+          "explanation": "补零weight与短SF的迭代条件为“for (int pad_token_idx = 0; pad_token_idx < num_part_tokens; ++ pad_token_idx)”；浮点weight以32位整数0写入，位表示即+0.0；host保证SF输出连续pack。",
+          "reads": [
+            "num_part_tokens",
+            "pad_token_idx"
+          ],
+          "writes": [
+            "pad_token_idx"
+          ]
+        },
+        {
+          "line": 580,
+          "kind": "statement",
+          "explanation": "把每条padding输出weight的32位位表示写0，即float +0.0，不访问有效token的route weight。",
+          "reads": [
+            "gm_recv_topk_weights"
+          ],
+          "writes": [
+            "gm_recv_topk_weights"
+          ]
+        },
+        {
+          "line": 581,
+          "kind": "brace",
+          "explanation": "结束由“for (int pad_token_idx = 0; pad_token_idx < num_part_tokens; ++ pad_token_idx) {”开启的作用域；到此补零weight与短SF对应状态更新完成，此括号不增加额外同步。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 582,
+          "kind": "brace",
+          "explanation": "结束由“if (recv_topk_weights != nullptr) {”开启的作用域；到此补零weight与短SF对应状态更新完成，此括号不增加额外同步。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 583,
+          "kind": "blank",
+          "explanation": "在补零weight与短SF中，分隔“}”与随后“if constexpr (kNumSFPacks > 0) {”两步；此处没有数据写入。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 584,
+          "kind": "branch",
+          "explanation": "补零weight与短SF的分支条件为“if constexpr (kNumSFPacks > 0)”；浮点weight以32位整数0写入，位表示即+0.0；host保证SF输出连续pack。",
+          "reads": [
+            "kNumSFPacks"
+          ],
+          "writes": []
+        },
+        {
+          "line": 585,
+          "kind": "declaration",
+          "explanation": "在补零weight与短SF中更新/计算“const auto gm_recv_sf = recv_sf +”。 gm_recv_sf：当前padding part的SF输出首址；host强制输出stride=P和1。",
+          "reads": [
+            "recv_sf"
+          ],
+          "writes": [
+            "gm_recv_sf"
+          ]
+        },
+        {
+          "line": 586,
+          "kind": "statement",
+          "explanation": "SF padding首位置按(expert有效end+part起点)*recv_sf_token_stride个sf_pack_t元素前移；不使用hidden字节步长。",
+          "reads": [
+            "expert_token_end_idx",
+            "pad_token_start_idx",
+            "recv_sf_token_stride"
+          ],
+          "writes": []
+        },
+        {
+          "line": 587,
+          "kind": "branch",
+          "explanation": "补零weight与短SF的分支条件为“if constexpr (kNumSFBytes <= kNumZeroBytes)”；浮点weight以32位整数0写入，位表示即+0.0；host保证SF输出连续pack。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 588,
+          "kind": "call",
+          "explanation": "当SF<=一向量宽度时，每个padding token用一个burst写P pack零，GM stride等kNumSFBytes；host强制SF连续布局。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 589,
+          "kind": "statement",
+          "explanation": "短SF MTE3目标是gm_recv_sf，来源是UB全零向量的sf_pack_t视图。",
+          "reads": [
+            "gm_recv_sf",
+            "ub_zero_buffer"
+          ],
+          "writes": [
+            "gm_recv_sf"
+          ]
+        },
+        {
+          "line": 590,
+          "kind": "statement",
+          "explanation": "短SF发num_part_tokens个burst，每token写kNumSFBytes有效SF字节；全部来自同一零向量。",
+          "reads": [
+            "num_part_tokens"
+          ],
+          "writes": []
+        },
+        {
+          "line": 591,
+          "kind": "statement",
+          "explanation": "短SF补零MTE3使用L2 NORMAL_FV，利于随后expert计算读取控制/scale数据。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 592,
+          "kind": "statement",
+          "explanation": "短SF目标token步长=kNumSFBytes（host输出连续P pack）；UB源stride=0以重复零向量。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 593,
+          "kind": "brace",
+          "explanation": "闭合第588行“asc_copy_ub2gm_align(”的实参列表；padding weight和短SF行清零。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 594,
+          "kind": "statement",
+          "explanation": "结束if constexpr (kNumSFBytes <= kNumZeroBytes) {并进入else {，在长SF整块与余数补零里处理相反/后续分支。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 595,
+          "kind": "call",
+          "explanation": "为长SF整向量块补零设置外层num_part_tokens循环，目标行间使用完整SF token stride。",
+          "reads": [
+            "num_part_tokens"
+          ],
+          "writes": []
+        },
+        {
+          "line": 596,
+          "kind": "call",
+          "explanation": "长SF整块外层UB stride=0复用零源，GM stride=recv_sf_token_stride*sizeof(sf_pack_t)跳到下一padding token SF行。",
+          "reads": [
+            "recv_sf_token_stride"
+          ],
+          "writes": []
+        },
+        {
+          "line": 597,
+          "kind": "call",
+          "explanation": "当SF超过零向量宽度时，先为每条padding行重复写完整向量块，外层GM stride为recv_sf_token_stride*sizeof(sf_pack_t)。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 598,
+          "kind": "statement",
+          "explanation": "长SF整块写目标gm_recv_sf与source全零sf_pack_t视图相同，outer loop覆盖当前part多个token。",
+          "reads": [
+            "gm_recv_sf",
+            "ub_zero_buffer"
+          ],
+          "writes": [
+            "gm_recv_sf"
+          ]
+        },
+        {
+          "line": 599,
+          "kind": "statement",
+          "explanation": "长SF每token先写floor(SF字节/零向量宽度)个burst，每burst长一零向量宽度。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 600,
+          "kind": "statement",
+          "explanation": "长SF整块补零MTE3选L2 NORMAL_FV；下一行给内层源目标步长。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 601,
+          "kind": "statement",
+          "explanation": "长SF目标每内层burst前移一零向量宽度，UB source stride=0；外层GM另按完整SF token stride跳行。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 602,
+          "kind": "brace",
+          "explanation": "闭合第597行“asc_copy_ub2gm_align(”的实参列表；padding SF全长为零，MTE3 loop状态恢复。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 603,
+          "kind": "call",
+          "explanation": "完成长SF整向量块写入后把MTE3外层loop恢复(1,1)；若存在tail再单独配置一次。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 604,
+          "kind": "branch",
+          "explanation": "长SF整块与余数补零的分支条件为“if constexpr (kNumSFBytes % kNumZeroBytes > 0)”；SF可能不是整向量倍数，不能只清整块而保留tail旧内容。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 605,
+          "kind": "call",
+          "explanation": "仅长SF存在不足一向量的tail时重新设置外层num_part_tokens循环，清每行尾部剩余字节。",
+          "reads": [
+            "num_part_tokens"
+          ],
+          "writes": []
+        },
+        {
+          "line": 606,
+          "kind": "call",
+          "explanation": "SF tail外层UB stride仍0；GM stride保持完整SF输出行步长，与前面的整块写保持同一行对应。",
+          "reads": [
+            "recv_sf_token_stride"
+          ],
+          "writes": []
+        },
+        {
+          "line": 607,
+          "kind": "call",
+          "explanation": "对SF整向量块后的余数字节再发一次MTE3：GM首址加已清块跨度，长度kNumSFBytes%kNumZeroBytes。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 608,
+          "kind": "statement",
+          "explanation": "SF tail GM首址在gm_recv_sf后加已清完整向量块字节数，除sizeof(sf_pack_t)转换为pack元素偏移。",
+          "reads": [
+            "gm_recv_sf"
+          ],
+          "writes": [
+            "gm_recv_sf"
+          ]
+        },
+        {
+          "line": 609,
+          "kind": "statement",
+          "explanation": "SF tail仍从全零UB向量首址读取，不需要单独创建tail零缓冲。",
+          "reads": [
+            "ub_zero_buffer"
+          ],
+          "writes": []
+        },
+        {
+          "line": 610,
+          "kind": "statement",
+          "explanation": "每个padding token的SF tail发1个burst，长度为SF字节数模零向量宽度。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 611,
+          "kind": "statement",
+          "explanation": "SF tail补零选L2 NORMAL_FV，与前面的SF完整向量块策略一致。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 612,
+          "kind": "statement",
+          "explanation": "tail目标burst跨度是有效tail字节数，UB source stride=0；outer loop保证每token落在正确SF行内。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 613,
+          "kind": "brace",
+          "explanation": "闭合第607行“asc_copy_ub2gm_align(”的实参列表；padding SF全长为零，MTE3 loop状态恢复。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 614,
+          "kind": "call",
+          "explanation": "完成SF tail补零后恢复UB→GM loop次数(1,1)，让后续专家part从普通搬运状态开始。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 615,
+          "kind": "brace",
+          "explanation": "结束由“if constexpr (kNumSFBytes % kNumZeroBytes > 0) {”开启的作用域；到此长SF整块与余数补零对应状态更新完成，此括号不增加额外同步。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 616,
+          "kind": "brace",
+          "explanation": "结束由“} else {”开启的作用域；到此长SF整块与余数补零对应状态更新完成，此括号不增加额外同步。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 617,
+          "kind": "brace",
+          "explanation": "结束由“if constexpr (kNumSFPacks > 0) {”开启的作用域；到此长SF整块与余数补零对应状态更新完成，此括号不增加额外同步。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 618,
+          "kind": "brace",
+          "explanation": "结束由“for (int expert_idx = first_expert_idx; expert_idx < kNumExpertsPerRank; expert_idx += kNumVecCores) {”开启的作用域；到此长SF整块与余数补零对应状态更新完成，此括号不增加额外同步。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 619,
+          "kind": "brace",
+          "explanation": "结束由“for (int part_idx = 0; part_idx < kNumPaddingParts; ++ part_idx) {”开启的作用域；到此长SF整块与余数补零对应状态更新完成，此括号不增加额外同步。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 620,
+          "kind": "brace",
+          "explanation": "结束由“if constexpr (kDoZeroPadding) {”开启的作用域；到此长SF整块与余数补零对应状态更新完成，此括号不增加额外同步。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 621,
+          "kind": "brace",
+          "explanation": "结束由“int stage_token_base_idx[kNumMTEStages] = {};”开启的作用域；到此长SF整块与余数补零对应状态更新完成，此括号不增加额外同步。",
+          "reads": [],
+          "writes": []
+        }
+      ]
+    },
+    {
+      "id": "epi-issue-load-291",
+      "module_id": "epilogue",
+      "name": "issue_load",
+      "start": 291,
+      "end": 324,
+      "summary": "按来源Rank边界发完整token MTE2预取，维护stage长度与接收流全局索引。",
+      "inactive": false,
+      "inputs": [
+        "issue_iter",
+        "load_stage_idx",
+        "is_preload",
+        "recv_buffer",
+        "ub_token_buffer",
+        "token_layout"
+      ],
+      "outputs": [
+        "stage_num_tokens",
+        "stage_token_base_idx",
+        "issue_iter",
+        "ub_token_buffer"
+      ],
+      "side_effects": [
+        "MTE2读取接收GM完整token到当前UB token stage",
+        "发布MTE2→S(kNumMetadataStages+load_stage_idx)",
+        "更新stage长度/base及单调issue_iter"
+      ],
+      "review": {
+        "function_id": "epi-issue-load-291",
+        "revision": 5,
+        "draft_author": "walkthrough-agent",
+        "reviewer": "independent-review",
+        "source_sha256": "3666da791943b16986c7a0258c52cc022361c1a07d364098e0713036bd412a25",
+        "draft_sha256": "dc01efb69a3429d1deae73490f57c535ea05bb5f6509f16613fce3dd9613ac6a",
+        "function_content_sha256": "608ac78ee0595b87df8c4f7d00ad43d36f79648a0b12e1766058b3fd9680f3d4",
+        "line_range": [
+          291,
+          324
+        ],
+        "gaps": [],
+        "overlaps": [],
+        "unresolved": [],
+        "verdict": "PASS",
+        "status": "PASS",
+        "required_changes": [],
+        "verified": [
+          "PSumIterator只向前跳过空Rank、三边界批长",
+          "GM固定Rank容量切片与紧凑接收流坐标换算",
+          "初始预取/refill分支、MTE3→MTE2回收与MTE2→S发布",
+          "stage真实长度/全局base记录及issue_iter推进",
+          "完整定义逐行含signature/comment/brace/blank复核；无fallback或错误跨域变量解释",
+          "caller/callee真实调用点、IO/成员/GM/UB/remote状态变化核对",
+          "allocator/owner/capacity/alignment/lifetime/cache边界详见独立PASS memory-review-r3",
+          "独立复审renderer整改：仅既有标识符周边空白，calls/notes/IO/ranges完全一致"
+        ],
+        "prior_function_content_sha256": "22bf76e7d208d3e4cea245ee0a503ad310ed036eec353b4c4a51dcf898c392d0"
+      },
+      "segments": [
+        {
+          "start": 291,
+          "end": 303,
+          "title": "选择同一来源Rank的连续token批次",
+          "detail": "finished则返回false； get_contiguous_count 同时限制源Rank余量、AIV余量、stage容量；构造load_ub_ptr与load_gm_ptr。",
+          "kind": "input",
+          "input_state": [
+            "issue_iter当前全局位置与来源Rank边界一致"
+          ],
+          "mechanism": "finished则返回false； get_contiguous_count 同时限制源Rank余量、AIV余量、stage容量；构造load_ub_ptr与load_gm_ptr。",
+          "output_state": [
+            "一次完整token读取不跨来源Rankbuffer"
+          ],
+          "why": "不同来源RankGM切片按最大容量M分隔，实际接收流不能跨Rank一口读取。",
+          "calls": [
+            {
+              "name": "finished",
+              "line": 292,
+              "type": "internal",
+              "target": "epi-iter-171"
+            },
+            {
+              "name": "get_contiguous_count",
+              "line": 295,
+              "type": "internal",
+              "target": "epi-iter-167"
+            },
+            {
+              "name": "get_local_idx",
+              "line": 301,
+              "type": "internal",
+              "target": "epi-iter-163"
+            }
+          ],
+          "id": "epi-issue-load-291-s1"
+        },
+        {
+          "start": 304,
+          "end": 324,
+          "title": "发出整包MTE2并记录stage描述",
+          "detail": "refill先等MTE3→MTE2释放；NOTALLOC_CLEAN读num_stage_tokens*T字节，发布MTE2→S，记录长度与接收流全局base，advance。",
+          "kind": "output",
+          "input_state": [
+            "load_stage_idx选择UB token stage，is_preload区分首次与refill"
+          ],
+          "mechanism": "refill先等MTE3→MTE2释放；NOTALLOC_CLEAN读num_stage_tokens*T字节，发布MTE2→S，记录长度与接收流全局base，advance。",
+          "output_state": [
+            "消费者知道stage真实长度和全局metadata索引"
+          ],
+          "why": "输入整包用一次MTE2读取，后续多专家MTE3共享此UB token；refill不能覆盖在途MTE3来源。",
+          "calls": [
+            {
+              "name": "asc_sync_wait",
+              "line": 306,
+              "type": "external"
+            },
+            {
+              "name": "asc_copy_gm2ub_align",
+              "line": 309,
+              "type": "external"
+            },
+            {
+              "name": "asc_sync_notify",
+              "line": 315,
+              "type": "external"
+            },
+            {
+              "name": "advance",
+              "line": 321,
+              "type": "internal",
+              "target": "epi-iter-150"
+            }
+          ],
+          "id": "epi-issue-load-291-s2"
+        }
+      ],
+      "line_notes": [
+        {
+          "line": 291,
+          "kind": "signature",
+          "explanation": "声明选择同一来源Rank的连续token批次对应的模板/设备入口“const auto issue_load = [&](int load_stage_idx, bool is_preload) __aicore__ {”；issue_iter当前全局位置与来源Rank边界一致",
+          "reads": [
+            "load_stage_idx",
+            "is_preload"
+          ],
+          "writes": [
+            "issue_load"
+          ]
+        },
+        {
+          "line": 292,
+          "kind": "branch",
+          "explanation": "issue_iter.finished为true时没有剩余接收token，必须返回false并保持旧stage描述不被消费。",
+          "reads": [
+            "issue_iter"
+          ],
+          "writes": []
+        },
+        {
+          "line": 293,
+          "kind": "statement",
+          "explanation": "返回“false”；一次完整token读取不跨来源Rankbuffer finished则返回false；get_contiguous_count同时限制源Rank余量、AIV余量、stage容量；构造load_ub_ptr与load_gm_ptr。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 294,
+          "kind": "blank",
+          "explanation": "在选择同一来源Rank的连续token批次中，分隔“return false;”与随后“const auto num_stage_tokens = issue_iter.get_contiguous_count(kNumTokensPerStage);”两步；此处没有数据写入。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 295,
+          "kind": "declaration",
+          "explanation": "本stage长度取源Rank剩余、AIV剩余与kNumTokensPerStage最小值；读取不会跨过按最大M容量分隔的来源Rank切片。",
+          "reads": [
+            "issue_iter"
+          ],
+          "writes": [
+            "num_stage_tokens"
+          ]
+        },
+        {
+          "line": 296,
+          "kind": "declaration",
+          "explanation": "在选择同一来源Rank的连续token批次中更新/计算“const auto load_ub_ptr = ub_token_buffer”。 load_ub_ptr：ub_token_buffer第load_stage_idx个stage的UB整包目标；ub_token_buffer：recv token整包UB多stage，在统计阶段之后覆盖ub_histogram。",
+          "reads": [
+            "ub_token_buffer"
+          ],
+          "writes": [
+            "load_ub_ptr"
+          ]
+        },
+        {
+          "line": 297,
+          "kind": "statement",
+          "explanation": "按load_stage_idx*kNumTokensPerStage定位UB token buffer中当前stage第一个token。",
+          "reads": [
+            "load_stage_idx"
+          ],
+          "writes": []
+        },
+        {
+          "line": 298,
+          "kind": "statement",
+          "explanation": "将当前UB stage TokenLayout基址转换成uint8指针，作为整包MTE2目的。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 299,
+          "kind": "declaration",
+          "explanation": "在选择同一来源Rank的连续token批次中更新/计算“const auto load_gm_ptr = recv_buffer”。 load_gm_ptr：recv_buffer中issue_iter来源Rank与本地槽的完整通信token GM来源；recv_buffer：Context::buffer对称GM的接收区；按源Rank分区后每区最多M token。",
+          "reads": [
+            "recv_buffer"
+          ],
+          "writes": [
+            "load_gm_ptr"
+          ]
+        },
+        {
+          "line": 300,
+          "kind": "statement",
+          "explanation": "从GM recv_buffer选issue_iter当前来源Rank切片；每切片保留M*T字节而非实际recv长度。",
+          "reads": [
+            "issue_iter",
+            "rank_idx"
+          ],
+          "writes": []
+        },
+        {
+          "line": 301,
+          "kind": "statement",
+          "explanation": "在该来源Rank切片中选global token减rank_start_idx后的相对槽，避免用接收流全局编号越过切片。",
+          "reads": [
+            "issue_iter"
+          ],
+          "writes": []
+        },
+        {
+          "line": 302,
+          "kind": "statement",
+          "explanation": "取完整通信token首字节GM地址load_gm_ptr，MTE2将连续num_stage_tokens个token整包读取。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 303,
+          "kind": "blank",
+          "explanation": "在选择同一来源Rank的连续token批次中，分隔“.template get_base_ptr<__gm__ uint8_t>();”与随后“// refills wait until the consumer's MTE3 copies that read this stage have completed”两步；此处没有数据写入。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 304,
+          "kind": "comment",
+          "explanation": "注释说明发出整包MTE2并记录stage描述的实现意图（refills wait until the consumer's MTE3 copies that read this stage have completed）；refill先等MTE3→MTE2释放；NOTALLOC_CLEAN读num_stage_tokens*T字节，发布MTE2→S，记录长度与接收流全局base，advance。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 305,
+          "kind": "branch",
+          "explanation": "发出整包MTE2并记录stage描述的分支条件为“if (not is_preload)”；输入整包用一次MTE2读取，后续多专家MTE3共享此UB token；refill不能覆盖在途MTE3来源。",
+          "reads": [
+            "is_preload"
+          ],
+          "writes": []
+        },
+        {
+          "line": 306,
+          "kind": "sync",
+          "explanation": "让第二管线等待第一管线发布的同一event，建立数据就绪或stage释放依赖；调用本行“asc_sync_wait(PIPE_MTE3, PIPE_MTE2, static_cast<event_t>(kNumMetadataStages + load_stage_idx));”。 load_stage_idx：要写入的UB token stage号，事件ID加metadata stage偏移。",
+          "reads": [
+            "load_stage_idx"
+          ],
+          "writes": []
+        },
+        {
+          "line": 307,
+          "kind": "brace",
+          "explanation": "结束由“if (not is_preload) {”开启的作用域；到此发出整包MTE2并记录stage描述对应状态更新完成，此括号不增加额外同步。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 308,
+          "kind": "comment",
+          "explanation": "注释说明发出整包MTE2并记录stage描述的实现意图（we won't use the token data after this copy, so we use NOTALLOC_CLEAN to avoid polluting the L2 cache）；refill先等MTE3→MTE2释放；NOTALLOC_CLEAN读num_stage_tokens*T字节，发布MTE2→S，记录长度与接收流全局base，advance。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 309,
+          "kind": "call",
+          "explanation": "MTE2整包读取源Rank recv buffer的num_stage_tokens*T字节到load_stage_idx的token UB stage，L2用NOTALLOC_CLEAN。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 310,
+          "kind": "statement",
+          "explanation": "MTE2参数方向是load_gm_ptr→load_ub_ptr，长度见下一行；current stage已经释放或属于首次预取。",
+          "reads": [
+            "load_ub_ptr",
+            "load_gm_ptr"
+          ],
+          "writes": [
+            "load_ub_ptr"
+          ]
+        },
+        {
+          "line": 311,
+          "kind": "statement",
+          "explanation": "整包只发1个burst，长度num_stage_tokens*TokenLayout字节，左右padding均0；真实批长已被Rank和AIV终点截断。",
+          "reads": [
+            "num_stage_tokens",
+            "token_layout"
+          ],
+          "writes": []
+        },
+        {
+          "line": 312,
+          "kind": "statement",
+          "explanation": "整包GM读取使用L2 NOTALLOC_CLEAN，源/目的额外步长为0，因为只有一个连续burst。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 313,
+          "kind": "brace",
+          "explanation": "闭合第309行“asc_copy_gm2ub_align(”的实参列表；消费者知道stage真实长度和全局metadata索引。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 314,
+          "kind": "comment",
+          "explanation": "注释说明发出整包MTE2并记录stage描述的实现意图（load done: the consumer's S pipe waits on this before reading the stage）；refill先等MTE3→MTE2释放；NOTALLOC_CLEAN读num_stage_tokens*T字节，发布MTE2→S，记录长度与接收流全局base，advance。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 315,
+          "kind": "sync",
+          "explanation": "MTE2完成事件发给Scalar，消费者wait此event后才可从stage提取字段与分配slot。",
+          "reads": [
+            "load_stage_idx"
+          ],
+          "writes": []
+        },
+        {
+          "line": 316,
+          "kind": "blank",
+          "explanation": "在发出整包MTE2并记录stage描述中，分隔“asc_sync_notify(PIPE_MTE2, PIPE_S, static_cast<event_t>(kNumMetadataStages + load_stage_idx));”与随后“stage_num_tokens[load_stage_idx] = num_stage_tokens;”两步；此处没有数据写入。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 317,
+          "kind": "statement",
+          "explanation": "在发出整包MTE2并记录stage描述中更新/计算“stage_num_tokens[load_stage_idx] = num_stage_tokens;”。 stage_num_tokens：记录每个token stage真实长度，消费者不能假定stage满载；load_stage_idx：要写入的UB token stage号，事件ID加metadata stage偏移；num_stage_tokens：当前批次真实连续token数，限制在来源Rank/AIV/stage三边界。",
+          "reads": [
+            "num_stage_tokens"
+          ],
+          "writes": [
+            "stage_num_tokens"
+          ]
+        },
+        {
+          "line": 318,
+          "kind": "comment",
+          "explanation": "注释说明发出整包MTE2并记录stage描述的实现意图（global recv-stream position: recv_src_metadata is indexed by the global stream）；refill先等MTE3→MTE2释放；NOTALLOC_CLEAN读num_stage_tokens*T字节，发布MTE2→S，记录长度与接收流全局base，advance。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 319,
+          "kind": "statement",
+          "explanation": "记录当前stage接收流全局token起点；recv_src_metadata按全局流索引，不能用来源Rank内槽号索引。",
+          "reads": [
+            "issue_iter",
+            "token_idx"
+          ],
+          "writes": [
+            "stage_token_base_idx"
+          ]
+        },
+        {
+          "line": 320,
+          "kind": "blank",
+          "explanation": "在发出整包MTE2并记录stage描述中，分隔“stage_token_base_idx[load_stage_idx] = issue_iter.token_idx;”与随后“issue_iter.advance(num_stage_tokens);”两步；此处没有数据写入。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 321,
+          "kind": "statement",
+          "explanation": "将issue_iter前移本次stage真实token数，必要时跨过来源Rank累计边界；尚未消费UB只表示下次预取起点已更新。",
+          "reads": [
+            "issue_iter",
+            "num_stage_tokens"
+          ],
+          "writes": [
+            "issue_iter"
+          ]
+        },
+        {
+          "line": 322,
+          "kind": "blank",
+          "explanation": "在发出整包MTE2并记录stage描述中，分隔“issue_iter.advance(num_stage_tokens);”与随后“return true;”两步；此处没有数据写入。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 323,
+          "kind": "statement",
+          "explanation": "返回“true”；消费者知道stage真实长度和全局metadata索引 refill先等MTE3→MTE2释放；NOTALLOC_CLEAN读num_stage_tokens*T字节，发布MTE2→S，记录长度与接收流全局base，advance。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 324,
+          "kind": "brace",
+          "explanation": "结束由“const auto issue_load = [&](int load_stage_idx, bool is_preload) __aicore__ {”开启的作用域；到此发出整包MTE2并记录stage描述对应状态更新完成，此括号不增加额外同步。",
+          "reads": [],
+          "writes": []
+        }
+      ]
+    }
+  ]
+}

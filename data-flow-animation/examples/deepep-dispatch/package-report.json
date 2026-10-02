@@ -1,0 +1,22 @@
+{
+  "status": "PASS",
+  "files": 232,
+  "zip_bytes": 8153407,
+  "numeric_review": "PASS",
+  "terminology_review": "PASS",
+  "checked_required_files": [
+    "animation/numeric-ui.mjs",
+    "animation/provenance.mjs",
+    "animation/source.mjs",
+    "animation/terminology-source-evidence.mjs",
+    "animation/terminology-source-extra.mjs",
+    "animation/terminology.mjs",
+    "index.html",
+    "review/numeric-review.json",
+    "review/terminology-review.json",
+    "root-numeric-object-ui.json",
+    "root-numeric-ui.json",
+    "root-terminology-ui.json",
+    "serve.py"
+  ]
+}

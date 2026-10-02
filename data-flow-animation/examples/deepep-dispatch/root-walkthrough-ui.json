@@ -1,0 +1,48 @@
+{
+  "status": "PASS",
+  "browser": "Playwright Chromium",
+  "origin": "http://127.0.0.1:8789",
+  "records": [
+    {
+      "name": "dispatch",
+      "lines": 867,
+      "modules": 3,
+      "functions": 3,
+      "segments": 42,
+      "internal_calls": 3,
+      "memory_paths": 4,
+      "transfers": 17,
+      "checks": [
+        "exact source bytes/line count",
+        "all modules/functions/segments",
+        "internal call drilldown and return line",
+        "global search count/navigation/no result",
+        "source reverse selection and reviewed line tips",
+        "keyboard column resize/reset",
+        "memory paths/transfers/detail/source linkage",
+        "1280x720/1440x900/1920x1080 viewport roots fit"
+      ]
+    },
+    {
+      "name": "dispatch_copy_epilogue",
+      "lines": 623,
+      "modules": 4,
+      "functions": 11,
+      "segments": 33,
+      "internal_calls": 23,
+      "memory_paths": 4,
+      "transfers": 19,
+      "checks": [
+        "exact source bytes/line count",
+        "all modules/functions/segments",
+        "internal call drilldown and return line",
+        "global search count/navigation/no result",
+        "source reverse selection and reviewed line tips",
+        "keyboard column resize/reset",
+        "memory paths/transfers/detail/source linkage",
+        "1280x720/1440x900/1920x1080 viewport roots fit"
+      ]
+    }
+  ],
+  "errors": []
+}

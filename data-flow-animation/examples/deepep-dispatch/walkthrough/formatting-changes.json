@@ -1,0 +1,198 @@
+[
+  {
+    "file": "dispatch",
+    "function_id": "dispatch-simt-77",
+    "segment_id": "dispatch-simt-77-s5",
+    "identifier": "expert_histogram",
+    "change": "仅在已有标识符两侧加入ASCII空格，修复Unicode word-boundary识别"
+  },
+  {
+    "file": "dispatch",
+    "function_id": "dispatch-simt-77",
+    "segment_id": "dispatch-simt-77-s7",
+    "identifier": "wait_ready",
+    "change": "仅在已有标识符两侧加入ASCII空格，修复Unicode word-boundary识别"
+  },
+  {
+    "file": "dispatch",
+    "function_id": "dispatch-simt-77",
+    "segment_id": "dispatch-simt-77-s10",
+    "identifier": "local_copy_dst_slot_idx",
+    "change": "仅在已有标识符两侧加入ASCII空格，修复Unicode word-boundary识别"
+  },
+  {
+    "file": "dispatch",
+    "function_id": "dispatch-simt-77",
+    "segment_id": "dispatch-simt-77-s11",
+    "identifier": "load_peer_info",
+    "change": "仅在已有标识符两侧加入ASCII空格，修复Unicode word-boundary识别"
+  },
+  {
+    "file": "dispatch",
+    "function_id": "dispatch-simt-77",
+    "segment_id": "dispatch-simt-77-s13",
+    "identifier": "sgep_to_entry",
+    "change": "仅在已有标识符两侧加入ASCII空格，修复Unicode word-boundary识别"
+  },
+  {
+    "file": "dispatch",
+    "function_id": "dispatch-simt-77",
+    "segment_id": "dispatch-simt-77-s17",
+    "identifier": "metadata_ready",
+    "change": "仅在已有标识符两侧加入ASCII空格，修复Unicode word-boundary识别"
+  },
+  {
+    "file": "dispatch",
+    "function_id": "dispatch-simt-77",
+    "segment_id": "dispatch-simt-77-s18",
+    "identifier": "reduction",
+    "change": "仅在已有标识符两侧加入ASCII空格，修复Unicode word-boundary识别"
+  },
+  {
+    "file": "dispatch",
+    "function_id": "dispatch-impl-551",
+    "segment_id": "dispatch-impl-551-s3",
+    "identifier": "kNumMaxSQEs",
+    "change": "仅在已有标识符两侧加入ASCII空格，修复Unicode word-boundary识别"
+  },
+  {
+    "file": "dispatch",
+    "function_id": "dispatch-impl-551",
+    "segment_id": "dispatch-impl-551-s8",
+    "identifier": "nddma_desc",
+    "change": "仅在已有标识符两侧加入ASCII空格，修复Unicode word-boundary识别"
+  },
+  {
+    "file": "dispatch",
+    "function_id": "dispatch-impl-551",
+    "segment_id": "dispatch-impl-551-s12",
+    "identifier": "metadata_send_buffer",
+    "change": "仅在已有标识符两侧加入ASCII空格，修复Unicode word-boundary识别"
+  },
+  {
+    "file": "dispatch",
+    "function_id": "dispatch-impl-551",
+    "segment_id": "dispatch-impl-551-s13",
+    "identifier": "local_copy_ready",
+    "change": "仅在已有标识符两侧加入ASCII空格，修复Unicode word-boundary识别"
+  },
+  {
+    "file": "dispatch",
+    "function_id": "dispatch-impl-551",
+    "segment_id": "dispatch-impl-551-s16",
+    "identifier": "ring_doorbell",
+    "change": "仅在已有标识符两侧加入ASCII空格，修复Unicode word-boundary识别"
+  },
+  {
+    "file": "dispatch",
+    "function_id": "dispatch-preload-688",
+    "segment_id": "dispatch-preload-688-s2",
+    "identifier": "nddma_desc",
+    "change": "仅在已有标识符两侧加入ASCII空格，修复Unicode word-boundary识别"
+  },
+  {
+    "file": "dispatch_copy_epilogue",
+    "function_id": "epi-histogram-37",
+    "segment_id": "epi-histogram-37-s1",
+    "identifier": "offset_vec",
+    "change": "仅在已有标识符两侧加入ASCII空格，修复Unicode word-boundary识别"
+  },
+  {
+    "file": "dispatch_copy_epilogue",
+    "function_id": "epi-histogram-37",
+    "segment_id": "epi-histogram-37-s2",
+    "identifier": "downsample",
+    "change": "仅在已有标识符两侧加入ASCII空格，修复Unicode word-boundary识别"
+  },
+  {
+    "file": "dispatch_copy_epilogue",
+    "function_id": "epi-histogram-37",
+    "segment_id": "epi-histogram-37-s3",
+    "identifier": "hist",
+    "change": "仅在已有标识符两侧加入ASCII空格，修复Unicode word-boundary识别"
+  },
+  {
+    "file": "dispatch_copy_epilogue",
+    "function_id": "epi-init-slot-107",
+    "segment_id": "epi-init-slot-107-s1",
+    "identifier": "unaligned_expert_start_slot_idx",
+    "change": "仅在已有标识符两侧加入ASCII空格，修复Unicode word-boundary识别"
+  },
+  {
+    "file": "dispatch_copy_epilogue",
+    "function_id": "epi-impl-176",
+    "segment_id": "epi-impl-176-s6",
+    "identifier": "get_contiguous_count",
+    "change": "仅在已有标识符两侧加入ASCII空格，修复Unicode word-boundary识别"
+  },
+  {
+    "file": "dispatch_copy_epilogue",
+    "function_id": "epi-impl-176",
+    "segment_id": "epi-impl-176-s8",
+    "identifier": "fill_ubuf",
+    "change": "仅在已有标识符两侧加入ASCII空格，修复Unicode word-boundary识别"
+  },
+  {
+    "file": "dispatch_copy_epilogue",
+    "function_id": "epi-impl-176",
+    "segment_id": "epi-impl-176-s9",
+    "identifier": "histogram_accumulate_u32",
+    "change": "仅在已有标识符两侧加入ASCII空格，修复Unicode word-boundary识别"
+  },
+  {
+    "file": "dispatch_copy_epilogue",
+    "function_id": "epi-impl-176",
+    "segment_id": "epi-impl-176-s10",
+    "identifier": "issue",
+    "change": "仅在已有标识符两侧加入ASCII空格，修复Unicode word-boundary识别"
+  },
+  {
+    "file": "dispatch_copy_epilogue",
+    "function_id": "epi-impl-176",
+    "segment_id": "epi-impl-176-s11",
+    "identifier": "ub_expert_token_count",
+    "change": "仅在已有标识符两侧加入ASCII空格，修复Unicode word-boundary识别"
+  },
+  {
+    "file": "dispatch_copy_epilogue",
+    "function_id": "epi-impl-176",
+    "segment_id": "epi-impl-176-s12",
+    "identifier": "ub_next_dst_slot_idx",
+    "change": "仅在已有标识符两侧加入ASCII空格，修复Unicode word-boundary识别"
+  },
+  {
+    "file": "dispatch_copy_epilogue",
+    "function_id": "epi-impl-176",
+    "segment_id": "epi-impl-176-s15",
+    "identifier": "master_topk_slot_idx",
+    "change": "仅在已有标识符两侧加入ASCII空格，修复Unicode word-boundary识别"
+  },
+  {
+    "file": "dispatch_copy_epilogue",
+    "function_id": "epi-impl-176",
+    "segment_id": "epi-impl-176-s18",
+    "identifier": "num_part_tokens",
+    "change": "仅在已有标识符两侧加入ASCII空格，修复Unicode word-boundary识别"
+  },
+  {
+    "file": "dispatch_copy_epilogue",
+    "function_id": "epi-impl-176",
+    "segment_id": "epi-impl-176-s19",
+    "identifier": "num_part_tokens",
+    "change": "仅在已有标识符两侧加入ASCII空格，修复Unicode word-boundary识别"
+  },
+  {
+    "file": "dispatch_copy_epilogue",
+    "function_id": "epi-impl-176",
+    "segment_id": "epi-impl-176-s20",
+    "identifier": "kNumZeroBytes",
+    "change": "仅在已有标识符两侧加入ASCII空格，修复Unicode word-boundary识别"
+  },
+  {
+    "file": "dispatch_copy_epilogue",
+    "function_id": "epi-issue-load-291",
+    "segment_id": "epi-issue-load-291-s1",
+    "identifier": "get_contiguous_count",
+    "change": "仅在已有标识符两侧加入ASCII空格，修复Unicode word-boundary识别"
+  }
+]

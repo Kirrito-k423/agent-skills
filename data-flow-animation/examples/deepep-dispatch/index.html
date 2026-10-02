@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="zh-CN">
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DeepEP-Ascend · Dispatch 实现逻辑</title>
+<style>
+:root{color-scheme:light;font-family:system-ui,-apple-system,"PingFang SC",sans-serif;color:#15243b;background:#fff}*{box-sizing:border-box}body{margin:0;background:#fff}main{max-width:1160px;margin:auto;padding:38px 30px 46px}h1{font-size:32px;letter-spacing:-.8px;margin:10px 0 14px}h2{font-size:18px;margin:0 0 12px}p{line-height:1.75;margin:8px 0 14px}a{color:#244bc5;text-decoration:none}a:hover{text-decoration:underline}.eyebrow{font-size:12px;color:#53657d;letter-spacing:1px}.lead{font-size:18px;max-width:900px}.revision{font-size:12px;overflow-wrap:anywhere;color:#53657d;border-bottom:1px solid #dfe5ee;padding-bottom:18px}.route{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin:24px 0}.step{border:1px solid #d8e2ef;border-radius:12px;padding:18px;position:relative}.step p{font-size:13px;margin:9px 0 0}.number{font:600 12px ui-monospace,monospace;color:#53657d}.step b{display:block;margin-top:8px}.choices{display:grid;grid-template-columns:1fr 1fr;gap:18px}.choice{border:1px solid #cbd8ea;border-radius:14px;padding:22px}.choice p{font-size:14px}.links{display:flex;gap:10px;flex-wrap:wrap}.button{border:1px solid #bacbed;border-radius:8px;padding:10px 14px;font-size:14px;display:inline-block}.primary{background:#254cc6;color:white;border-color:#254cc6}.facts{display:grid;grid-template-columns:repeat(3,1fr);gap:20px;margin-top:28px}.fact{font-size:13px;line-height:1.75}.fact b{display:block;font-size:14px;margin-bottom:7px}.fact code,.step code{font-size:12px;overflow-wrap:anywhere}.usage{margin-top:26px;padding-top:19px;border-top:1px solid #dfe5ee;font-size:13px}code{font-family:ui-monospace,SFMono-Regular,monospace}.command{border:1px solid #d8e2ef;border-radius:8px;padding:11px;white-space:pre-wrap;overflow-wrap:anywhere;background:#fff}.evidence{display:flex;gap:16px;flex-wrap:wrap;font-size:12px;margin-top:22px}@media(max-width:760px){main{padding:24px 18px}.route{grid-template-columns:1fr 1fr}.choices,.facts{grid-template-columns:1fr}h1{font-size:26px}}
+</style>
+<main>
+<div class="eyebrow">固定源码 · 交互式走读 · 四 Rank 教学动画</div>
+<h1>DeepEP-Ascend 的 Dispatch 如何完成</h1>
+<p class="lead">把每个 token 送到需要它的 Rank，再在接收端为每个命中的专家生成一行输出。<strong>同一 token 对同一 Rank 只传一次，专家展开留到 copy epilogue。</strong></p>
+<div class="revision">仓库 <a href="https://github.com/deepseek-ai/DeepEP-Ascend/tree/3b25377d04b24fc6154698ded78a2bcb2c59afff">deepseek-ai/DeepEP-Ascend</a> · main 快照 <code>3b25377d04b24fc6154698ded78a2bcb2c59afff</code> · 获取于 2026-09-30 · DeepJIT gitlink <code>65f513952b8771408a19202f65e36398522db6db</code></div>
+<div class="route">
+<article class="step"><span class="number">01 · Python / Host</span><b>检查输入，选择特化</b><p><code>EPBuffer.dispatch</code> 接受 BF16 或 FP8 输入。Host 准备张量与通信指针，DeepJIT 编译对应模板。</p></article>
+<article class="step"><span class="number">02 · Dispatch / SIMT</span><b>统计与路由去重</b><p>每个 AIV 负责连续 token 区间。专家计数逐 top-k 累加，Rank 计数按目标去重，分配接收槽和 SGE。</p></article>
+<article class="step"><span class="number">03 · Dispatch / Scalar</span><b>打包元数据，提交发送</b><p>本机 hidden 经过 UB 复制；远端 SQE 直接引用输入 hidden 与 GM 元数据。准备完成后推进 SQ 并写 doorbell。</p></article>
+<article class="step"><span class="number">04 · Copy epilogue</span><b>确认完成，按专家展开</b><p>drain 与跨 Rank barrier 建立消费边界，随后读取接收槽，计算专家内位置，写出 hidden、权重和来源元数据。</p></article>
+</div>
+<p style="font-size:13px;color:#53657d">步骤 2 与 3 在同一个 kernel 内并行协作，通过 <code>local_copy_ready</code> 和 <code>metadata_ready</code> 握手；卡片编号表示阅读顺序。</p>
+<div class="choices">
+<section class="choice"><h2>源码走读：控制流与内存</h2><p>两个完整源码文件，共 1,490 行、14 个定义（含 2 个 lambda）。切换“代码逻辑 / 内存与通信”，点击模块、函数、语义块或搬运箭头定位原文；函数定义内每行均有说明。</p><div class="links"><a class="button primary" href="walkthrough/dispatch.walkthrough.html">Dispatch · 867 行</a><a class="button" href="walkthrough/dispatch_copy_epilogue.walkthrough.html">Copy epilogue · 623 行</a></div></section>
+<section class="choice"><h2>数据流动画：数字推导与术语解释</h2><p>四个 Rank 的教学输入，跟踪 <code>topk_idx</code>、计数、接收槽、队列描述符和 <code>recv_x</code>。悬浮名称，查看变量、参数和缩写的含义与当前作用；悬浮数字，查看初始来源、实际操作数和计算过程。点击固定说明，按 Esc 关闭；完整对象、历史和源码也能查询。</p><div class="links"><a class="button primary" href="animation/control.html">控制与解释屏</a><a class="button" href="animation/visual.html">数据流动画屏</a></div></section>
+</div>
+<div class="facts">
+<div class="fact"><b>两种计数有不同用途</b><code>rank_histogram</code> 统计去重后需要发送的 token；<code>expert_histogram</code> 统计专家命中。一个 token 在一个 Rank 可占一个接收槽，却生成多个专家输出行。</div>
+<div class="fact"><b>提交与可读各有边界</b><code>ring_doorbell()</code> 提交队列。常规路径的 copy epilogue 先 drain 再 barrier；benchmark 配置可把 drain 放到 dispatch 末尾。核函数返回本身不证明远端 payload 已经可读。</div>
+<div class="fact"><b>Fresh 与 Cached 的区别</b>Fresh 生成路由、前缀和来源元数据；Cached 复用 handle 中的槽位及映射，仍发送新的 hidden、SF 和权重。复用要求 token 数与路由张量保持约定。</div>
+</div>
+<div class="usage"><b>打开方式</b><p>源码走读页可以直接打开。双屏动画请用下列命令启动本地服务，再在同一浏览器打开两页，将动画窗口拖到第二显示器，分别全屏。</p><pre class="command">python3 serve.py</pre><p>动画按源码语义选择一种合法的原子操作顺序，显示教学步骤。它不代表硬件全局时序或性能 trace。本次交付的验证范围是源码分析、独立复查、CPU 模型与浏览器交互。</p></div>
+<div class="evidence"><a href="source-manifest.json">源码哈希与双方法函数清单</a><a href="review/source-review-baseline.json">独立源码事实核查</a><a href="README.md">范围与启动说明</a><a href="validation-summary.json">最终验收汇总</a><a href="https://github.com/deepseek-ai/DeepEP-Ascend/blob/3b25377d04b24fc6154698ded78a2bcb2c59afff/deep_ep/buffers/ep.py#L314">Python 入口原文</a><a href="https://github.com/deepseek-ai/DeepEP-Ascend/blob/3b25377d04b24fc6154698ded78a2bcb2c59afff/csrc/buffers/ep.hpp#L89">Host 入口原文</a></div>
+</main>
+</html>

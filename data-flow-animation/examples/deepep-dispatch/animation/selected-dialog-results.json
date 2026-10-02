@@ -1,0 +1,19 @@
+{
+  "viewport": [
+    1280,
+    720
+  ],
+  "combinations": 428,
+  "failures": [],
+  "dialogRect": {
+    "x": 190,
+    "y": 67,
+    "width": 900,
+    "height": 586,
+    "top": 67,
+    "right": 1090,
+    "bottom": 653,
+    "left": 190
+  },
+  "dialogVisible": true
+}

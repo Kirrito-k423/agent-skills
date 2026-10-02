@@ -1,0 +1,40 @@
+[
+  {
+    "file": "dispatch",
+    "source_sha256": "25244c66d5937e9e7521400792c2e0ddc974512971f582e95d19c4828c31b678",
+    "source_lines": 867,
+    "module_count": 3,
+    "function_count": 3,
+    "independent_pass_count": 3,
+    "segments": 42,
+    "line_notes": 854,
+    "memory_model_independent_pass": "PASS",
+    "spaces": 5,
+    "regions": 13,
+    "transfers": 13,
+    "paths": 4,
+    "html_sha256": "db62711ee70019b53d589ed4813ff37572d24489bd2e0e2dc8f5059ebcf491d7",
+    "html_bytes": 481413,
+    "strict_renderer": "PASS",
+    "adapter_scope": "只扩展跨行template/VF_CALL和命名constructor调用定位，不跳过其他quality gate"
+  },
+  {
+    "file": "dispatch_copy_epilogue",
+    "source_sha256": "3666da791943b16986c7a0258c52cc022361c1a07d364098e0713036bd412a25",
+    "source_lines": 623,
+    "module_count": 4,
+    "function_count": 11,
+    "independent_pass_count": 11,
+    "segments": 33,
+    "line_notes": 607,
+    "memory_model_independent_pass": "PASS",
+    "spaces": 3,
+    "regions": 12,
+    "transfers": 15,
+    "paths": 4,
+    "html_sha256": "30fa5b14e9e3f3b96c8faccd69fded4a1f95045cd121b05749e88cdce4a52736",
+    "html_bytes": 379951,
+    "strict_renderer": "PASS",
+    "adapter_scope": "只扩展跨行template/VF_CALL和命名constructor调用定位，不跳过其他quality gate"
+  }
+]

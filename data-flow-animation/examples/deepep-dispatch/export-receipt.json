@@ -1,0 +1,29 @@
+{
+  "status": "PASS",
+  "source_revision": "3b25377d04b24fc6154698ded78a2bcb2c59afff",
+  "files": 231,
+  "portable_path_normalizations": [
+    "README.md",
+    "animation/README.md",
+    "index.html",
+    "review/animation-review.json",
+    "review/numeric-review-plan.json",
+    "review/source-review-baseline.json",
+    "source-manifest.json"
+  ],
+  "runtime_excluded": [
+    ".preview-runtime",
+    ".git",
+    "node_modules",
+    "__pycache__"
+  ],
+  "destination": "data-flow-animation/examples/deepep-dispatch",
+  "browser_evidence": "export-browser-results.json",
+  "prototype_diagnostics_excluded": [
+    "animation/terminology-missing.json",
+    "animation/terminology-source-inventory.json",
+    "animation/terminology-full-inventory.json",
+    "animation/terminology-header-initial-720.png",
+    "review/terminology-hover-diagnostic.png"
+  ]
+}

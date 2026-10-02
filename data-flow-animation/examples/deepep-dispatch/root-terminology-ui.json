@@ -1,0 +1,720 @@
+{
+  "status": "PASS",
+  "checkedAt": "2026-10-02T04:00:13.775Z",
+  "source_revision": "3b25377d04b24fc6154698ded78a2bcb2c59afff",
+  "checks": [
+    "real CSS viewport 1280x720 terminology geometry",
+    "real CSS viewport 1440x900 terminology geometry",
+    "real CSS viewport 1920x1080 terminology geometry",
+    "keyboard focus and Enter pin; related term uses one panel; Escape closes",
+    "complete source link retains caller empty preset and T=0 capacity context",
+    "all nine complete source pages preserve 3732 original lines and have zero unresolved variable bindings",
+    "source related recv_x clears original identifier and retains its own definition and source reference",
+    "modal source field term links to its own address arithmetic without recursively reopening the same term",
+    "source partition uses the general origin concept while typed SGE source retains its address-field meaning",
+    "step transition discards stale term tip; late join and refresh restore paired context"
+  ],
+  "samples": [
+    {
+      "name": "capacity M 1280x720",
+      "text": "M · 教学参数与源码参数的对应\n×\n\n每个来源 Rank 接收分区预留的最大 token 容量\n\n名称/全称：kNumMaxTokensPerRank / num_max_tokens_per_rank\n\n当前作用：当前预设 mixed：M=4；每个来源 Rank 接收分区预留的最大 token 容量。\n\n单位/类型：slot/source-rank\n\n范围/约束：M>0；有效输入T=4；接收分区shape=[R,M]，分区每rank 4条。\n\n关联值：4（点击数字查看计算）\n\n相关：T · M\n\ndeep_ep/include/deep_ep/layout/ep/token.hpp:107 · 依据\n\n悬浮 / 聚焦查看；点击或Enter固定；Esc关闭",
+      "record": {
+        "termId": "M",
+        "label": "M",
+        "definition": "每个来源 Rank 接收分区预留的最大 token 容量",
+        "fullName": "kNumMaxTokensPerRank / num_max_tokens_per_rank",
+        "kind": "教学参数与源码参数的对应",
+        "unit": "slot/source-rank",
+        "bounds": "M>0；有效输入T=4；接收分区shape=[R,M]，分区每rank 4条。",
+        "role": "",
+        "sourceRef": {
+          "file": "deep_ep/include/deep_ep/layout/ep/token.hpp",
+          "line": 107,
+          "fn": "",
+          "commit": "3b25377d04b24fc6154698ded78a2bcb2c59afff",
+          "url": "https://github.com/deepseek-ai/DeepEP-Ascend/blob/3b25377d04b24fc6154698ded78a2bcb2c59afff/deep_ep/include/deep_ep/layout/ep/token.hpp#L107"
+        },
+        "aliases": [
+          "M"
+        ],
+        "related": [
+          "T",
+          "M"
+        ],
+        "context": {
+          "step": 0,
+          "preset": "mixed",
+          "stage": "input",
+          "surface": "visual"
+        },
+        "currentRole": "当前预设 mixed：M=4；每个来源 Rank 接收分区预留的最大 token 容量。",
+        "currentValue": 4,
+        "valueQuery": {
+          "objectId": "@config.M",
+          "value": 4,
+          "step": 0,
+          "phase": "observe",
+          "elementPath": []
+        },
+        "step": 0,
+        "preset": "mixed"
+      },
+      "box": {
+        "x": 194.9375,
+        "y": 40,
+        "width": 430,
+        "height": 364
+      },
+      "anchor": {
+        "x": 174.4375,
+        "y": 40,
+        "width": 10.5,
+        "height": 15
+      },
+      "viewport": {
+        "width": 1280,
+        "height": 720
+      }
+    },
+    {
+      "name": "AIV 1280x720",
+      "text": "AIV · 术语\n×\n\nAscend 的向量核执行主体。本图每 rank 使用 C 个 AIV；按容量 M 分配连续 token 范围，T 小于 M 时尾部核可为空。\n\n名称/全称：AI Vector\n\n当前作用：Ascend 的向量核执行主体。本图每 rank 使用 C 个 AIV；按容量 M 分配连续 token 范围，T 小于 M 时尾部核可为空。\n\ndeep_ep/include/deep_ep/impls/ep/dispatch.hpp:98 · 依据\n\n官方术语定义\n\n悬浮 / 聚焦查看；点击或Enter固定；Esc关闭",
+      "record": {
+        "termId": "AIV",
+        "label": "AIV",
+        "definition": "Ascend 的向量核执行主体。本图每 rank 使用 C 个 AIV；按容量 M 分配连续 token 范围，T 小于 M 时尾部核可为空。",
+        "fullName": "AI Vector",
+        "kind": "术语",
+        "unit": "",
+        "bounds": "",
+        "role": "",
+        "sourceRef": {
+          "file": "deep_ep/include/deep_ep/impls/ep/dispatch.hpp",
+          "line": 98,
+          "fn": "",
+          "commit": "3b25377d04b24fc6154698ded78a2bcb2c59afff",
+          "url": "https://github.com/deepseek-ai/DeepEP-Ascend/blob/3b25377d04b24fc6154698ded78a2bcb2c59afff/deep_ep/include/deep_ep/impls/ep/dispatch.hpp#L98"
+        },
+        "aliases": [
+          "AIV"
+        ],
+        "related": [],
+        "externalSource": "https://www.hiascend.com/document/detail/en/canncommercial/800/opdevg/Ascendcopdevg/atlas_ascendc_10_0008.html",
+        "context": {
+          "step": 0,
+          "preset": "mixed",
+          "stage": "input",
+          "surface": "visual"
+        },
+        "currentRole": "Ascend 的向量核执行主体。本图每 rank 使用 C 个 AIV；按容量 M 分配连续 token 范围，T 小于 M 时尾部核可为空。",
+        "step": 0,
+        "preset": "mixed"
+      },
+      "box": {
+        "x": 453.90625,
+        "y": 40,
+        "width": 430,
+        "height": 262
+      },
+      "anchor": {
+        "x": 425.390625,
+        "y": 40,
+        "width": 18.515625,
+        "height": 15
+      },
+      "viewport": {
+        "width": 1280,
+        "height": 720
+      }
+    },
+    {
+      "name": "capacity M 1440x900",
+      "text": "M · 教学参数与源码参数的对应\n×\n\n每个来源 Rank 接收分区预留的最大 token 容量\n\n名称/全称：kNumMaxTokensPerRank / num_max_tokens_per_rank\n\n当前作用：当前预设 mixed：M=4；每个来源 Rank 接收分区预留的最大 token 容量。\n\n单位/类型：slot/source-rank\n\n范围/约束：M>0；有效输入T=4；接收分区shape=[R,M]，分区每rank 4条。\n\n关联值：4（点击数字查看计算）\n\n相关：T · M\n\ndeep_ep/include/deep_ep/layout/ep/token.hpp:107 · 依据\n\n悬浮 / 聚焦查看；点击或Enter固定；Esc关闭",
+      "record": {
+        "termId": "M",
+        "label": "M",
+        "definition": "每个来源 Rank 接收分区预留的最大 token 容量",
+        "fullName": "kNumMaxTokensPerRank / num_max_tokens_per_rank",
+        "kind": "教学参数与源码参数的对应",
+        "unit": "slot/source-rank",
+        "bounds": "M>0；有效输入T=4；接收分区shape=[R,M]，分区每rank 4条。",
+        "role": "",
+        "sourceRef": {
+          "file": "deep_ep/include/deep_ep/layout/ep/token.hpp",
+          "line": 107,
+          "fn": "",
+          "commit": "3b25377d04b24fc6154698ded78a2bcb2c59afff",
+          "url": "https://github.com/deepseek-ai/DeepEP-Ascend/blob/3b25377d04b24fc6154698ded78a2bcb2c59afff/deep_ep/include/deep_ep/layout/ep/token.hpp#L107"
+        },
+        "aliases": [
+          "M"
+        ],
+        "related": [
+          "T",
+          "M"
+        ],
+        "context": {
+          "step": 0,
+          "preset": "mixed",
+          "stage": "input",
+          "surface": "visual"
+        },
+        "currentRole": "当前预设 mixed：M=4；每个来源 Rank 接收分区预留的最大 token 容量。",
+        "currentValue": 4,
+        "valueQuery": {
+          "objectId": "@config.M",
+          "value": 4,
+          "step": 0,
+          "phase": "observe",
+          "elementPath": []
+        },
+        "step": 0,
+        "preset": "mixed"
+      },
+      "box": {
+        "x": 198.9375,
+        "y": 44,
+        "width": 430,
+        "height": 364
+      },
+      "anchor": {
+        "x": 178.4375,
+        "y": 44,
+        "width": 10.5,
+        "height": 15
+      },
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      }
+    },
+    {
+      "name": "AIV 1440x900",
+      "text": "AIV · 术语\n×\n\nAscend 的向量核执行主体。本图每 rank 使用 C 个 AIV；按容量 M 分配连续 token 范围，T 小于 M 时尾部核可为空。\n\n名称/全称：AI Vector\n\n当前作用：Ascend 的向量核执行主体。本图每 rank 使用 C 个 AIV；按容量 M 分配连续 token 范围，T 小于 M 时尾部核可为空。\n\ndeep_ep/include/deep_ep/impls/ep/dispatch.hpp:98 · 依据\n\n官方术语定义\n\n悬浮 / 聚焦查看；点击或Enter固定；Esc关闭",
+      "record": {
+        "termId": "AIV",
+        "label": "AIV",
+        "definition": "Ascend 的向量核执行主体。本图每 rank 使用 C 个 AIV；按容量 M 分配连续 token 范围，T 小于 M 时尾部核可为空。",
+        "fullName": "AI Vector",
+        "kind": "术语",
+        "unit": "",
+        "bounds": "",
+        "role": "",
+        "sourceRef": {
+          "file": "deep_ep/include/deep_ep/impls/ep/dispatch.hpp",
+          "line": 98,
+          "fn": "",
+          "commit": "3b25377d04b24fc6154698ded78a2bcb2c59afff",
+          "url": "https://github.com/deepseek-ai/DeepEP-Ascend/blob/3b25377d04b24fc6154698ded78a2bcb2c59afff/deep_ep/include/deep_ep/impls/ep/dispatch.hpp#L98"
+        },
+        "aliases": [
+          "AIV"
+        ],
+        "related": [],
+        "externalSource": "https://www.hiascend.com/document/detail/en/canncommercial/800/opdevg/Ascendcopdevg/atlas_ascendc_10_0008.html",
+        "context": {
+          "step": 0,
+          "preset": "mixed",
+          "stage": "input",
+          "surface": "visual"
+        },
+        "currentRole": "Ascend 的向量核执行主体。本图每 rank 使用 C 个 AIV；按容量 M 分配连续 token 范围，T 小于 M 时尾部核可为空。",
+        "step": 0,
+        "preset": "mixed"
+      },
+      "box": {
+        "x": 457.90625,
+        "y": 44,
+        "width": 430,
+        "height": 262
+      },
+      "anchor": {
+        "x": 429.390625,
+        "y": 44,
+        "width": 18.515625,
+        "height": 15
+      },
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      }
+    },
+    {
+      "name": "capacity M 1920x1080",
+      "text": "M · 教学参数与源码参数的对应\n×\n\n每个来源 Rank 接收分区预留的最大 token 容量\n\n名称/全称：kNumMaxTokensPerRank / num_max_tokens_per_rank\n\n当前作用：当前预设 mixed：M=4；每个来源 Rank 接收分区预留的最大 token 容量。\n\n单位/类型：slot/source-rank\n\n范围/约束：M>0；有效输入T=4；接收分区shape=[R,M]，分区每rank 4条。\n\n关联值：4（点击数字查看计算）\n\n相关：T · M\n\ndeep_ep/include/deep_ep/layout/ep/token.hpp:107 · 依据\n\n悬浮 / 聚焦查看；点击或Enter固定；Esc关闭",
+      "record": {
+        "termId": "M",
+        "label": "M",
+        "definition": "每个来源 Rank 接收分区预留的最大 token 容量",
+        "fullName": "kNumMaxTokensPerRank / num_max_tokens_per_rank",
+        "kind": "教学参数与源码参数的对应",
+        "unit": "slot/source-rank",
+        "bounds": "M>0；有效输入T=4；接收分区shape=[R,M]，分区每rank 4条。",
+        "role": "",
+        "sourceRef": {
+          "file": "deep_ep/include/deep_ep/layout/ep/token.hpp",
+          "line": 107,
+          "fn": "",
+          "commit": "3b25377d04b24fc6154698ded78a2bcb2c59afff",
+          "url": "https://github.com/deepseek-ai/DeepEP-Ascend/blob/3b25377d04b24fc6154698ded78a2bcb2c59afff/deep_ep/include/deep_ep/layout/ep/token.hpp#L107"
+        },
+        "aliases": [
+          "M"
+        ],
+        "related": [
+          "T",
+          "M"
+        ],
+        "context": {
+          "step": 0,
+          "preset": "mixed",
+          "stage": "input",
+          "surface": "visual"
+        },
+        "currentRole": "当前预设 mixed：M=4；每个来源 Rank 接收分区预留的最大 token 容量。",
+        "currentValue": 4,
+        "valueQuery": {
+          "objectId": "@config.M",
+          "value": 4,
+          "step": 0,
+          "phase": "observe",
+          "elementPath": []
+        },
+        "step": 0,
+        "preset": "mixed"
+      },
+      "box": {
+        "x": 198.9375,
+        "y": 44,
+        "width": 430,
+        "height": 364
+      },
+      "anchor": {
+        "x": 178.4375,
+        "y": 44,
+        "width": 10.5,
+        "height": 15
+      },
+      "viewport": {
+        "width": 1920,
+        "height": 1080
+      }
+    },
+    {
+      "name": "AIV 1920x1080",
+      "text": "AIV · 术语\n×\n\nAscend 的向量核执行主体。本图每 rank 使用 C 个 AIV；按容量 M 分配连续 token 范围，T 小于 M 时尾部核可为空。\n\n名称/全称：AI Vector\n\n当前作用：Ascend 的向量核执行主体。本图每 rank 使用 C 个 AIV；按容量 M 分配连续 token 范围，T 小于 M 时尾部核可为空。\n\ndeep_ep/include/deep_ep/impls/ep/dispatch.hpp:98 · 依据\n\n官方术语定义\n\n悬浮 / 聚焦查看；点击或Enter固定；Esc关闭",
+      "record": {
+        "termId": "AIV",
+        "label": "AIV",
+        "definition": "Ascend 的向量核执行主体。本图每 rank 使用 C 个 AIV；按容量 M 分配连续 token 范围，T 小于 M 时尾部核可为空。",
+        "fullName": "AI Vector",
+        "kind": "术语",
+        "unit": "",
+        "bounds": "",
+        "role": "",
+        "sourceRef": {
+          "file": "deep_ep/include/deep_ep/impls/ep/dispatch.hpp",
+          "line": 98,
+          "fn": "",
+          "commit": "3b25377d04b24fc6154698ded78a2bcb2c59afff",
+          "url": "https://github.com/deepseek-ai/DeepEP-Ascend/blob/3b25377d04b24fc6154698ded78a2bcb2c59afff/deep_ep/include/deep_ep/impls/ep/dispatch.hpp#L98"
+        },
+        "aliases": [
+          "AIV"
+        ],
+        "related": [],
+        "externalSource": "https://www.hiascend.com/document/detail/en/canncommercial/800/opdevg/Ascendcopdevg/atlas_ascendc_10_0008.html",
+        "context": {
+          "step": 0,
+          "preset": "mixed",
+          "stage": "input",
+          "surface": "visual"
+        },
+        "currentRole": "Ascend 的向量核执行主体。本图每 rank 使用 C 个 AIV；按容量 M 分配连续 token 范围，T 小于 M 时尾部核可为空。",
+        "step": 0,
+        "preset": "mixed"
+      },
+      "box": {
+        "x": 457.90625,
+        "y": 44,
+        "width": 430,
+        "height": 262
+      },
+      "anchor": {
+        "x": 429.390625,
+        "y": 44,
+        "width": 18.515625,
+        "height": 15
+      },
+      "viewport": {
+        "width": 1920,
+        "height": 1080
+      }
+    },
+    {
+      "name": "empty visible T",
+      "text": "T · 教学参数与源码参数的对应\n×\n\n本轮每个 Rank 的有效输入 token 数量\n\n名称/全称：num_tokens\n\n当前作用：当前预设 empty：T=0；本轮每个 Rank 的有效输入 token 数量。\n\n单位/类型：token/rank\n\n范围/约束：0≤T≤M，当前 0≤4；T=0仍保留M个容量槽。\n\n关联值：0（点击数字查看计算）\n\n相关：T · M\n\ndeep_ep/include/deep_ep/impls/ep/dispatch.hpp:98 · 依据\n\n悬浮 / 聚焦查看；点击或Enter固定；Esc关闭",
+      "record": {
+        "termId": "T",
+        "label": "T",
+        "definition": "本轮每个 Rank 的有效输入 token 数量",
+        "fullName": "num_tokens",
+        "kind": "教学参数与源码参数的对应",
+        "unit": "token/rank",
+        "bounds": "0≤T≤M，当前 0≤4；T=0仍保留M个容量槽。",
+        "role": "",
+        "sourceRef": {
+          "file": "deep_ep/include/deep_ep/impls/ep/dispatch.hpp",
+          "line": 98,
+          "fn": "",
+          "commit": "3b25377d04b24fc6154698ded78a2bcb2c59afff",
+          "url": "https://github.com/deepseek-ai/DeepEP-Ascend/blob/3b25377d04b24fc6154698ded78a2bcb2c59afff/deep_ep/include/deep_ep/impls/ep/dispatch.hpp#L98"
+        },
+        "aliases": [
+          "T"
+        ],
+        "related": [
+          "T",
+          "M"
+        ],
+        "context": {
+          "step": 0,
+          "preset": "empty",
+          "stage": "input",
+          "surface": "visual"
+        },
+        "currentRole": "当前预设 empty：T=0；本轮每个 Rank 的有效输入 token 数量。",
+        "currentValue": 0,
+        "valueQuery": {
+          "objectId": "@config.T",
+          "value": 0,
+          "step": 0,
+          "phase": "observe",
+          "elementPath": []
+        },
+        "step": 0,
+        "preset": "empty"
+      },
+      "box": {
+        "x": 130.453125,
+        "y": 40,
+        "width": 430,
+        "height": 325
+      },
+      "anchor": {
+        "x": 112.84375,
+        "y": 40,
+        "width": 7.609375,
+        "height": 15
+      },
+      "viewport": {
+        "width": 1280,
+        "height": 720
+      }
+    },
+    {
+      "name": "epilogue dst_slot_idx scoped",
+      "text": "dst_slot_idx · 源码标识符\n×\n\n当前expert展开后的输出行号；从ub_next_dst_slot_idx取号或cached recv_src_metadata读取。单位是recv_x行，不是接收来源分区slot。\n\n当前作用：当前expert展开后的输出行号；从ub_next_dst_slot_idx取号或cached recv_src_metadata读取。单位是recv_x行，不是接收来源分区slot。\n\n当前准确原文与作用域\n\ndeep_ep/include/deep_ep/impls/ep/dispatch_copy_epilogue.hpp:484 · 依据\n\n悬浮 / 聚焦查看；点击或Enter固定；Esc关闭",
+      "record": {
+        "termId": "src.dst_slot_idx",
+        "label": "dst_slot_idx",
+        "definition": "当前expert展开后的输出行号；从ub_next_dst_slot_idx取号或cached recv_src_metadata读取。单位是recv_x行，不是接收来源分区slot。",
+        "fullName": "",
+        "kind": "源码标识符",
+        "unit": "",
+        "bounds": "",
+        "role": "",
+        "sourceRef": {
+          "file": "deep_ep/include/deep_ep/impls/ep/dispatch_copy_epilogue.hpp",
+          "line": 484,
+          "fn": "",
+          "commit": "3b25377d04b24fc6154698ded78a2bcb2c59afff",
+          "url": "https://github.com/deepseek-ai/DeepEP-Ascend/blob/3b25377d04b24fc6154698ded78a2bcb2c59afff/deep_ep/include/deep_ep/impls/ep/dispatch_copy_epilogue.hpp#L484"
+        },
+        "aliases": [
+          "dst_slot_idx"
+        ],
+        "related": [],
+        "context": {
+          "preset": "empty",
+          "step": 0,
+          "surface": "source",
+          "file": "deep_ep/include/deep_ep/impls/ep/dispatch_copy_epilogue.hpp",
+          "line": 484,
+          "identifier": "dst_slot_idx",
+          "sourceLine": "                        dst_slot_idx = static_cast<int>(ub_next_dst_slot_idx[local_expert_idx]);"
+        },
+        "currentRole": "当前expert展开后的输出行号；从ub_next_dst_slot_idx取号或cached recv_src_metadata读取。单位是recv_x行，不是接收来源分区slot。",
+        "sourceLine": "                        dst_slot_idx = static_cast<int>(ub_next_dst_slot_idx[local_expert_idx]);",
+        "step": 0,
+        "preset": "empty"
+      },
+      "box": {
+        "x": 360.859375,
+        "y": 8,
+        "width": 430,
+        "height": 293
+      },
+      "anchor": {
+        "x": 257.234375,
+        "y": 3.1875,
+        "width": 93.625,
+        "height": 15
+      },
+      "viewport": {
+        "width": 1280,
+        "height": 720
+      }
+    },
+    {
+      "name": "source partition concept",
+      "text": "source · 术语\n×\n\n来源：在接收buffer容量公式中指来源rank分区，在数值推导中指操作数从哪个对象、元素路径及前置步骤读取；source-before-producer表示该来源尚未由生产步骤写入。具体SGE.source字段才表示传输源地址。\n\n当前作用：来源：在接收buffer容量公式中指来源rank分区，在数值推导中指操作数从哪个对象、元素路径及前置步骤读取；source-before-producer表示该来源尚未由生产步骤写入。具体SGE.source字段才表示传输源地址。\n\n相关：sourceRank · M · source\n\ndeep_ep/include/deep_ep/layout/ep/token.hpp:107 · 依据\n\n悬浮 / 聚焦查看；点击或Enter固定；Esc关闭",
+      "record": {
+        "termId": "source",
+        "label": "source",
+        "definition": "来源：在接收buffer容量公式中指来源rank分区，在数值推导中指操作数从哪个对象、元素路径及前置步骤读取；source-before-producer表示该来源尚未由生产步骤写入。具体SGE.source字段才表示传输源地址。",
+        "fullName": "",
+        "kind": "术语",
+        "unit": "",
+        "bounds": "",
+        "role": "",
+        "sourceRef": {
+          "file": "deep_ep/include/deep_ep/layout/ep/token.hpp",
+          "line": 107,
+          "fn": "",
+          "commit": "3b25377d04b24fc6154698ded78a2bcb2c59afff",
+          "url": "https://github.com/deepseek-ai/DeepEP-Ascend/blob/3b25377d04b24fc6154698ded78a2bcb2c59afff/deep_ep/include/deep_ep/layout/ep/token.hpp#L107"
+        },
+        "aliases": [
+          "source"
+        ],
+        "related": [
+          "sourceRank",
+          "M",
+          "field.source"
+        ],
+        "context": {
+          "step": 14,
+          "preset": "mixed",
+          "stage": "counts",
+          "surface": "visual"
+        },
+        "currentRole": "来源：在接收buffer容量公式中指来源rank分区，在数值推导中指操作数从哪个对象、元素路径及前置步骤读取；source-before-producer表示该来源尚未由生产步骤写入。具体SGE.source字段才表示传输源地址。",
+        "step": 14,
+        "preset": "mixed"
+      },
+      "box": {
+        "x": 159.34375,
+        "y": 369,
+        "width": 430,
+        "height": 312.5
+      },
+      "anchor": {
+        "x": 111,
+        "y": 369,
+        "width": 38.34375,
+        "height": 15
+      },
+      "viewport": {
+        "width": 1280,
+        "height": 720
+      }
+    },
+    {
+      "name": "pre transition term",
+      "text": "M · 教学参数与源码参数的对应\n×\n\n每个来源 Rank 接收分区预留的最大 token 容量\n\n名称/全称：kNumMaxTokensPerRank / num_max_tokens_per_rank\n\n当前作用：当前预设 mixed：M=4；每个来源 Rank 接收分区预留的最大 token 容量。\n\n单位/类型：slot/source-rank\n\n范围/约束：M>0；有效输入T=4；接收分区shape=[R,M]，分区每rank 4条。\n\n关联值：4（点击数字查看计算）\n\n相关：T · M\n\ndeep_ep/include/deep_ep/layout/ep/token.hpp:107 · 依据\n\n悬浮 / 聚焦查看；点击或Enter固定；Esc关闭",
+      "record": {
+        "termId": "M",
+        "label": "M",
+        "definition": "每个来源 Rank 接收分区预留的最大 token 容量",
+        "fullName": "kNumMaxTokensPerRank / num_max_tokens_per_rank",
+        "kind": "教学参数与源码参数的对应",
+        "unit": "slot/source-rank",
+        "bounds": "M>0；有效输入T=4；接收分区shape=[R,M]，分区每rank 4条。",
+        "role": "",
+        "sourceRef": {
+          "file": "deep_ep/include/deep_ep/layout/ep/token.hpp",
+          "line": 107,
+          "fn": "",
+          "commit": "3b25377d04b24fc6154698ded78a2bcb2c59afff",
+          "url": "https://github.com/deepseek-ai/DeepEP-Ascend/blob/3b25377d04b24fc6154698ded78a2bcb2c59afff/deep_ep/include/deep_ep/layout/ep/token.hpp#L107"
+        },
+        "aliases": [
+          "M"
+        ],
+        "related": [
+          "T",
+          "M"
+        ],
+        "context": {
+          "step": 5,
+          "preset": "mixed",
+          "stage": "prefix",
+          "surface": "visual"
+        },
+        "currentRole": "当前预设 mixed：M=4；每个来源 Rank 接收分区预留的最大 token 容量。",
+        "currentValue": 4,
+        "valueQuery": {
+          "objectId": "@config.M",
+          "value": 4,
+          "step": 5,
+          "phase": "observe",
+          "elementPath": []
+        },
+        "step": 5,
+        "preset": "mixed"
+      },
+      "box": {
+        "x": 194.9375,
+        "y": 40,
+        "width": 430,
+        "height": 364
+      },
+      "anchor": {
+        "x": 174.4375,
+        "y": 40,
+        "width": 10.5,
+        "height": 15
+      },
+      "viewport": {
+        "width": 1280,
+        "height": 720
+      }
+    },
+    {
+      "name": "late join receives term context",
+      "text": "T · 教学参数与源码参数的对应\n×\n\n本轮每个 Rank 的有效输入 token 数量\n\n名称/全称：num_tokens\n\n当前作用：当前预设 mixed：T=4；本轮每个 Rank 的有效输入 token 数量。\n\n单位/类型：token/rank\n\n范围/约束：0≤T≤M，当前 4≤4；T=0仍保留M个容量槽。\n\n关联值：4（点击数字查看计算）\n\n相关：T · M\n\ndeep_ep/include/deep_ep/impls/ep/dispatch.hpp:98 · 依据\n\n悬浮 / 聚焦查看；点击或Enter固定；Esc关闭",
+      "record": {
+        "termId": "T",
+        "label": "T",
+        "definition": "本轮每个 Rank 的有效输入 token 数量",
+        "fullName": "num_tokens",
+        "kind": "教学参数与源码参数的对应",
+        "unit": "token/rank",
+        "bounds": "0≤T≤M，当前 4≤4；T=0仍保留M个容量槽。",
+        "role": "",
+        "sourceRef": {
+          "file": "deep_ep/include/deep_ep/impls/ep/dispatch.hpp",
+          "line": 98,
+          "fn": "",
+          "commit": "3b25377d04b24fc6154698ded78a2bcb2c59afff",
+          "url": "https://github.com/deepseek-ai/DeepEP-Ascend/blob/3b25377d04b24fc6154698ded78a2bcb2c59afff/deep_ep/include/deep_ep/impls/ep/dispatch.hpp#L98"
+        },
+        "aliases": [
+          "T"
+        ],
+        "related": [
+          "T",
+          "M"
+        ],
+        "context": {
+          "step": 6,
+          "preset": "mixed",
+          "stage": "slots",
+          "surface": "visual"
+        },
+        "currentRole": "当前预设 mixed：T=4；本轮每个 Rank 的有效输入 token 数量。",
+        "currentValue": 4,
+        "valueQuery": {
+          "objectId": "@config.T",
+          "value": 4,
+          "step": 6,
+          "phase": "observe",
+          "elementPath": []
+        },
+        "step": 6,
+        "preset": "mixed"
+      },
+      "box": {
+        "x": 130.453125,
+        "y": 40,
+        "width": 430,
+        "height": 325
+      },
+      "anchor": {
+        "x": 112.84375,
+        "y": 40,
+        "width": 7.609375,
+        "height": 15
+      },
+      "viewport": {
+        "width": 1280,
+        "height": 720
+      }
+    },
+    {
+      "name": "refresh restores term context",
+      "text": "M · 教学参数与源码参数的对应\n×\n\n每个来源 Rank 接收分区预留的最大 token 容量\n\n名称/全称：kNumMaxTokensPerRank / num_max_tokens_per_rank\n\n当前作用：当前预设 mixed：M=4；每个来源 Rank 接收分区预留的最大 token 容量。\n\n单位/类型：slot/source-rank\n\n范围/约束：M>0；有效输入T=4；接收分区shape=[R,M]，分区每rank 4条。\n\n关联值：4（点击数字查看计算）\n\n相关：T · M\n\ndeep_ep/include/deep_ep/layout/ep/token.hpp:107 · 依据\n\n悬浮 / 聚焦查看；点击或Enter固定；Esc关闭",
+      "record": {
+        "termId": "M",
+        "label": "M",
+        "definition": "每个来源 Rank 接收分区预留的最大 token 容量",
+        "fullName": "kNumMaxTokensPerRank / num_max_tokens_per_rank",
+        "kind": "教学参数与源码参数的对应",
+        "unit": "slot/source-rank",
+        "bounds": "M>0；有效输入T=4；接收分区shape=[R,M]，分区每rank 4条。",
+        "role": "",
+        "sourceRef": {
+          "file": "deep_ep/include/deep_ep/layout/ep/token.hpp",
+          "line": 107,
+          "fn": "",
+          "commit": "3b25377d04b24fc6154698ded78a2bcb2c59afff",
+          "url": "https://github.com/deepseek-ai/DeepEP-Ascend/blob/3b25377d04b24fc6154698ded78a2bcb2c59afff/deep_ep/include/deep_ep/layout/ep/token.hpp#L107"
+        },
+        "aliases": [
+          "M"
+        ],
+        "related": [
+          "T",
+          "M"
+        ],
+        "context": {
+          "step": 6,
+          "preset": "mixed",
+          "stage": "slots",
+          "surface": "visual"
+        },
+        "currentRole": "当前预设 mixed：M=4；每个来源 Rank 接收分区预留的最大 token 容量。",
+        "currentValue": 4,
+        "valueQuery": {
+          "objectId": "@config.M",
+          "value": 4,
+          "step": 6,
+          "phase": "observe",
+          "elementPath": []
+        },
+        "step": 6,
+        "preset": "mixed"
+      },
+      "box": {
+        "x": 194.9375,
+        "y": 40,
+        "width": 430,
+        "height": 364
+      },
+      "anchor": {
+        "x": 174.4375,
+        "y": 40,
+        "width": 10.5,
+        "height": 15
+      },
+      "viewport": {
+        "width": 1280,
+        "height": 720
+      }
+    }
+  ],
+  "errors": [],
+  "deliveredHashes": {
+    "app.mjs": "bfc8c966eda1f13f49126f3e5aa04f0609658ee151437638aa4c131e7fe23af4",
+    "style.css": "94a4bf33a948915d7fa377c6be54e21059e7143ea76c39d30acae684096427e0",
+    "numeric-ui.mjs": "432726a01acec95d1881cc1842f9d352dbe98f018cfb1679d7bbbda6efe9a648",
+    "provenance.mjs": "6ac9d0f9ad90d2666d7d3d2ee639c570292ba0b9429a4b337d5d23e4f55befa8",
+    "model.mjs": "567fc1e82f4c91dd09c481a05d7eee2b6ea850e6f155a541c1a3f1c95b633197",
+    "terminology.mjs": "ebc7810d7c739552b6ff5d82b665049308c889078a06f68f5ea41563f0f3d47c",
+    "terminology-source-extra.mjs": "28359f74131e5a53c95e80ae2f60a08637748ebab3b71f8636fbe592860d5f2b",
+    "terminology-source-evidence.mjs": "00b3af6a19b4b94996779a7c17d33b87c11752ae64e7fe070d2ef43d09c42171",
+    "source.mjs": "ada3c285a6fbe68dd8eaf809e6949b821813b2986c2abd54a9c89f8f7469e7c0",
+    "source.html": "5b43dcb574144d7e0840943320f2302823da38fc537ea07996ba59d10dce613a"
+  }
+}

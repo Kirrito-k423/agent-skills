@@ -1,0 +1,5275 @@
+{
+  "source_sha256": "25244c66d5937e9e7521400792c2e0ddc974512971f582e95d19c4828c31b678",
+  "functions": [
+    {
+      "id": "dispatch-simt-77",
+      "module_id": "routing",
+      "name": "simt_persistent_worker",
+      "start": 77,
+      "end": 549,
+      "summary": "异步SIMT worker并行路由、计数、SGE/SQ构建与本地metadata复制；Scalar负责metadata和hidden MTE流水。",
+      "inactive": false,
+      "inputs": [
+        "workspace_layout",
+        "host_workspace_layout",
+        "ub_layout",
+        "x",
+        "metadata_send_buffer",
+        "jetty_ptrs",
+        "topk_idx",
+        "dst_buffer_slot_idx",
+        "dst_gsge_idx",
+        "num_tokens",
+        "rank_idx",
+        "vec_core_idx",
+        "recv_buffer_offset",
+        "num_hidden_bytes",
+        "num_metadata_bytes",
+        "num_token_bytes"
+      ],
+      "outputs": [
+        "psum_num_recv_tokens_per_rank",
+        "psum_num_recv_tokens_per_expert",
+        "num_unaligned_recv_tokens_per_expert",
+        "dst_buffer_slot_idx",
+        "dst_gsge_idx",
+        "ub_layout"
+      ],
+      "side_effects": [
+        "写GM SQ环描述符但不ring doorbell",
+        "写peer GM remote_rank_histogram和原子remote_expert_histogram",
+        "SIMT写本Rankrecv metadata",
+        "fresh写mapped host通知和可选cumulative_local_expert_recv_stats",
+        "清EPSignals reduction区域",
+        "发布UB local_copy_ready；消费metadata_ready"
+      ],
+      "review": {
+        "function_id": "dispatch-simt-77",
+        "revision": 5,
+        "draft_author": "walkthrough-agent",
+        "reviewer": "independent-review",
+        "source_sha256": "25244c66d5937e9e7521400792c2e0ddc974512971f582e95d19c4828c31b678",
+        "draft_sha256": "c677c39bd97dd8d012890977136938a59e146388b03c68435c37786eb099ca82",
+        "function_content_sha256": "f96927221de9d7fc47ffb6cb304e65161502f9dad7acd2048a8cdfa834def2b5",
+        "line_range": [
+          77,
+          549
+        ],
+        "gaps": [],
+        "overlaps": [],
+        "unresolved": [],
+        "verdict": "PASS",
+        "status": "PASS",
+        "required_changes": [],
+        "verified": [
+          "lane组同token Rank去重但expert频数不去重；原子槽顺序与输入顺序分开",
+          "同warp两段AIV排他前缀、arrival状态复用/清零与local_copy_ready发布",
+          "逻辑SGE cached恢复、4WQEBB固定槽/NOP/owner位/最后WRITE完成标志",
+          "metadata_ready后local GM copy；raw expert计数、host aligned通知与两类psum不同",
+          "完整定义逐行含signature/comment/brace/blank复核；无fallback或错误跨域变量解释",
+          "caller/callee真实调用点、IO/成员/GM/UB/remote状态变化核对",
+          "allocator/owner/capacity/alignment/lifetime/cache边界详见独立PASS memory-review-r3",
+          "独立复审renderer整改：仅既有标识符周边空白，calls/notes/IO/ranges完全一致"
+        ],
+        "prior_function_content_sha256": "097e81b6b9fea41f68d211aa2af66fd7f49ea44945e0266cdb4db4b47218033d"
+      },
+      "segments": [
+        {
+          "start": 77,
+          "end": 106,
+          "title": "建立AIV、warp与lane坐标",
+          "detail": "kNumMaxTokensPerVecCore=ceil(M/V)；thread_idx分解为warp_idx与lane_idx；参数区分GM数据和UB状态。",
+          "kind": "input",
+          "input_state": [
+            "workspace_layout/ub_layout是当前Rank通信状态；topk_idx是路由输入"
+          ],
+          "mechanism": "kNumMaxTokensPerVecCore=ceil(M/V)；thread_idx分解为warp_idx与lane_idx；参数区分GM数据和UB状态。",
+          "output_state": [
+            "每个worker仅访问所属AIV连续token片段"
+          ],
+          "why": "连续片段使metadata预取与self-copy和SIMT token_idx保持同一坐标。",
+          "calls": [],
+          "id": "dispatch-simt-77-s1"
+        },
+        {
+          "start": 107,
+          "end": 130,
+          "title": "清空本次SQ和路由暂存",
+          "detail": "清零lsqe_counter/psqe_counter；fresh模式清expert/rank_histogram；local_copy_dst_slot_idx和sgep_to_entry填-1后syncthreads。",
+          "kind": "compute",
+          "input_state": [
+            "ub_layout可能含前次dispatch状态"
+          ],
+          "mechanism": "清零lsqe_counter/psqe_counter；fresh模式清expert/rank_histogram；local_copy_dst_slot_idx和sgep_to_entry填-1后syncthreads。",
+          "output_state": [
+            "UB中无效映射为-1，所有thread看见初始化"
+          ],
+          "why": "cached仍需重建当前SQ与self-copy状态；-1防止发送padding SGE。",
+          "calls": [
+            {
+              "name": "EP_STATIC_ASSERT",
+              "line": 109,
+              "type": "external"
+            },
+            {
+              "name": "EP_STATIC_ASSERT",
+              "line": 110,
+              "type": "external"
+            },
+            {
+              "name": "EP_STATIC_ASSERT",
+              "line": 111,
+              "type": "external"
+            },
+            {
+              "name": "EP_STATIC_ASSERT",
+              "line": 112,
+              "type": "external"
+            },
+            {
+              "name": "asc_syncthreads",
+              "line": 130,
+              "type": "external"
+            }
+          ],
+          "id": "dispatch-simt-77-s2"
+        },
+        {
+          "start": 131,
+          "end": 155,
+          "title": "恢复cached槽位和逆SGE映射",
+          "detail": "有界num_entries重建dst_rank_idx、dst_slot_idx、sgep_to_entry和self-copy；warp max再atomic_max算lsqe_counter。",
+          "kind": "compute",
+          "input_state": [
+            "dst_buffer_slot_idx/dst_gsge_idx保留首次dispatch结果"
+          ],
+          "mechanism": "有界num_entries重建dst_rank_idx、dst_slot_idx、sgep_to_entry和self-copy；warp max再atomic_max算lsqe_counter。",
+          "output_state": [
+            "cached路由就绪，跳过fresh计数"
+          ],
+          "why": "复用首次atomic分配的槽顺序，不能重新竞争分配导致handle失配。",
+          "calls": [
+            {
+              "name": "asc_reduce_max",
+              "line": 152,
+              "type": "external"
+            },
+            {
+              "name": "asc_atomic_max",
+              "line": 154,
+              "type": "external"
+            }
+          ],
+          "id": "dispatch-simt-77-s3"
+        },
+        {
+          "start": 156,
+          "end": 171,
+          "title": "按Top-K分组lane",
+          "detail": "num_threads_per_group为覆盖Top-K的2幂；routing_group_mask只覆盖同token lane组，num_iterations向整wave对齐。",
+          "kind": "compute",
+          "input_state": [
+            "kNumTopk不超过warpSize；fresh路由尚未计数"
+          ],
+          "mechanism": "num_threads_per_group为覆盖Top-K的2幂；routing_group_mask只覆盖同token lane组，num_iterations向整wave对齐。",
+          "output_state": [
+            "group_idx/group_lane_idx标识每token路由lane"
+          ],
+          "why": "Top-K小于warp时一个warp同时处理多个token，去重只能在同组内进行。",
+          "calls": [],
+          "id": "dispatch-simt-77-s4"
+        },
+        {
+          "start": 172,
+          "end": 198,
+          "title": "专家计数与目标Rank去重",
+          "detail": "每个非负专家增加 expert_histogram ；deduplicate把同token同Rank只保留一次，rank_histogram原子返回Rank内SGE编号。",
+          "kind": "compute",
+          "input_state": [
+            "topk_idx给出token的全局专家ID"
+          ],
+          "mechanism": "每个非负专家增加 expert_histogram ；deduplicate把同token同Rank只保留一次，rank_histogram原子返回Rank内SGE编号。",
+          "output_state": [
+            "专家保留多命中；每token每目标Rank仅一份传输"
+          ],
+          "why": "同Rank多个专家在epilogue展开，不需网络重复发送hidden；atomic序号不是稳定Top-K顺序。",
+          "calls": [
+            {
+              "name": "asc_atomic_add",
+              "line": 179,
+              "type": "external"
+            },
+            {
+              "name": "deduplicate",
+              "line": 183,
+              "type": "external"
+            },
+            {
+              "name": "asc_atomic_add",
+              "line": 186,
+              "type": "external"
+            },
+            {
+              "name": "asc_syncthreads",
+              "line": 197,
+              "type": "external"
+            }
+          ],
+          "id": "dispatch-simt-77-s5"
+        },
+        {
+          "start": 199,
+          "end": 216,
+          "title": "划分逻辑SQ并发布专家局部计数",
+          "detail": "远端Rank以ceil(count/6)原子保留lsqe_base_idx；expert_histogram以arrival=1和低24位计数发布到本RankGM reduction区。",
+          "kind": "compute",
+          "input_state": [
+            "rank_histogram为本AIV每Rank去重token数"
+          ],
+          "mechanism": "远端Rank以ceil(count/6)原子保留lsqe_base_idx；expert_histogram以arrival=1和低24位计数发布到本RankGM reduction区。",
+          "output_state": [
+            "lsqe_counter包含各远端SQE，expert reduction等待V个AIV"
+          ],
+          "why": "每条SQE只发一个Rank连续槽；expert reduction保留独立的非去重频数。",
+          "calls": [
+            {
+              "name": "asc_atomic_add",
+              "line": 204,
+              "type": "external"
+            },
+            {
+              "name": "asc_atomic_add",
+              "line": 212,
+              "type": "external"
+            }
+          ],
+          "id": "dispatch-simt-77-s6"
+        },
+        {
+          "start": 217,
+          "end": 247,
+          "title": "跨AIV计算每Rank排他前缀",
+          "detail": "各AIV发布arrival=1；同一warp32lane先后对AIV前32与后32组作 wait_ready 和inclusive_sum；读完两半再写arrival=2与exclusive前缀。",
+          "kind": "compute",
+          "input_state": [
+            "local_rank_histogram尚为V×W的到达计数"
+          ],
+          "mechanism": "各AIV发布arrival=1；同一warp的lane分别处理AIV[0,31]与[32,63]两组，进行 wait_ready 、inclusive_sum；读完两半再写arrival=2与exclusive前缀。",
+          "output_state": [
+            "rank_psum为当前源Rank发往peer总量，GM矩阵为AIV前缀"
+          ],
+          "why": "AIV切片必须互不重叠；原始计数被原地复用为前缀时需先完成读。",
+          "calls": [
+            {
+              "name": "EP_STATIC_ASSERT",
+              "line": 217,
+              "type": "external"
+            },
+            {
+              "name": "asc_threadfence",
+              "line": 222,
+              "type": "external"
+            },
+            {
+              "name": "asc_syncthreads",
+              "line": 224,
+              "type": "external"
+            },
+            {
+              "name": "get_reduction_value",
+              "line": 232,
+              "type": "external"
+            },
+            {
+              "name": "wait_ready",
+              "line": 232,
+              "type": "external"
+            },
+            {
+              "name": "warp_inclusive_sum",
+              "line": 233,
+              "type": "external"
+            },
+            {
+              "name": "exchange",
+              "line": 234,
+              "type": "external"
+            },
+            {
+              "name": "get_reduction_value",
+              "line": 236,
+              "type": "external"
+            },
+            {
+              "name": "wait_ready",
+              "line": 236,
+              "type": "external"
+            },
+            {
+              "name": "warp_inclusive_sum",
+              "line": 237,
+              "type": "external"
+            },
+            {
+              "name": "exchange",
+              "line": 238,
+              "type": "external"
+            },
+            {
+              "name": "asc_threadfence",
+              "line": 240,
+              "type": "external"
+            }
+          ],
+          "id": "dispatch-simt-77-s7"
+        },
+        {
+          "start": 248,
+          "end": 255,
+          "title": "读回本AIV槽位基址并清理矩阵",
+          "detail": "wait_ready(ptr,2)读取exclusive前缀到rank_histogram，再清ptr为0并syncthreads。",
+          "kind": "compute",
+          "input_state": [
+            "GM矩阵entry的arrival状态已到2"
+          ],
+          "mechanism": "wait_ready(ptr,2)读取exclusive前缀到rank_histogram，再清ptr为0并syncthreads。",
+          "output_state": [
+            "rank_histogram语义变为前序AIV总数"
+          ],
+          "why": "复用同名数组保存基址，不能再把它解释为当前AIV原始计数。",
+          "calls": [
+            {
+              "name": "get_reduction_value",
+              "line": 252,
+              "type": "external"
+            },
+            {
+              "name": "wait_ready",
+              "line": 252,
+              "type": "external"
+            },
+            {
+              "name": "asc_syncthreads",
+              "line": 255,
+              "type": "external"
+            }
+          ],
+          "id": "dispatch-simt-77-s8"
+        },
+        {
+          "start": 256,
+          "end": 283,
+          "title": "生成接收槽与全局SGE索引",
+          "detail": "远端slot=prefix+sgep；global_sgep_idx=lsqe_base_idx*6+sgep；本地slot=prefix+local序号；写GM缓存handle。",
+          "kind": "output",
+          "input_state": [
+            "rank_histogram为AIV前缀；sgep_idx是核内atomic序号"
+          ],
+          "mechanism": "远端slot=prefix+sgep；global_sgep_idx=lsqe_base_idx*6+sgep；本地slot=prefix+local序号；写GM缓存handle。",
+          "output_state": [
+            "dst_buffer_slot_idx/dst_gsge_idx与UB逆映射一致"
+          ],
+          "why": "首次dispatch的handle同时支持后续cached发送和combine回程。",
+          "calls": [],
+          "id": "dispatch-simt-77-s9"
+        },
+        {
+          "start": 284,
+          "end": 299,
+          "title": "发布self-copy槽准备完成",
+          "detail": "ballot限routing_group_mask，无本Rank路由设 local_copy_dst_slot_idx =-1；有命中存dst_slot_idx；全thread同步后thread0发布local_copy_ready=1。",
+          "kind": "sync",
+          "input_state": [
+            "dst_rank_idx记录去重后的有效Rank"
+          ],
+          "mechanism": "ballot限routing_group_mask，无本Rank路由设 local_copy_dst_slot_idx =-1；有命中存dst_slot_idx；全thread同步后thread0发布local_copy_ready=1。",
+          "output_state": [
+            "Scalar能按本地槽号搬hidden"
+          ],
+          "why": "同token只需一份本地接收记录；ready不能早于槽映射完成。",
+          "calls": [
+            {
+              "name": "asc_ballot",
+              "line": 287,
+              "type": "external"
+            },
+            {
+              "name": "asc_syncthreads",
+              "line": 296,
+              "type": "external"
+            }
+          ],
+          "id": "dispatch-simt-77-s10"
+        },
+        {
+          "start": 300,
+          "end": 314,
+          "title": "加载通信描述符并检查SQ",
+          "detail": " load_peer_info 跳过本Rank；warp1加载jetty_info；检查lsqe_counter*4<=kSQDepth以及packed_head对齐，否则trap。",
+          "kind": "compute",
+          "input_state": [
+            "jetty_ptrs指向已注册peer与AIV私有Jetty控制信息"
+          ],
+          "mechanism": " load_peer_info 跳过本Rank；warp1加载jetty_info；检查lsqe_counter*4<=kSQDepth以及packed_head对齐，否则trap。",
+          "output_state": [
+            "peer_info与SQ环地址对所有warp可用"
+          ],
+          "why": "描述符与Scalar self-copy可重叠，但写WQEBB前必须证明容量和head对齐。",
+          "calls": [
+            {
+              "name": "load_peer_info",
+              "line": 302,
+              "type": "external"
+            },
+            {
+              "name": "load_jetty_info",
+              "line": 305,
+              "type": "external"
+            },
+            {
+              "name": "__trap",
+              "line": 308,
+              "type": "external"
+            },
+            {
+              "name": "asc_syncthreads",
+              "line": 310,
+              "type": "external"
+            },
+            {
+              "name": "__trap",
+              "line": 313,
+              "type": "external"
+            }
+          ],
+          "id": "dispatch-simt-77-s11"
+        },
+        {
+          "start": 315,
+          "end": 326,
+          "title": "向目标Rank发布源Rank总数",
+          "detail": "get_sym_ptr映射到peer的remote_rank_histogram[rank_idx]，写arrival=V和低位总量。",
+          "kind": "output",
+          "input_state": [
+            "rank_psum[peer_idx]是源Rank发往目标peer去重token总量"
+          ],
+          "mechanism": "get_sym_ptr映射到peer的remote_rank_histogram[rank_idx]，写arrival=V和低位总量。",
+          "output_state": [
+            "目标Rank能够构造来源Rank接收流长度"
+          ],
+          "why": "接收流按来源Rank分区，此通知不是payload网络传输完成证据。",
+          "calls": [
+            {
+              "name": "get_sym_ptr",
+              "line": 318,
+              "type": "external"
+            },
+            {
+              "name": "make_reduction_status",
+              "line": 323,
+              "type": "external"
+            }
+          ],
+          "id": "dispatch-simt-77-s12"
+        },
+        {
+          "start": 327,
+          "end": 354,
+          "title": "将逻辑SQ映射到物理SQE",
+          "detail": "warp分摊SQ数，lane0 atomic取得psqe_idx；前6lane按psqe_idx*6+lane查 sgep_to_entry 并取目标Rank/槽。",
+          "kind": "compute",
+          "input_state": [
+            "lsqe_counter已经包含所有远端peer的逻辑SQ数"
+          ],
+          "mechanism": "warp分摊SQ数，lane0 atomic取得psqe_idx；前6lane按psqe_idx*6+lane查 sgep_to_entry 并取目标Rank/槽。",
+          "output_state": [
+            "每warp当前SQ具有最多6个有效SGE pair"
+          ],
+          "why": "物理SQ序号连续分配；同peer逻辑区保证该SQ目标Rank一致。",
+          "calls": [
+            {
+              "name": "asc_atomic_add",
+              "line": 340,
+              "type": "external"
+            },
+            {
+              "name": "exchange",
+              "line": 341,
+              "type": "external"
+            },
+            {
+              "name": "EP_STATIC_ASSERT",
+              "line": 345,
+              "type": "external"
+            }
+          ],
+          "id": "dispatch-simt-77-s13"
+        },
+        {
+          "start": 355,
+          "end": 382,
+          "title": "计算SQE头和SGE编码lane",
+          "detail": "num_sges=2*num_sgeps；头48B占6lane；每pair占4lane；广播lane0目标Rank/槽与sgep_entry_idx。",
+          "kind": "compute",
+          "input_state": [
+            "entry_idx为-1时无有效pair；每pair有hidden和metadata两条SGE"
+          ],
+          "mechanism": "num_sges=2*num_sgeps；头48B占6lane；每pair占4lane；广播lane0目标Rank/槽与sgep_entry_idx。",
+          "output_state": [
+            "lane获得自身64位SQE word的语义职责"
+          ],
+          "why": "48B+12×16B最多需4个64B WQEBB，本实现强制6 pair。",
+          "calls": [
+            {
+              "name": "EP_STATIC_ASSERT",
+              "line": 370,
+              "type": "external"
+            },
+            {
+              "name": "__reduce_add",
+              "line": 371,
+              "type": "external"
+            },
+            {
+              "name": "exchange",
+              "line": 376,
+              "type": "external"
+            },
+            {
+              "name": "exchange",
+              "line": 377,
+              "type": "external"
+            },
+            {
+              "name": "exchange",
+              "line": 382,
+              "type": "external"
+            }
+          ],
+          "id": "dispatch-simt-77-s14"
+        },
+        {
+          "start": 383,
+          "end": 402,
+          "title": "编码SQ环owner与WRITE头",
+          "detail": "slot_head=head+psqe_idx*4；WQEBB owner按环轮次翻转；末物理SQ添加strong-order/CQE；远端地址加recv_buffer_offset+slot*T。",
+          "kind": "compute",
+          "input_state": [
+            "jetty_info.packed_head是当前环head；peer_info含远端注册地址/key"
+          ],
+          "mechanism": "slot_head=head+psqe_idx*4；WQEBB owner按环轮次翻转；末物理SQ添加strong-order/CQE；远端地址加recv_buffer_offset+slot*T。",
+          "output_state": [
+            "sqe_word包含URMA头或peer字段"
+          ],
+          "why": "固定4 WQEBB槽避免不同有效SGE数影响下一SQ定位，最后SQ建立drain完成依据。",
+          "calls": [],
+          "id": "dispatch-simt-77-s15"
+        },
+        {
+          "start": 403,
+          "end": 429,
+          "title": "编码hidden和metadata SGE并写SQ",
+          "detail": "SGE lane对分别写长度与源地址；尾部WQEBB填NOP；asc_stcg写sq_base_addr+ring_idx*8+lane%8。",
+          "kind": "output",
+          "input_state": [
+            "x是原始hidden GM；metadata_send_buffer是打包metadata GM"
+          ],
+          "mechanism": "SGE lane对分别写长度与源地址；尾部WQEBB填NOP；asc_stcg写sq_base_addr+ring_idx*8+lane%8。",
+          "output_state": [
+            "设备SQ环已有全部WRITE描述符，尚未ring doorbell"
+          ],
+          "why": "payload由URMA直接读x与metadata，无须先把hidden搬入发送staging；此循环不能随意加全thread屏障。",
+          "calls": [
+            {
+              "name": "asc_stcg",
+              "line": 422,
+              "type": "external"
+            }
+          ],
+          "id": "dispatch-simt-77-s16"
+        },
+        {
+          "start": 430,
+          "end": 449,
+          "title": "metadata就绪后本地SIMT copy",
+          "detail": "等待ready，按warp遍历本地token，用64位asc_stcg把metadata从发送buffer写到本Rankrecv slot的hidden末尾；cached随后return。",
+          "kind": "output",
+          "input_state": [
+            " metadata_ready 由Scalar在MTE3完成后发布"
+          ],
+          "mechanism": "等待ready，按warp遍历本地token，用64位asc_stcg把metadata从发送buffer写到本Rankrecv slot的hidden末尾；cached随后return。",
+          "output_state": [
+            "self-copy token具有metadata；cached不再次归约计数"
+          ],
+          "why": "metadata独立于Scalar hidden搬运，ready保证GM来源可读。",
+          "calls": [
+            {
+              "name": "nop",
+              "line": 432,
+              "type": "external"
+            },
+            {
+              "name": "asc_syncthreads",
+              "line": 433,
+              "type": "external"
+            },
+            {
+              "name": "asc_stcg",
+              "line": 444,
+              "type": "external"
+            }
+          ],
+          "id": "dispatch-simt-77-s17"
+        },
+        {
+          "start": 450,
+          "end": 468,
+          "title": "汇总本Rank专家频数并发往owner",
+          "detail": "仅AIV0等待V到达，按expert/(E/W)计算owner Rank，把arrival=1+count原子加入远端本地专家桶，再清本地 reduction 状态。",
+          "kind": "output",
+          "input_state": [
+            "local_expert_histogram收集V个AIV的arrival与频数"
+          ],
+          "mechanism": "仅AIV0等待V到达，按expert/(E/W)计算owner Rank，把arrival=1+count原子加入远端本地专家桶，再清本地 reduction 状态。",
+          "output_state": [
+            "owner Rank收到每个源Rank的专家统计"
+          ],
+          "why": "专家计数决定输出展开大小，不能用去重后的Rank token数替代。",
+          "calls": [
+            {
+              "name": "wait_ready",
+              "line": 453,
+              "type": "external"
+            },
+            {
+              "name": "get_reduction_value",
+              "line": 458,
+              "type": "external"
+            },
+            {
+              "name": "asc_atomic_add",
+              "line": 460,
+              "type": "external"
+            },
+            {
+              "name": "get_sym_ptr",
+              "line": 461,
+              "type": "external"
+            }
+          ],
+          "id": "dispatch-simt-77-s18"
+        },
+        {
+          "start": 469,
+          "end": 490,
+          "title": "接收专家全域计数并通知host",
+          "detail": "AIV0取得原始num_recv_tokens；kDoCPUSync写对齐后的host count；写GM未对齐计数、UB histogram与可选累计统计，再清远端桶。",
+          "kind": "output",
+          "input_state": [
+            "remote_expert_histogram等待W个源Rank"
+          ],
+          "mechanism": "AIV0取得原始num_recv_tokens；kDoCPUSync写对齐后的host count；写GM未对齐计数、UB histogram与可选累计统计，再清远端桶。",
+          "output_state": [
+            "host和epilogue拥有同一专家接收数量"
+          ],
+          "why": "host分配对齐输出，epilogue仍需原始count来识别padding范围。",
+          "calls": [
+            {
+              "name": "wait_ready",
+              "line": 472,
+              "type": "external"
+            },
+            {
+              "name": "get_reduction_value",
+              "line": 477,
+              "type": "external"
+            },
+            {
+              "name": "make_reduction_status",
+              "line": 480,
+              "type": "external"
+            },
+            {
+              "name": "asc_atomic_add",
+              "line": 485,
+              "type": "external"
+            }
+          ],
+          "id": "dispatch-simt-77-s19"
+        },
+        {
+          "start": 491,
+          "end": 504,
+          "title": "接收来源Rank计数",
+          "detail": "AIV1 wait_ready要求V状态，保存到UB rank_psum并清GM通知区；syncthreads后warp0读取。",
+          "kind": "sync",
+          "input_state": [
+            "remote_rank_histogram[source]已由发送者写arrival=V"
+          ],
+          "mechanism": "AIV1 wait_ready要求V状态，保存到UB rank_psum并清GM通知区；syncthreads后warp0读取。",
+          "output_state": [
+            "来源Rank去重接收长度可用"
+          ],
+          "why": "arrival=V表示该源已汇总所有AIV，不代表W个源在同一桶相加。",
+          "calls": [
+            {
+              "name": "EP_STATIC_ASSERT",
+              "line": 492,
+              "type": "external"
+            },
+            {
+              "name": "EP_STATIC_ASSERT",
+              "line": 493,
+              "type": "external"
+            },
+            {
+              "name": "get_reduction_value",
+              "line": 496,
+              "type": "external"
+            },
+            {
+              "name": "wait_ready",
+              "line": 497,
+              "type": "external"
+            },
+            {
+              "name": "asc_syncthreads",
+              "line": 503,
+              "type": "external"
+            }
+          ],
+          "id": "dispatch-simt-77-s20"
+        },
+        {
+          "start": 505,
+          "end": 525,
+          "title": "构造专家有效终点",
+          "detail": "warp扫描align(count,A)，exclusive_warp_psum与前wave累计给专家起点；psum_num_recv_tokens_per_expert写此前对齐容量+当前原始count。",
+          "kind": "output",
+          "input_state": [
+            "expert_histogram[e]是原始专家count"
+          ],
+          "mechanism": "warp扫描align(count,A)，exclusive_warp_psum与前wave累计给专家起点；psum_num_recv_tokens_per_expert写此前对齐容量+当前原始count。",
+          "output_state": [
+            "每个expert end是有效行末端，不含本专家padding"
+          ],
+          "why": "相邻专家起点需再次align前一终点；简单原始cumsum或全部aligned cumsum都不能表达这个接口。",
+          "calls": [
+            {
+              "name": "warp_inclusive_sum",
+              "line": 513,
+              "type": "external"
+            },
+            {
+              "name": "exchange",
+              "line": 522,
+              "type": "external"
+            }
+          ],
+          "id": "dispatch-simt-77-s21"
+        },
+        {
+          "start": 526,
+          "end": 549,
+          "title": "构造来源Rank累计接收流",
+          "detail": "AIV1 warp0计算inclusive cumsum写psum_num_recv_tokens_per_rank；kDoCPUSync逐Rank通知host原始count。",
+          "kind": "output",
+          "input_state": [
+            "rank_psum[source]是每个源Rank去重接收长度"
+          ],
+          "mechanism": "AIV1 warp0计算inclusive cumsum写psum_num_recv_tokens_per_rank；kDoCPUSync逐Rank通知host原始count。",
+          "output_state": [
+            "PSumIterator能把全局接收流映射到来源RankGM切片"
+          ],
+          "why": "Rank流没有expert alignment padding，末项就是去重recv token总数。",
+          "calls": [
+            {
+              "name": "warp_inclusive_sum",
+              "line": 533,
+              "type": "external"
+            },
+            {
+              "name": "make_reduction_status",
+              "line": 541,
+              "type": "external"
+            },
+            {
+              "name": "exchange",
+              "line": 546,
+              "type": "external"
+            }
+          ],
+          "id": "dispatch-simt-77-s22"
+        }
+      ],
+      "line_notes": [
+        {
+          "line": 77,
+          "kind": "signature",
+          "explanation": "本行声明当前设备入口参数/模板约束“template <int kNumMaxTokensPerRank,”。 kNumMaxTokensPerRank：每Rank最大输入容量M",
+          "reads": [
+            "kNumMaxTokensPerRank"
+          ],
+          "writes": []
+        },
+        {
+          "line": 78,
+          "kind": "signature",
+          "explanation": "固定通信域W、专家E、路由K与专家alignment A；Rank专家等分和Top-K组宽度由这些参数派生。",
+          "reads": [
+            "kNumRanks",
+            "kNumExperts",
+            "kNumTopk",
+            "kExpertAlignment"
+          ],
+          "writes": []
+        },
+        {
+          "line": 79,
+          "kind": "signature",
+          "explanation": "kCachedMode选择恢复handle或fresh统计；kDoCPUSync控制host通知；V决定跨核前缀与到达数，threads决定SIMT并行度。",
+          "reads": [
+            "kCachedMode",
+            "kDoCPUSync",
+            "kNumVecCores"
+          ],
+          "writes": []
+        },
+        {
+          "line": 80,
+          "kind": "signature",
+          "explanation": "每SQ可编码的SGE pair数量，本实现后面强制等于6；每pair对应hidden+metadata两SGE。",
+          "reads": [
+            "kNumSGEPairsPerSQE"
+          ],
+          "writes": []
+        },
+        {
+          "line": 81,
+          "kind": "signature",
+          "explanation": "kNumTimeoutCycles供远端专家/Rank归约等待超时检查，避免永久无到达。",
+          "reads": [
+            "kNumTimeoutCycles"
+          ],
+          "writes": []
+        },
+        {
+          "line": 82,
+          "kind": "signature",
+          "explanation": "本行声明当前设备入口参数/模板约束“int kNumExpertsPerRank = kNumExperts / kNumRanks,”。 kNumExperts：全域专家数E，按Rank均分；kNumRanks：通信域Rank数W",
+          "reads": [
+            "kNumExperts",
+            "kNumRanks"
+          ],
+          "writes": [
+            "kNumExpertsPerRank"
+          ]
+        },
+        {
+          "line": 83,
+          "kind": "signature",
+          "explanation": "本行声明当前设备入口参数/模板约束“int kNumMaxTokensPerVecCore = math::ceil_div(kNumMaxTokensPerRank, kNumVecCores),”。 kNumMaxTokensPerRank：每Rank最大输入容量M；kNumVecCores：AIV并行核数V与私有Jetty数",
+          "reads": [
+            "kNumMaxTokensPerRank",
+            "kNumVecCores"
+          ],
+          "writes": [
+            "kNumMaxTokensPerVecCore"
+          ]
+        },
+        {
+          "line": 84,
+          "kind": "signature",
+          "explanation": "在建立AIV、warp与lane坐标中更新/计算“int kNumWarps = kNumThreads / warpSize,”。 kNumMaxTokensPerVecCore=ceil(M/V)；thread_idx分解为warp_idx与lane_idx；参数区分GM数据和UB状态。",
+          "reads": [],
+          "writes": [
+            "kNumWarps"
+          ]
+        },
+        {
+          "line": 85,
+          "kind": "signature",
+          "explanation": "本行声明当前设备入口参数/模板约束“typename ub_layout_t = DispatchUBLayout<kNumExperts, kNumRanks, kNumMaxTokensPerVecCore * kNumTopk, kNumMaxTokensPerVecCore>>”。 kNumExperts：全域专家数E，按Rank均分；kNumRanks：通信域Rank数W；kNumTopk：每token路由数K",
+          "reads": [
+            "kNumExperts",
+            "kNumRanks",
+            "kNumTopk"
+          ],
+          "writes": [
+            "ub_layout_t"
+          ]
+        },
+        {
+          "line": 86,
+          "kind": "signature",
+          "explanation": "声明建立AIV、warp与lane坐标对应的模板/设备入口“__simt_vf__ __aicore__ __launch_bounds__(kNumThreads) void simt_persistent_worker(”；workspace_layout/ub_layout是当前Rank通信状态；topk_idx是路由输入",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 87,
+          "kind": "signature",
+          "explanation": "workspace_layout绑定Context设备EPSignals；host_workspace_layout绑定EPBuffer映射host页，worker仅写通知，不拥有内存。",
+          "reads": [
+            "workspace_layout",
+            "host_workspace_layout"
+          ],
+          "writes": []
+        },
+        {
+          "line": 88,
+          "kind": "signature",
+          "explanation": "ub_layout是当前AIV私有UB控制区；SIMT与该AIV Scalar通过ready旗标共享路由槽和Jetty状态。",
+          "reads": [
+            "ub_layout_t",
+            "ub_layout"
+          ],
+          "writes": []
+        },
+        {
+          "line": 89,
+          "kind": "signature",
+          "explanation": "x是URMA直接读取的原hidden GM；metadata_send_buffer是Scalar打包完成后URMA/SIMT读取的metadata GM。",
+          "reads": [
+            "x",
+            "metadata_send_buffer"
+          ],
+          "writes": []
+        },
+        {
+          "line": 90,
+          "kind": "signature",
+          "explanation": "jetty_ptrs含peer注册信息与每AIV私有Jetty SQ/CQ控制地址，加载后用于WQE编码。",
+          "reads": [
+            "jetty_ptrs"
+          ],
+          "writes": []
+        },
+        {
+          "line": 91,
+          "kind": "signature",
+          "explanation": "topk_idx为每token K个int64全局专家ID；fresh统计专家并按目标Rank去重，cached用它恢复目标Rank。",
+          "reads": [
+            "topk_idx"
+          ],
+          "writes": []
+        },
+        {
+          "line": 92,
+          "kind": "signature",
+          "explanation": "可选GM cumulative_local_expert_recv_stats保存本地专家累计原始接收数；nullptr时跳过统计。",
+          "reads": [
+            "cumulative_local_expert_recv_stats"
+          ],
+          "writes": []
+        },
+        {
+          "line": 93,
+          "kind": "signature",
+          "explanation": "psum_num_recv_tokens_per_rank是GM输出的来源Rank普通累计接收流长度，epilogue用它跨Rank定位。",
+          "reads": [
+            "psum_num_recv_tokens_per_rank"
+          ],
+          "writes": []
+        },
+        {
+          "line": 94,
+          "kind": "signature",
+          "explanation": "psum_num_recv_tokens_per_expert输出每专家有效终点；num_unaligned_recv_tokens_per_expert输出原始count，两者都不能视为全部对齐容量。",
+          "reads": [
+            "psum_num_recv_tokens_per_expert",
+            "num_unaligned_recv_tokens_per_expert"
+          ],
+          "writes": []
+        },
+        {
+          "line": 95,
+          "kind": "signature",
+          "explanation": "dst_buffer_slot_idx与dst_gsge_idx是fresh写、cached读的GM路由handle：分别存目标slot和远端SGE pair位置。",
+          "reads": [
+            "dst_buffer_slot_idx",
+            "dst_gsge_idx"
+          ],
+          "writes": []
+        },
+        {
+          "line": 96,
+          "kind": "signature",
+          "explanation": "recv_buffer_offset是本源Rank在对称注册大块中的接收切片偏移，peer远端地址加此偏移定位同一源Rank区。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 97,
+          "kind": "signature",
+          "explanation": "hidden、metadata与完整token字节数分别用作两个SGE长度与接收slot步长；metadata不包含hidden。",
+          "reads": [
+            "num_metadata_bytes"
+          ],
+          "writes": []
+        },
+        {
+          "line": 98,
+          "kind": "signature",
+          "explanation": "num_tokens限制本次有效输入；vec_core_idx限定AIV连续token片段；rank_idx区分远端发送与self-copy。",
+          "reads": [
+            "num_tokens",
+            "vec_core_idx",
+            "rank_idx"
+          ],
+          "writes": []
+        },
+        {
+          "line": 99,
+          "kind": "comment",
+          "explanation": "注释说明建立AIV、warp与lane坐标的实现意图（Indices）；kNumMaxTokensPerVecCore=ceil(M/V)；thread_idx分解为warp_idx与lane_idx；参数区分GM数据和UB状态。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 100,
+          "kind": "comment",
+          "explanation": "注释说明建立AIV、warp与lane坐标的实现意图（TODO: try intrinsics）；kNumMaxTokensPerVecCore=ceil(M/V)；thread_idx分解为warp_idx与lane_idx；参数区分GM数据和UB状态。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 101,
+          "kind": "comment",
+          "explanation": "注释说明建立AIV、warp与lane坐标的实现意图（TODO: reshuffling, but also ensure coalescing）；kNumMaxTokensPerVecCore=ceil(M/V)；thread_idx分解为warp_idx与lane_idx；参数区分GM数据和UB状态。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 102,
+          "kind": "comment",
+          "explanation": "注释说明建立AIV、warp与lane坐标的实现意图（TODO: after shuffling, please note that the data access coalescing will be break）；kNumMaxTokensPerVecCore=ceil(M/V)；thread_idx分解为warp_idx与lane_idx；参数区分GM数据和UB状态。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 103,
+          "kind": "comment",
+          "explanation": "注释说明建立AIV、warp与lane坐标的实现意图（`thread_idx` can be `threadIdx.x` to save registers (without shuffling)）；kNumMaxTokensPerVecCore=ceil(M/V)；thread_idx分解为warp_idx与lane_idx；参数区分GM数据和UB状态。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 104,
+          "kind": "declaration",
+          "explanation": "在建立AIV、warp与lane坐标中更新/计算“const int thread_idx = static_cast<int>(threadIdx.x);”。 thread_idx：SIMT thread坐标；作为专家/Rank桶并行索引。",
+          "reads": [
+            "threadIdx"
+          ],
+          "writes": [
+            "thread_idx"
+          ]
+        },
+        {
+          "line": 105,
+          "kind": "declaration",
+          "explanation": "在建立AIV、warp与lane坐标中更新/计算“const int warp_idx = thread_idx / warpSize;”。 warp_idx：当前warp编号；分配SQ与self-copy任务；thread_idx：SIMT thread坐标；作为专家/Rank桶并行索引。",
+          "reads": [
+            "thread_idx"
+          ],
+          "writes": [
+            "warp_idx"
+          ]
+        },
+        {
+          "line": 106,
+          "kind": "declaration",
+          "explanation": "在建立AIV、warp与lane坐标中更新/计算“const int lane_idx = thread_idx % warpSize;”。 lane_idx：warp内lane；执行shuffle、扫描和WQEBB编码；thread_idx：SIMT thread坐标；作为专家/Rank桶并行索引。",
+          "reads": [
+            "thread_idx"
+          ],
+          "writes": [
+            "lane_idx"
+          ]
+        },
+        {
+          "line": 107,
+          "kind": "blank",
+          "explanation": "在清空本次SQ和路由暂存中，分隔“const int lane_idx = thread_idx % warpSize;”与随后“// Checks”两步；此处没有数据写入。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 108,
+          "kind": "comment",
+          "explanation": "注释说明清空本次SQ和路由暂存的实现意图（Checks）；清零lsqe_counter/psqe_counter；fresh模式清expert/rank_histogram；local_copy_dst_slot_idx和sgep_to_entry填-1后syncthreads。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 109,
+          "kind": "statement",
+          "explanation": "要求专家数<=thread数，使thread_idx<kNumExperts分工能各负责一个专家桶及归约。",
+          "reads": [
+            "kNumExperts"
+          ],
+          "writes": []
+        },
+        {
+          "line": 110,
+          "kind": "statement",
+          "explanation": "要求Rank数<=thread数，使每Rank描述符/计数都可由一个thread负责。",
+          "reads": [
+            "kNumRanks"
+          ],
+          "writes": []
+        },
+        {
+          "line": 111,
+          "kind": "statement",
+          "explanation": "要求AIV数V>0，避免核token分割、跨核到达数和前缀循环无定义。",
+          "reads": [
+            "kNumVecCores"
+          ],
+          "writes": []
+        },
+        {
+          "line": 112,
+          "kind": "statement",
+          "explanation": "要求K在[1,warpSize]，保证一个token lane组和routing_group_mask在单warp32位位图内。",
+          "reads": [
+            "kNumTopk"
+          ],
+          "writes": []
+        },
+        {
+          "line": 113,
+          "kind": "blank",
+          "explanation": "在清空本次SQ和路由暂存中，分隔“EP_STATIC_ASSERT(kNumTopk > 0 and kNumTopk <= warpSize);”与随后“// Clean: < 1 us”两步；此处没有数据写入。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 114,
+          "kind": "comment",
+          "explanation": "源码在清空本次SQ和路由暂存旁记载“Clean: < 1 us”；这是源码备注，未在本作品对应硬件配置实测，不能当性能结论。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 115,
+          "kind": "branch",
+          "explanation": "清空本次SQ和路由暂存的分支条件为“if (thread_idx == 0)”；cached仍需重建当前SQ与self-copy状态；-1防止发送padding SGE。",
+          "reads": [
+            "thread_idx"
+          ],
+          "writes": []
+        },
+        {
+          "line": 116,
+          "kind": "statement",
+          "explanation": "thread0把逻辑SQE计数lsqe_counter清零，后续各peer按ceil(count/6)原子保留区间。",
+          "reads": [],
+          "writes": [
+            "ub_layout",
+            "lsqe_counter"
+          ]
+        },
+        {
+          "line": 117,
+          "kind": "statement",
+          "explanation": "thread0把物理SQE计数psqe_counter清零，后续各warp用atomic_add取得连续提交槽。",
+          "reads": [],
+          "writes": [
+            "ub_layout",
+            "psqe_counter"
+          ]
+        },
+        {
+          "line": 118,
+          "kind": "brace",
+          "explanation": "结束由“if (thread_idx == 0) {”开启的作用域；到此清空本次SQ和路由暂存对应状态更新完成，此括号不增加额外同步。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 119,
+          "kind": "branch",
+          "explanation": "清空本次SQ和路由暂存的分支条件为“if constexpr (not kCachedMode)”；cached仍需重建当前SQ与self-copy状态；-1防止发送padding SGE。",
+          "reads": [
+            "kCachedMode"
+          ],
+          "writes": []
+        },
+        {
+          "line": 120,
+          "kind": "branch",
+          "explanation": "清空本次SQ和路由暂存的分支条件为“if (thread_idx < kNumExperts)”；cached仍需重建当前SQ与self-copy状态；-1防止发送padding SGE。",
+          "reads": [
+            "thread_idx",
+            "kNumExperts"
+          ],
+          "writes": []
+        },
+        {
+          "line": 121,
+          "kind": "statement",
+          "explanation": "fresh模式按thread_idx逐专家清expert_histogram；每次Top-K命中都会计数，同Rank多专家不去重。",
+          "reads": [
+            "thread_idx"
+          ],
+          "writes": [
+            "ub_layout",
+            "expert_histogram"
+          ]
+        },
+        {
+          "line": 122,
+          "kind": "branch",
+          "explanation": "清空本次SQ和路由暂存的分支条件为“if (thread_idx < kNumRanks)”；cached仍需重建当前SQ与self-copy状态；-1防止发送padding SGE。",
+          "reads": [
+            "thread_idx",
+            "kNumRanks"
+          ],
+          "writes": []
+        },
+        {
+          "line": 123,
+          "kind": "statement",
+          "explanation": "fresh模式清rank_histogram；此时它记录每目标Rank去重后的token数，后面将原地改成AIV前缀。",
+          "reads": [
+            "thread_idx"
+          ],
+          "writes": [
+            "ub_layout",
+            "rank_histogram"
+          ]
+        },
+        {
+          "line": 124,
+          "kind": "brace",
+          "explanation": "结束由“if constexpr (not kCachedMode) {”开启的作用域；到此清空本次SQ和路由暂存对应状态更新完成，此括号不增加额外同步。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 125,
+          "kind": "loop",
+          "explanation": "清空本次SQ和路由暂存的迭代条件为“for (int i = thread_idx; i < kNumMaxTokensPerVecCore; i += kNumThreads)”；cached仍需重建当前SQ与self-copy状态；-1防止发送padding SGE。",
+          "reads": [
+            "thread_idx",
+            "i"
+          ],
+          "writes": [
+            "i"
+          ]
+        },
+        {
+          "line": 126,
+          "kind": "statement",
+          "explanation": "在清空本次SQ和路由暂存中更新/计算“ub_layout->local_copy_dst_slot_idx[i] = -1;”。 local_copy_dst_slot_idx：每个本AIV token的本Rank接收槽，-1表示无self-copy。",
+          "reads": [],
+          "writes": [
+            "ub_layout",
+            "local_copy_dst_slot_idx"
+          ]
+        },
+        {
+          "line": 127,
+          "kind": "loop",
+          "explanation": "清空本次SQ和路由暂存的迭代条件为“for (int i = thread_idx; i < ub_layout_t::kNumMaxSGEs; i += kNumThreads)”；cached仍需重建当前SQ与self-copy状态；-1防止发送padding SGE。",
+          "reads": [
+            "thread_idx",
+            "ub_layout_t",
+            "i"
+          ],
+          "writes": [
+            "i"
+          ]
+        },
+        {
+          "line": 128,
+          "kind": "statement",
+          "explanation": "在清空本次SQ和路由暂存中更新/计算“ub_layout->sgep_to_entry[i] = -1;”。 sgep_to_entry：全局SGE pair位置到本AIV路由entry的逆映射。",
+          "reads": [],
+          "writes": [
+            "ub_layout",
+            "sgep_to_entry"
+          ]
+        },
+        {
+          "line": 129,
+          "kind": "blank",
+          "explanation": "在清空本次SQ和路由暂存中，分隔“ub_layout->sgep_to_entry[i] = -1;”与随后“asc_syncthreads();”两步；此处没有数据写入。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 130,
+          "kind": "call",
+          "explanation": "等待当前SIMT worker所有thread，保证前述UB状态已在worker内汇合；调用本行“asc_syncthreads();”。 清零lsqe_counter/psqe_counter；fresh模式清expert/rank_histogram；local_copy_dst_slot_idx和sgep_to_entry填-1后syncthreads。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 131,
+          "kind": "blank",
+          "explanation": "在恢复cached槽位和逆SGE映射中，分隔“asc_syncthreads();”与随后“// Each AIV owns a bounded contiguous token range, including the final partial range.”两步；此处没有数据写入。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 132,
+          "kind": "comment",
+          "explanation": "注释说明恢复cached槽位和逆SGE映射的实现意图（Each AIV owns a bounded contiguous token range, including the final partial range.）；有界num_entries重建dst_rank_idx、dst_slot_idx、sgep_to_entry和self-copy；warp max再atomic_max算lsqe_counter。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 133,
+          "kind": "branch",
+          "explanation": "恢复cached槽位和逆SGE映射的分支条件为“if constexpr (kCachedMode)”；复用首次atomic分配的槽顺序，不能重新竞争分配导致handle失配。",
+          "reads": [
+            "kCachedMode"
+          ],
+          "writes": []
+        },
+        {
+          "line": 134,
+          "kind": "comment",
+          "explanation": "注释说明恢复cached槽位和逆SGE映射的实现意图（Restore the cached slots and inverse SGE mapping for this vector core.）；有界num_entries重建dst_rank_idx、dst_slot_idx、sgep_to_entry和self-copy；warp max再atomic_max算lsqe_counter。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 135,
+          "kind": "declaration",
+          "explanation": "max_gsge_idx初始化为每thread私有-1，152行才进行warp归约；无远端SGE时恢复SQ数为0。",
+          "reads": [],
+          "writes": [
+            "max_gsge_idx"
+          ]
+        },
+        {
+          "line": 136,
+          "kind": "declaration",
+          "explanation": "在恢复cached槽位和逆SGE映射中更新/计算“const auto num_entries = math::max(0, math::min(kNumMaxTokensPerVecCore, num_tokens - vec_core_idx * kNumMaxTokensPerVecCore)) * kNumTopk;”。 num_entries：当前AIV有效token数乘Top-K，尾AIV夹在0与最大连续块容量之间。",
+          "reads": [
+            "num_tokens",
+            "vec_core_idx",
+            "kNumTopk"
+          ],
+          "writes": [
+            "num_entries"
+          ]
+        },
+        {
+          "line": 137,
+          "kind": "loop",
+          "explanation": "恢复cached槽位和逆SGE映射的迭代条件为“for (int entry_idx = thread_idx; entry_idx < num_entries; entry_idx += kNumThreads)”；复用首次atomic分配的槽顺序，不能重新竞争分配导致handle失配。",
+          "reads": [
+            "entry_idx",
+            "thread_idx",
+            "num_entries"
+          ],
+          "writes": [
+            "entry_idx"
+          ]
+        },
+        {
+          "line": 138,
+          "kind": "declaration",
+          "explanation": "在恢复cached槽位和逆SGE映射中更新/计算“const auto token_idx = vec_core_idx * kNumMaxTokensPerVecCore + entry_idx / kNumTopk;”。 token_idx：输入token的Rank内索引，由AIV连续块基址加核内位置；entry_idx：本AIV token位置×Top-K+路由位置，定位路由暂存。",
+          "reads": [
+            "vec_core_idx",
+            "entry_idx",
+            "kNumTopk"
+          ],
+          "writes": [
+            "token_idx"
+          ]
+        },
+        {
+          "line": 139,
+          "kind": "declaration",
+          "explanation": "在恢复cached槽位和逆SGE映射中更新/计算“const auto topk_offset = token_idx * kNumTopk + entry_idx % kNumTopk;”。 topk_offset：token×Top-K+路由lane的扁平handle索引；token_idx：输入token的Rank内索引，由AIV连续块基址加核内位置；entry_idx：本AIV token位置×Top-K+路由位置，定位路由暂存。",
+          "reads": [
+            "token_idx",
+            "kNumTopk",
+            "entry_idx"
+          ],
+          "writes": [
+            "topk_offset"
+          ]
+        },
+        {
+          "line": 140,
+          "kind": "declaration",
+          "explanation": "在恢复cached槽位和逆SGE映射中更新/计算“const auto dst_slot_idx = dst_buffer_slot_idx[topk_offset];”。 dst_slot_idx：目标Rank中当前源Rank接收切片内槽号，-1代表无有效路由；topk_offset：token×Top-K+路由lane的扁平handle索引。",
+          "reads": [
+            "dst_buffer_slot_idx",
+            "topk_offset"
+          ],
+          "writes": [
+            "dst_slot_idx"
+          ]
+        },
+        {
+          "line": 141,
+          "kind": "declaration",
+          "explanation": "在恢复cached槽位和逆SGE映射中更新/计算“const auto dst_rank_idx = dst_slot_idx >= 0 ? static_cast<int>(topk_idx[topk_offset]) / kNumExpertsPerRank : -1;”。 dst_rank_idx：全局专家ID除每Rank专家数得到目标Rank，去重后可能变为-1；dst_slot_idx：目标Rank中当前源Rank接收切片内槽号，-1代表无有效路由；topk_offset：token×Top-K+路由lane的扁平handle索引。",
+          "reads": [
+            "dst_slot_idx",
+            "topk_idx",
+            "topk_offset"
+          ],
+          "writes": [
+            "dst_rank_idx"
+          ]
+        },
+        {
+          "line": 142,
+          "kind": "declaration",
+          "explanation": "在恢复cached槽位和逆SGE映射中更新/计算“const auto gsge_idx = dst_gsge_idx[topk_offset];”。 gsge_idx：cached全局SGE pair位置，负值对应非远端有效发送；topk_offset：token×Top-K+路由lane的扁平handle索引。",
+          "reads": [
+            "dst_gsge_idx",
+            "topk_offset"
+          ],
+          "writes": [
+            "gsge_idx"
+          ]
+        },
+        {
+          "line": 143,
+          "kind": "statement",
+          "explanation": "在恢复cached槽位和逆SGE映射中更新/计算“ub_layout->dst_rank_idx[entry_idx] = dst_rank_idx;”。 dst_rank_idx：全局专家ID除每Rank专家数得到目标Rank，去重后可能变为-1；entry_idx：本AIV token位置×Top-K+路由位置，定位路由暂存。",
+          "reads": [
+            "entry_idx",
+            "dst_rank_idx"
+          ],
+          "writes": [
+            "ub_layout",
+            "dst_rank_idx"
+          ]
+        },
+        {
+          "line": 144,
+          "kind": "statement",
+          "explanation": "在恢复cached槽位和逆SGE映射中更新/计算“ub_layout->dst_slot_idx[entry_idx] = dst_slot_idx;”。 dst_slot_idx：目标Rank中当前源Rank接收切片内槽号，-1代表无有效路由；entry_idx：本AIV token位置×Top-K+路由位置，定位路由暂存。",
+          "reads": [
+            "entry_idx",
+            "dst_slot_idx"
+          ],
+          "writes": [
+            "ub_layout",
+            "dst_slot_idx"
+          ]
+        },
+        {
+          "line": 145,
+          "kind": "branch",
+          "explanation": "恢复cached槽位和逆SGE映射的分支条件为“if (gsge_idx >= 0)”；复用首次atomic分配的槽顺序，不能重新竞争分配导致handle失配。",
+          "reads": [
+            "gsge_idx"
+          ],
+          "writes": []
+        },
+        {
+          "line": 146,
+          "kind": "statement",
+          "explanation": "在恢复cached槽位和逆SGE映射中更新/计算“ub_layout->sgep_to_entry[gsge_idx] = entry_idx;”。 sgep_to_entry：全局SGE pair位置到本AIV路由entry的逆映射；gsge_idx：cached全局SGE pair位置，负值对应非远端有效发送；entry_idx：本AIV token位置×Top-K+路由位置，定位路由暂存。",
+          "reads": [
+            "entry_idx"
+          ],
+          "writes": [
+            "ub_layout",
+            "sgep_to_entry"
+          ]
+        },
+        {
+          "line": 147,
+          "kind": "statement",
+          "explanation": "当前thread把自身看到的cached gsge_idx并入私有max_gsge_idx；此行尚未跨lane归约。",
+          "reads": [
+            "gsge_idx",
+            "max_gsge_idx"
+          ],
+          "writes": [
+            "max_gsge_idx"
+          ]
+        },
+        {
+          "line": 148,
+          "kind": "statement",
+          "explanation": "结束if (gsge_idx >= 0) {并进入else if (dst_rank_idx == rank_idx) {，在恢复cached槽位和逆SGE映射里处理相反/后续分支。",
+          "reads": [
+            "dst_rank_idx",
+            "rank_idx"
+          ],
+          "writes": []
+        },
+        {
+          "line": 149,
+          "kind": "statement",
+          "explanation": "在恢复cached槽位和逆SGE映射中更新/计算“ub_layout->local_copy_dst_slot_idx[entry_idx / kNumTopk] = dst_slot_idx;”。 local_copy_dst_slot_idx：每个本AIV token的本Rank接收槽，-1表示无self-copy；entry_idx：本AIV token位置×Top-K+路由位置，定位路由暂存；dst_slot_idx：目标Rank中当前源Rank接收切片内槽号，-1代表无有效路由。",
+          "reads": [
+            "entry_idx",
+            "dst_slot_idx"
+          ],
+          "writes": [
+            "ub_layout",
+            "local_copy_dst_slot_idx"
+          ]
+        },
+        {
+          "line": 150,
+          "kind": "brace",
+          "explanation": "结束由“} else if (dst_rank_idx == rank_idx) {”开启的作用域；到此恢复cached槽位和逆SGE映射对应状态更新完成，此括号不增加额外同步。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 151,
+          "kind": "brace",
+          "explanation": "结束由“for (int entry_idx = thread_idx; entry_idx < num_entries; entry_idx += kNumThreads) {”开启的作用域；到此恢复cached槽位和逆SGE映射对应状态更新完成，此括号不增加额外同步。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 152,
+          "kind": "call",
+          "explanation": "对当前warp的候选值归约取最大；调用本行“max_gsge_idx = asc_reduce_max(max_gsge_idx);”。 max_gsge_idx：当前warp看到的最大cached SGE pair编号，用来恢复SQ总数。",
+          "reads": [
+            "max_gsge_idx"
+          ],
+          "writes": [
+            "max_gsge_idx"
+          ]
+        },
+        {
+          "line": 153,
+          "kind": "branch",
+          "explanation": "恢复cached槽位和逆SGE映射的分支条件为“if (lane_idx == 0)”；复用首次atomic分配的槽顺序，不能重新竞争分配导致handle失配。",
+          "reads": [
+            "lane_idx"
+          ],
+          "writes": []
+        },
+        {
+          "line": 154,
+          "kind": "call",
+          "explanation": "原子保留所有warp恢复出的最大SQ数量；调用本行“asc_atomic_max(&ub_layout->lsqe_counter, math::ceil_div(max_gsge_idx + 1, kNumSGEPairsPerSQE));”。 lsqe_counter：逻辑SQE总数，各远端Rank预留SQ区累计值；max_gsge_idx：当前warp看到的最大cached SGE pair编号，用来恢复SQ总数。",
+          "reads": [
+            "ub_layout",
+            "lsqe_counter",
+            "max_gsge_idx",
+            "kNumSGEPairsPerSQE"
+          ],
+          "writes": [
+            "ub_layout",
+            "lsqe_counter"
+          ]
+        },
+        {
+          "line": 155,
+          "kind": "statement",
+          "explanation": "结束if constexpr (kCachedMode) {并进入else {，在恢复cached槽位和逆SGE映射里处理相反/后续分支。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 156,
+          "kind": "comment",
+          "explanation": "注释说明按Top-K分组lane的实现意图（If topk is small, a single warp can scan multiple tokens）；num_threads_per_group为覆盖Top-K的2幂；routing_group_mask只覆盖同token lane组，num_iterations向整wave对齐。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 157,
+          "kind": "declaration",
+          "explanation": "在按Top-K分组lane中更新/计算“static constexpr int num_threads_per_group = kNumTopk == 1 ? 1 : 1 << (32 - __builtin_clz(static_cast<unsigned>(kNumTopk - 1)));”。 num_threads_per_group：覆盖Top-K的最小2幂lane组宽度。",
+          "reads": [
+            "kNumTopk"
+          ],
+          "writes": [
+            "num_threads_per_group"
+          ]
+        },
+        {
+          "line": 158,
+          "kind": "declaration",
+          "explanation": "在按Top-K分组lane中更新/计算“static constexpr int num_groups_per_wave = kNumThreads / num_threads_per_group;”。 num_groups_per_wave：kNumThreads除lane组宽度，每轮同时处理的token数量；num_threads_per_group：覆盖Top-K的最小2幂lane组宽度。",
+          "reads": [
+            "num_threads_per_group"
+          ],
+          "writes": [
+            "num_groups_per_wave"
+          ]
+        },
+        {
+          "line": 159,
+          "kind": "declaration",
+          "explanation": "在按Top-K分组lane中更新/计算“const int group_idx = thread_idx / num_threads_per_group;”。 group_idx：thread所属token lane组；thread_idx：SIMT thread坐标；作为专家/Rank桶并行索引；num_threads_per_group：覆盖Top-K的最小2幂lane组宽度。",
+          "reads": [
+            "thread_idx",
+            "num_threads_per_group"
+          ],
+          "writes": [
+            "group_idx"
+          ]
+        },
+        {
+          "line": 160,
+          "kind": "declaration",
+          "explanation": "在按Top-K分组lane中更新/计算“const int group_lane_idx = thread_idx % num_threads_per_group;”。 group_lane_idx：同token组内Top-K路由位置；thread_idx：SIMT thread坐标；作为专家/Rank桶并行索引；num_threads_per_group：覆盖Top-K的最小2幂lane组宽度。",
+          "reads": [
+            "thread_idx",
+            "num_threads_per_group"
+          ],
+          "writes": [
+            "group_lane_idx"
+          ]
+        },
+        {
+          "line": 161,
+          "kind": "declaration",
+          "explanation": "在按Top-K分组lane中更新/计算“const auto routing_group_mask =”。 routing_group_mask：只含当前token lane组的warp位图，隔离同warp其他token。",
+          "reads": [],
+          "writes": [
+            "routing_group_mask"
+          ]
+        },
+        {
+          "line": 162,
+          "kind": "statement",
+          "explanation": "先右移全1位图以保留num_threads_per_group个低位，形成一个token lane组宽度的掩码。",
+          "reads": [
+            "num_threads_per_group"
+          ],
+          "writes": []
+        },
+        {
+          "line": 163,
+          "kind": "statement",
+          "explanation": "将这组低位移到当前lane所属token组起点，保证deduplicate/ballot不混入同warp其他token。",
+          "reads": [
+            "lane_idx",
+            "num_threads_per_group"
+          ],
+          "writes": []
+        },
+        {
+          "line": 164,
+          "kind": "comment",
+          "explanation": "注释说明按Top-K分组lane的实现意图（Histogram by atomic add）；num_threads_per_group为覆盖Top-K的2幂；routing_group_mask只覆盖同token lane组，num_iterations向整wave对齐。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 165,
+          "kind": "comment",
+          "explanation": "注释说明按Top-K分组lane的实现意图（Also assign SQEs and SGEs）；num_threads_per_group为覆盖Top-K的2幂；routing_group_mask只覆盖同token lane组，num_iterations向整wave对齐。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 166,
+          "kind": "comment",
+          "explanation": "源码在按Top-K分组lane旁记载“NOTES: this part cost ~6 us (with 4K tokens)”；这是源码备注，未在本作品对应硬件配置实测，不能当性能结论。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 167,
+          "kind": "comment",
+          "explanation": "注释说明按Top-K分组lane的实现意图（TODO: if local copy can be avoided, the iteration pattern will be not like this）；num_threads_per_group为覆盖Top-K的2幂；routing_group_mask只覆盖同token lane组，num_iterations向整wave对齐。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 168,
+          "kind": "declaration",
+          "explanation": "在按Top-K分组lane中更新/计算“const auto num_iterations = math::align(math::max(0, math::min(kNumMaxTokensPerVecCore, num_tokens - vec_core_idx * kNumMaxTokensPerVecCore)), num_groups_per_wave);”。 num_iterations：有效核内token数向num_groups_per_wave补齐后的统一循环边界；num_groups_per_wave：kNumThreads除lane组宽度，每轮同时处理的token数量。",
+          "reads": [
+            "num_tokens",
+            "vec_core_idx",
+            "num_groups_per_wave"
+          ],
+          "writes": [
+            "num_iterations"
+          ]
+        },
+        {
+          "line": 169,
+          "kind": "loop",
+          "explanation": "按Top-K分组lane的迭代条件为“for (int i = group_idx; i < num_iterations; i += num_groups_per_wave)”；Top-K小于warp时一个warp同时处理多个token，去重只能在同组内进行。",
+          "reads": [
+            "group_idx",
+            "num_iterations",
+            "num_groups_per_wave",
+            "i"
+          ],
+          "writes": [
+            "i"
+          ]
+        },
+        {
+          "line": 170,
+          "kind": "declaration",
+          "explanation": "在按Top-K分组lane中更新/计算“const auto token_idx = vec_core_idx * kNumMaxTokensPerVecCore + i;”。 token_idx：输入token的Rank内索引，由AIV连续块基址加核内位置。",
+          "reads": [
+            "vec_core_idx"
+          ],
+          "writes": [
+            "token_idx"
+          ]
+        },
+        {
+          "line": 171,
+          "kind": "declaration",
+          "explanation": "在按Top-K分组lane中更新/计算“const auto entry_idx = i * kNumTopk + group_lane_idx;”。 entry_idx：本AIV token位置×Top-K+路由位置，定位路由暂存；group_lane_idx：同token组内Top-K路由位置。",
+          "reads": [
+            "kNumTopk",
+            "group_lane_idx"
+          ],
+          "writes": [
+            "entry_idx"
+          ]
+        },
+        {
+          "line": 172,
+          "kind": "blank",
+          "explanation": "在专家计数与目标Rank去重中，分隔“const auto entry_idx = i * kNumTopk + group_lane_idx;”与随后“if (i < kNumMaxTokensPerVecCore and token_idx < num_tokens) {”两步；此处没有数据写入。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 173,
+          "kind": "branch",
+          "explanation": "专家计数与目标Rank去重的分支条件为“if (i < kNumMaxTokensPerVecCore and token_idx < num_tokens)”；同Rank多个专家在epilogue展开，不需网络重复发送hidden；atomic序号不是稳定Top-K顺序。",
+          "reads": [
+            "token_idx",
+            "num_tokens"
+          ],
+          "writes": []
+        },
+        {
+          "line": 174,
+          "kind": "comment",
+          "explanation": "注释说明专家计数与目标Rank去重的实现意图（Load expert indices and atomic add on expert histogram）；每个非负专家增加expert_histogram；deduplicate把同token同Rank只保留一次，rank_histogram原子返回Rank内SGE编号。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 175,
+          "kind": "declaration",
+          "explanation": "在专家计数与目标Rank去重中更新/计算“int dst_expert_idx = -1;”。 dst_expert_idx：输入Top-K全局专家ID或目标owner内专家索引。",
+          "reads": [],
+          "writes": [
+            "dst_expert_idx"
+          ]
+        },
+        {
+          "line": 176,
+          "kind": "branch",
+          "explanation": "只有group_lane_idx<K的实际Top-K lane读topk_idx；K非2幂时组尾padding lane保持expert=-1。",
+          "reads": [
+            "group_lane_idx",
+            "kNumTopk"
+          ],
+          "writes": []
+        },
+        {
+          "line": 177,
+          "kind": "statement",
+          "explanation": "在专家计数与目标Rank去重中更新/计算“dst_expert_idx = static_cast<int>(topk_idx[token_idx * kNumTopk + group_lane_idx]);”。 dst_expert_idx：输入Top-K全局专家ID或目标owner内专家索引；token_idx：输入token的Rank内索引，由AIV连续块基址加核内位置；group_lane_idx：同token组内Top-K路由位置。",
+          "reads": [
+            "topk_idx",
+            "token_idx",
+            "kNumTopk",
+            "group_lane_idx"
+          ],
+          "writes": [
+            "dst_expert_idx"
+          ]
+        },
+        {
+          "line": 178,
+          "kind": "branch",
+          "explanation": "专家计数与目标Rank去重的分支条件为“if (dst_expert_idx >= 0)”；同Rank多个专家在epilogue展开，不需网络重复发送hidden；atomic序号不是稳定Top-K顺序。",
+          "reads": [
+            "dst_expert_idx"
+          ],
+          "writes": []
+        },
+        {
+          "line": 179,
+          "kind": "call",
+          "explanation": "原子加入计数或为调用thread分配唯一旧计数序号；调用本行“asc_atomic_add(ub_layout->expert_histogram + dst_expert_idx, 1);”。 expert_histogram：专家命中计数，不按Rank去重；dst_expert_idx：输入Top-K全局专家ID或目标owner内专家索引。",
+          "reads": [
+            "ub_layout",
+            "expert_histogram",
+            "dst_expert_idx"
+          ],
+          "writes": [
+            "ub_layout",
+            "expert_histogram"
+          ]
+        },
+        {
+          "line": 180,
+          "kind": "blank",
+          "explanation": "在专家计数与目标Rank去重中，分隔“asc_atomic_add(ub_layout->expert_histogram + dst_expert_idx, 1);”与随后“// Deduplicate into rank indices, allocate SGEs and store rank indices”两步；此处没有数据写入。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 181,
+          "kind": "comment",
+          "explanation": "注释说明专家计数与目标Rank去重的实现意图（Deduplicate into rank indices, allocate SGEs and store rank indices）；每个非负专家增加expert_histogram；deduplicate把同token同Rank只保留一次，rank_histogram原子返回Rank内SGE编号。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 182,
+          "kind": "statement",
+          "explanation": "在专家计数与目标Rank去重中更新/计算“auto dst_rank_idx = dst_expert_idx >= 0 ? dst_expert_idx / kNumExpertsPerRank : -1;”。 dst_rank_idx：全局专家ID除每Rank专家数得到目标Rank，去重后可能变为-1；dst_expert_idx：输入Top-K全局专家ID或目标owner内专家索引。",
+          "reads": [
+            "dst_expert_idx"
+          ],
+          "writes": [
+            "dst_rank_idx"
+          ]
+        },
+        {
+          "line": 183,
+          "kind": "statement",
+          "explanation": "同token lane组内调用deduplicate<kNumRanks>，仅一个相同dst_rank_idx保留；其余设-1，避免同Rank多专家重复网络hidden。",
+          "reads": [
+            "kNumRanks",
+            "lane_idx",
+            "routing_group_mask",
+            "dst_rank_idx"
+          ],
+          "writes": [
+            "dst_rank_idx"
+          ]
+        },
+        {
+          "line": 184,
+          "kind": "branch",
+          "explanation": "专家计数与目标Rank去重的分支条件为“if (dst_rank_idx >= 0)”；同Rank多个专家在epilogue展开，不需网络重复发送hidden；atomic序号不是稳定Top-K顺序。",
+          "reads": [
+            "dst_rank_idx"
+          ],
+          "writes": []
+        },
+        {
+          "line": 185,
+          "kind": "comment",
+          "explanation": "注释说明专家计数与目标Rank去重的实现意图（The results are also the SGE indices）；每个非负专家增加expert_histogram；deduplicate把同token同Rank只保留一次，rank_histogram原子返回Rank内SGE编号。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 186,
+          "kind": "call",
+          "explanation": "对当前目标Rank计数atomic_add(1)，返回的旧值是该AIV该Rank内唯一dst_sgep_idx；竞争顺序不保证与Top-K输入顺序相同。",
+          "reads": [
+            "ub_layout",
+            "rank_histogram",
+            "dst_rank_idx"
+          ],
+          "writes": [
+            "ub_layout",
+            "rank_histogram",
+            "dst_sgep_idx"
+          ]
+        },
+        {
+          "line": 187,
+          "kind": "branch",
+          "explanation": "专家计数与目标Rank去重的分支条件为“if (dst_rank_idx != rank_idx)”；同Rank多个专家在epilogue展开，不需网络重复发送hidden；atomic序号不是稳定Top-K顺序。",
+          "reads": [
+            "dst_rank_idx",
+            "rank_idx"
+          ],
+          "writes": []
+        },
+        {
+          "line": 188,
+          "kind": "statement",
+          "explanation": "把该目标Rank atomic返回的核内去重token序号dst_sgep_idx存ub_layout->sgep_idx[entry_idx]；它不是SQ编码的局部lane pair索引。",
+          "reads": [
+            "entry_idx",
+            "dst_sgep_idx"
+          ],
+          "writes": [
+            "ub_layout",
+            "sgep_idx"
+          ]
+        },
+        {
+          "line": 189,
+          "kind": "statement",
+          "explanation": "结束if (dst_rank_idx != rank_idx) {并进入else {，在专家计数与目标Rank去重里处理相反/后续分支。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 190,
+          "kind": "statement",
+          "explanation": "在专家计数与目标Rank去重中更新/计算“ub_layout->local_copy_dst_slot_idx[i] = dst_sgep_idx;”。 local_copy_dst_slot_idx：每个本AIV token的本Rank接收槽，-1表示无self-copy；dst_sgep_idx：atomic_add返回的本AIV目标Rank内去重token序号。",
+          "reads": [
+            "dst_sgep_idx"
+          ],
+          "writes": [
+            "ub_layout",
+            "local_copy_dst_slot_idx"
+          ]
+        },
+        {
+          "line": 191,
+          "kind": "brace",
+          "explanation": "结束由“} else {”开启的作用域；到此专家计数与目标Rank去重对应状态更新完成，此括号不增加额外同步。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 192,
+          "kind": "brace",
+          "explanation": "结束由“if (dst_rank_idx >= 0) {”开启的作用域；到此专家计数与目标Rank去重对应状态更新完成，此括号不增加额外同步。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 193,
+          "kind": "branch",
+          "explanation": "专家计数与目标Rank去重的分支条件为“if (group_lane_idx < kNumTopk)”；同Rank多个专家在epilogue展开，不需网络重复发送hidden；atomic序号不是稳定Top-K顺序。",
+          "reads": [
+            "group_lane_idx",
+            "kNumTopk"
+          ],
+          "writes": []
+        },
+        {
+          "line": 194,
+          "kind": "statement",
+          "explanation": "在专家计数与目标Rank去重中更新/计算“ub_layout->dst_rank_idx[entry_idx] = dst_rank_idx;”。 dst_rank_idx：全局专家ID除每Rank专家数得到目标Rank，去重后可能变为-1；entry_idx：本AIV token位置×Top-K+路由位置，定位路由暂存。",
+          "reads": [
+            "entry_idx",
+            "dst_rank_idx"
+          ],
+          "writes": [
+            "ub_layout",
+            "dst_rank_idx"
+          ]
+        },
+        {
+          "line": 195,
+          "kind": "brace",
+          "explanation": "结束由“if (i < kNumMaxTokensPerVecCore and token_idx < num_tokens) {”开启的作用域；到此专家计数与目标Rank去重对应状态更新完成，此括号不增加额外同步。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 196,
+          "kind": "brace",
+          "explanation": "结束由“for (int i = group_idx; i < num_iterations; i += num_groups_per_wave) {”开启的作用域；到此专家计数与目标Rank去重对应状态更新完成，此括号不增加额外同步。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 197,
+          "kind": "call",
+          "explanation": "等待当前SIMT worker所有thread，保证前述UB状态已在worker内汇合；调用本行“asc_syncthreads();”。 每个非负专家增加expert_histogram；deduplicate把同token同Rank只保留一次，rank_histogram原子返回Rank内SGE编号。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 198,
+          "kind": "blank",
+          "explanation": "在专家计数与目标Rank去重中，分隔“asc_syncthreads();”与随后“// Create logical SQE range”两步；此处没有数据写入。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 199,
+          "kind": "comment",
+          "explanation": "注释说明划分逻辑SQ并发布专家局部计数的实现意图（Create logical SQE range）；远端Rank以ceil(count/6)原子保留lsqe_base_idx；expert_histogram以arrival=1和低24位计数发布到本RankGM reduction区。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 200,
+          "kind": "branch",
+          "explanation": "划分逻辑SQ并发布专家局部计数的分支条件为“if (thread_idx < kNumRanks)”；每条SQE只发一个Rank连续槽；expert reduction保留独立的非去重频数。",
+          "reads": [
+            "thread_idx",
+            "kNumRanks"
+          ],
+          "writes": []
+        },
+        {
+          "line": 201,
+          "kind": "comment",
+          "explanation": "注释说明划分逻辑SQ并发布专家局部计数的实现意图（TODO: add `vec_core_idx` into shuffling）；远端Rank以ceil(count/6)原子保留lsqe_base_idx；expert_histogram以arrival=1和低24位计数发布到本RankGM reduction区。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 202,
+          "kind": "declaration",
+          "explanation": "在划分逻辑SQ并发布专家局部计数中更新/计算“const auto peer_rank_idx = (rank_idx + thread_idx) % kNumRanks;”。 peer_rank_idx：从本Rank旋转后的peer编号，避免所有核同序起点；thread_idx：SIMT thread坐标；作为专家/Rank桶并行索引。",
+          "reads": [
+            "rank_idx",
+            "thread_idx",
+            "kNumRanks"
+          ],
+          "writes": [
+            "peer_rank_idx"
+          ]
+        },
+        {
+          "line": 203,
+          "kind": "branch",
+          "explanation": "划分逻辑SQ并发布专家局部计数的分支条件为“if (peer_rank_idx != rank_idx)”；每条SQE只发一个Rank连续槽；expert reduction保留独立的非去重频数。",
+          "reads": [
+            "peer_rank_idx",
+            "rank_idx"
+          ],
+          "writes": []
+        },
+        {
+          "line": 204,
+          "kind": "call",
+          "explanation": "原子加入计数或为调用thread分配唯一旧计数序号；调用本行“ub_layout->lsqe_base_idx[peer_rank_idx] = asc_atomic_add(”。 lsqe_base_idx：当前目标Rank在AIV逻辑SQ区的起始SQ号；peer_rank_idx：从本Rank旋转后的peer编号，避免所有核同序起点。",
+          "reads": [],
+          "writes": [
+            "ub_layout",
+            "lsqe_base_idx"
+          ]
+        },
+        {
+          "line": 205,
+          "kind": "statement",
+          "explanation": "asc_atomic_add操作lsqe_counter：返回旧SQ总数作为当前peer逻辑SQ区基址。",
+          "reads": [
+            "ub_layout",
+            "lsqe_counter"
+          ],
+          "writes": [
+            "ub_layout",
+            "lsqe_counter"
+          ]
+        },
+        {
+          "line": 206,
+          "kind": "statement",
+          "explanation": "该peer预留SQ数=ceil(本AIV发往peer去重token数/每SQ六pair)，保留不足六pair的尾SQ。",
+          "reads": [
+            "ub_layout",
+            "rank_histogram",
+            "peer_rank_idx",
+            "kNumSGEPairsPerSQE"
+          ],
+          "writes": []
+        },
+        {
+          "line": 207,
+          "kind": "brace",
+          "explanation": "结束由“if (peer_rank_idx != rank_idx) {”开启的作用域；到此划分逻辑SQ并发布专家局部计数对应状态更新完成，此括号不增加额外同步。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 208,
+          "kind": "brace",
+          "explanation": "结束由“if (thread_idx < kNumRanks) {”开启的作用域；到此划分逻辑SQ并发布专家局部计数对应状态更新完成，此括号不增加额外同步。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 209,
+          "kind": "blank",
+          "explanation": "在划分逻辑SQ并发布专家局部计数中，分隔“}”与随后“// Reduce all vector cores' expert histogram results.”两步；此处没有数据写入。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 210,
+          "kind": "comment",
+          "explanation": "注释说明划分逻辑SQ并发布专家局部计数的实现意图（Reduce all vector cores' expert histogram results.）；远端Rank以ceil(count/6)原子保留lsqe_base_idx；expert_histogram以arrival=1和低24位计数发布到本RankGM reduction区。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 211,
+          "kind": "branch",
+          "explanation": "划分逻辑SQ并发布专家局部计数的分支条件为“if (thread_idx < kNumExperts)”；每条SQE只发一个Rank连续槽；expert reduction保留独立的非去重频数。",
+          "reads": [
+            "thread_idx",
+            "kNumExperts"
+          ],
+          "writes": []
+        },
+        {
+          "line": 212,
+          "kind": "call",
+          "explanation": "原子加入计数或为调用thread分配唯一旧计数序号；调用本行“asc_atomic_add(”。 远端Rank以ceil(count/6)原子保留lsqe_base_idx；expert_histogram以arrival=1和低24位计数发布到本RankGM reduction区。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 213,
+          "kind": "statement",
+          "explanation": "expert local reduction地址按thread_idx选择全局专家桶；后续AIV0等待此桶收齐V贡献。",
+          "reads": [
+            "workspace_layout",
+            "thread_idx"
+          ],
+          "writes": [
+            "workspace_layout"
+          ]
+        },
+        {
+          "line": 214,
+          "kind": "statement",
+          "explanation": "把arrival=1的kReductionIdentity与低位expert count合并加入当前专家桶；即使count为0也发布一次AIV到达。",
+          "reads": [
+            "ub_layout",
+            "expert_histogram",
+            "thread_idx"
+          ],
+          "writes": []
+        },
+        {
+          "line": 215,
+          "kind": "brace",
+          "explanation": "结束由“if (thread_idx < kNumExperts) {”开启的作用域；到此划分逻辑SQ并发布专家局部计数对应状态更新完成，此括号不增加额外同步。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 216,
+          "kind": "blank",
+          "explanation": "在划分逻辑SQ并发布专家局部计数中，分隔“}”与随后“EP_STATIC_ASSERT(kNumVecCores <= 2 * warpSize and kNumVecCores <= kNumMaxVecCores);”两步；此处没有数据写入。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 217,
+          "kind": "statement",
+          "explanation": "前缀扫描由同一warp32lane分别处理AIV0..31和32..63，故V必须<=64且<=kNumMaxVecCores。",
+          "reads": [
+            "kNumVecCores"
+          ],
+          "writes": []
+        },
+        {
+          "line": 218,
+          "kind": "branch",
+          "explanation": "跨AIV计算每Rank排他前缀的分支条件为“if (thread_idx < kNumRanks)”；AIV切片必须互不重叠；原始计数被原地复用为前缀时需先完成读。",
+          "reads": [
+            "thread_idx",
+            "kNumRanks"
+          ],
+          "writes": []
+        },
+        {
+          "line": 219,
+          "kind": "comment",
+          "explanation": "注释说明跨AIV计算每Rank排他前缀的实现意图（local-rank-histogram[kNumVecCores, kNumRanks]）；各AIV发布arrival=1；同一warp的lane分别处理AIV[0,31]与[32,63]两组，进行wait_ready、inclusive_sum；读完两半再写arrival=2与exclusive前缀。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 220,
+          "kind": "statement",
+          "explanation": "在跨AIV计算每Rank排他前缀中更新/计算“auto ptr = workspace_layout.get_local_rank_histogram_ptr(vec_core_idx, thread_idx);”。 thread_idx：SIMT thread坐标；作为专家/Rank桶并行索引。",
+          "reads": [
+            "workspace_layout",
+            "vec_core_idx",
+            "thread_idx"
+          ],
+          "writes": [
+            "ptr"
+          ]
+        },
+        {
+          "line": 221,
+          "kind": "statement",
+          "explanation": "向local_rank_histogram[AIV,peer]写arrival=1和当前去重count；threadfence在下一行固定发布顺序。",
+          "reads": [
+            "ub_layout",
+            "rank_histogram",
+            "thread_idx"
+          ],
+          "writes": [
+            "ptr"
+          ]
+        },
+        {
+          "line": 222,
+          "kind": "call",
+          "explanation": "建立当前thread GM访问顺序，防止状态发布或原地复用越过先前访问；调用本行“asc_threadfence();”。 各AIV发布arrival=1；同一warp的32lane先后扫描AIV[0,31]与[32,63]；读完两半再写arrival=2与exclusive前缀。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 223,
+          "kind": "brace",
+          "explanation": "结束由“if (thread_idx < kNumRanks) {”开启的作用域；到此跨AIV计算每Rank排他前缀对应状态更新完成，此括号不增加额外同步。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 224,
+          "kind": "call",
+          "explanation": "等待当前SIMT worker所有thread，保证前述UB状态已在worker内汇合；调用本行“asc_syncthreads();”。 各AIV发布arrival=1；同一warp的32lane先后扫描AIV[0,31]与[32,63]；读完两半再写arrival=2与exclusive前缀。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 225,
+          "kind": "comment",
+          "explanation": "注释说明跨AIV计算每Rank排他前缀的实现意图（calculate prefix sum of rank counts）；各AIV发布arrival=1；同一warp的lane分别处理AIV[0,31]与[32,63]两组，进行wait_ready、inclusive_sum；读完两半再写arrival=2与exclusive前缀。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 226,
+          "kind": "comment",
+          "explanation": "注释说明跨AIV计算每Rank排他前缀的实现意图（local-rank-histogram-new[i, j] = \\sum_{k=0}^{i-1} local-rank-histogram[k, j]）；各AIV发布arrival=1；同一warp的lane分别处理AIV[0,31]与[32,63]两组，进行wait_ready、inclusive_sum；读完两半再写arrival=2与exclusive前缀。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 227,
+          "kind": "loop",
+          "explanation": "peer_idx由vec_core_idx+warp_idx*V起步，以V*kNumWarps步进，把目标Rank列分摊到所有AIV/warp避免多方重复改写。",
+          "reads": [
+            "vec_core_idx",
+            "warp_idx",
+            "kNumVecCores",
+            "kNumRanks",
+            "peer_idx"
+          ],
+          "writes": [
+            "peer_idx"
+          ]
+        },
+        {
+          "line": 228,
+          "kind": "declaration",
+          "explanation": "在跨AIV计算每Rank排他前缀中更新/计算“const auto lower_ptr = workspace_layout.get_local_rank_histogram_ptr(lane_idx, peer_idx);”。 lower_ptr：来源AIV 0至31的当前目标Rank计数/前缀GM地址；lane_idx：warp内lane；执行shuffle、扫描和WQEBB编码。",
+          "reads": [
+            "workspace_layout",
+            "lane_idx"
+          ],
+          "writes": [
+            "lower_ptr"
+          ]
+        },
+        {
+          "line": 229,
+          "kind": "declaration",
+          "explanation": "在跨AIV计算每Rank排他前缀中更新/计算“const auto upper_ptr = workspace_layout.get_local_rank_histogram_ptr(lane_idx + warpSize, peer_idx);”。 upper_ptr：来源AIV 32至63的当前目标Rank计数/前缀GM地址；lane_idx：warp内lane；执行shuffle、扫描和WQEBB编码。",
+          "reads": [
+            "workspace_layout",
+            "lane_idx"
+          ],
+          "writes": [
+            "upper_ptr"
+          ]
+        },
+        {
+          "line": 230,
+          "kind": "declaration",
+          "explanation": "在跨AIV计算每Rank排他前缀中更新/计算“int lower = 0, upper = 0;”。 各AIV发布arrival=1；同一warp的32lane先后扫描AIV[0,31]与[32,63]；读完两半再写arrival=2与exclusive前缀。",
+          "reads": [],
+          "writes": [
+            "lower",
+            "upper"
+          ]
+        },
+        {
+          "line": 231,
+          "kind": "branch",
+          "explanation": "前32 AIV组只有lane_idx<V的真实核读取lower_ptr，未对应核的lane保留lower=0参与scan。",
+          "reads": [
+            "lane_idx",
+            "kNumVecCores"
+          ],
+          "writes": []
+        },
+        {
+          "line": 232,
+          "kind": "statement",
+          "explanation": "取reduction低24位数值，不把高8位arrival计入token数量；调用本行“lower = reduction::get_reduction_value(reduction::simt::wait_ready(lower_ptr, 1));”。 lower_ptr：来源AIV 0至31的当前目标Rank计数/前缀GM地址。",
+          "reads": [
+            "lower_ptr"
+          ],
+          "writes": [
+            "lower"
+          ]
+        },
+        {
+          "line": 233,
+          "kind": "declaration",
+          "explanation": "在warp内扫描得到包含自身的累计值；调用本行“const auto lower_sum = simt::warp_inclusive_sum(lower, lane_idx);”。 lower_sum：前32核计数的warp包含前缀；lane_idx：warp内lane；执行shuffle、扫描和WQEBB编码。",
+          "reads": [
+            "lane_idx"
+          ],
+          "writes": [
+            "lower_sum"
+          ]
+        },
+        {
+          "line": 234,
+          "kind": "declaration",
+          "explanation": "warp shuffle广播指定lane的值；调用本行“const auto lower_total = simt::exchange(lower_sum, warpSize - 1);”。 lower_total：前32核去重token总数；lower_sum：前32核计数的warp包含前缀。",
+          "reads": [
+            "lower_sum"
+          ],
+          "writes": [
+            "lower_total"
+          ]
+        },
+        {
+          "line": 235,
+          "kind": "branch",
+          "explanation": "后32 AIV组只有lane_idx+32<V的真实核读取upper_ptr，V<=32时整个后半组都以0参与scan。",
+          "reads": [
+            "lane_idx",
+            "kNumVecCores"
+          ],
+          "writes": []
+        },
+        {
+          "line": 236,
+          "kind": "statement",
+          "explanation": "取reduction低24位数值，不把高8位arrival计入token数量；调用本行“upper = reduction::get_reduction_value(reduction::simt::wait_ready(upper_ptr, 1));”。 upper_ptr：来源AIV 32至63的当前目标Rank计数/前缀GM地址。",
+          "reads": [
+            "upper_ptr"
+          ],
+          "writes": [
+            "upper"
+          ]
+        },
+        {
+          "line": 237,
+          "kind": "declaration",
+          "explanation": "在warp内扫描得到包含自身的累计值；调用本行“const auto upper_sum = simt::warp_inclusive_sum(upper, lane_idx);”。 upper_sum：后32核计数的包含前缀；lane_idx：warp内lane；执行shuffle、扫描和WQEBB编码。",
+          "reads": [
+            "lane_idx"
+          ],
+          "writes": [
+            "upper_sum"
+          ]
+        },
+        {
+          "line": 238,
+          "kind": "declaration",
+          "explanation": "warp shuffle广播指定lane的值；调用本行“const auto upper_total = simt::exchange(upper_sum, warpSize - 1);”。 upper_total：后32核去重token总数；upper_sum：后32核计数的包含前缀。",
+          "reads": [
+            "upper_sum"
+          ],
+          "writes": [
+            "upper_total"
+          ]
+        },
+        {
+          "line": 239,
+          "kind": "comment",
+          "explanation": "注释说明跨AIV计算每Rank排他前缀的实现意图（Finish reading both halves before replacing counts with prefixes.）；各AIV发布arrival=1；同一warp的lane分别处理AIV[0,31]与[32,63]两组，进行wait_ready、inclusive_sum；读完两半再写arrival=2与exclusive前缀。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 240,
+          "kind": "call",
+          "explanation": "在把原始GM计数改写成前缀前建立当前thread访问顺序，确保本lane两半原值读取已发出。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 241,
+          "kind": "branch",
+          "explanation": "跨AIV计算每Rank排他前缀的分支条件为“if (lane_idx == 0)”；AIV切片必须互不重叠；原始计数被原地复用为前缀时需先完成读。",
+          "reads": [
+            "lane_idx"
+          ],
+          "writes": []
+        },
+        {
+          "line": 242,
+          "kind": "statement",
+          "explanation": "在跨AIV计算每Rank排他前缀中更新/计算“ub_layout->rank_psum[peer_idx] = lower_total + upper_total;”。 rank_psum：发送阶段是发往peer的总数，接收阶段是各来源Rank的总数；lower_total：前32核去重token总数；upper_total：后32核去重token总数。",
+          "reads": [
+            "lower_total",
+            "upper_total"
+          ],
+          "writes": [
+            "ub_layout",
+            "rank_psum"
+          ]
+        },
+        {
+          "line": 243,
+          "kind": "branch",
+          "explanation": "写回前32 AIV组exclusive前缀时仅lane_idx<V的真实核改lower_ptr，避免触碰未用GM行。",
+          "reads": [
+            "lane_idx",
+            "kNumVecCores"
+          ],
+          "writes": []
+        },
+        {
+          "line": 244,
+          "kind": "statement",
+          "explanation": "将前32核当前lane的inclusive_sum减原count，写成arrival=2与exclusive前缀，供该核分配slot基址。",
+          "reads": [
+            "lower_sum"
+          ],
+          "writes": [
+            "lower_ptr"
+          ]
+        },
+        {
+          "line": 245,
+          "kind": "branch",
+          "explanation": "写回后32 AIV组前缀时屏蔽lane_idx+32>=V的lane，地址必须包含前半组lower_total。",
+          "reads": [
+            "lane_idx",
+            "kNumVecCores"
+          ],
+          "writes": []
+        },
+        {
+          "line": 246,
+          "kind": "statement",
+          "explanation": "后32核的exclusive前缀还要加前32核lower_total，写arrival=2，覆盖全部前序AIV。",
+          "reads": [
+            "lower_total",
+            "upper_sum"
+          ],
+          "writes": [
+            "upper_ptr"
+          ]
+        },
+        {
+          "line": 247,
+          "kind": "brace",
+          "explanation": "结束由“for (int peer_idx = vec_core_idx + warp_idx * kNumVecCores; peer_idx < kNumRanks; peer_idx += kNumVecCores * kNumWarps) {”开启的作用域；到此跨AIV计算每Rank排他前缀对应状态更新完成，此括号不增加额外同步。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 248,
+          "kind": "comment",
+          "explanation": "注释说明读回本AIV槽位基址并清理矩阵的实现意图（obtain the final psum of rank counts）；wait_ready(ptr,2)读取exclusive前缀到rank_histogram，再清ptr为0并syncthreads。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 249,
+          "kind": "comment",
+          "explanation": "注释说明读回本AIV槽位基址并清理矩阵的实现意图（rank-hist[rank_idx] = local-rank-histogram-new[vec_core_idx, rank_idx]）；wait_ready(ptr,2)读取exclusive前缀到rank_histogram，再清ptr为0并syncthreads。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 250,
+          "kind": "branch",
+          "explanation": "读回本AIV槽位基址并清理矩阵的分支条件为“if (thread_idx < kNumRanks)”；复用同名数组保存基址，不能再把它解释为当前AIV原始计数。",
+          "reads": [
+            "thread_idx",
+            "kNumRanks"
+          ],
+          "writes": []
+        },
+        {
+          "line": 251,
+          "kind": "declaration",
+          "explanation": "在读回本AIV槽位基址并清理矩阵中更新/计算“const auto ptr = workspace_layout.get_local_rank_histogram_ptr(vec_core_idx, thread_idx);”。 thread_idx：SIMT thread坐标；作为专家/Rank桶并行索引。",
+          "reads": [
+            "workspace_layout",
+            "vec_core_idx",
+            "thread_idx"
+          ],
+          "writes": [
+            "ptr"
+          ]
+        },
+        {
+          "line": 252,
+          "kind": "statement",
+          "explanation": "等待自身GM行arrival=2，把前序AIV累计token数读入rank_histogram；数组从此代表slot基址而非自身count。",
+          "reads": [
+            "thread_idx",
+            "ptr"
+          ],
+          "writes": [
+            "ub_layout",
+            "rank_histogram"
+          ]
+        },
+        {
+          "line": 253,
+          "kind": "statement",
+          "explanation": "本AIV读回arrival=2的前缀后清GM ptr为0，供下一次dispatch重新发布计数。",
+          "reads": [],
+          "writes": [
+            "ptr"
+          ]
+        },
+        {
+          "line": 254,
+          "kind": "brace",
+          "explanation": "结束由“if (thread_idx < kNumRanks) {”开启的作用域；到此读回本AIV槽位基址并清理矩阵对应状态更新完成，此括号不增加额外同步。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 255,
+          "kind": "call",
+          "explanation": "等待当前SIMT worker所有thread，保证前述UB状态已在worker内汇合；调用本行“asc_syncthreads();”。 wait_ready(ptr,2)读取exclusive前缀到rank_histogram，再清ptr为0并syncthreads。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 256,
+          "kind": "blank",
+          "explanation": "在生成接收槽与全局SGE索引中，分隔“asc_syncthreads();”与随后“// Assign slots and create local copies' metadata”两步；此处没有数据写入。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 257,
+          "kind": "comment",
+          "explanation": "注释说明生成接收槽与全局SGE索引的实现意图（Assign slots and create local copies' metadata）；远端slot=prefix+sgep；global_sgep_idx=lsqe_base_idx*6+sgep；本地slot=prefix+local序号；写GM缓存handle。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 258,
+          "kind": "comment",
+          "explanation": "注释说明生成接收槽与全局SGE索引的实现意图（Also, create the global SGE to entry mapping）；远端slot=prefix+sgep；global_sgep_idx=lsqe_base_idx*6+sgep；本地slot=prefix+local序号；写GM缓存handle。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 259,
+          "kind": "comment",
+          "explanation": "源码在生成接收槽与全局SGE索引旁记载“NOTES: this costs 1 us”；这是源码备注，未在本作品对应硬件配置实测，不能当性能结论。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 260,
+          "kind": "loop",
+          "explanation": "生成接收槽与全局SGE索引的迭代条件为“for (int i = group_idx; i < num_iterations; i += num_groups_per_wave)”；首次dispatch的handle同时支持后续cached发送和combine回程。",
+          "reads": [
+            "group_idx",
+            "num_iterations",
+            "num_groups_per_wave",
+            "i"
+          ],
+          "writes": [
+            "i"
+          ]
+        },
+        {
+          "line": 261,
+          "kind": "declaration",
+          "explanation": "在生成接收槽与全局SGE索引中更新/计算“const auto token_idx = vec_core_idx * kNumMaxTokensPerVecCore + i;”。 token_idx：输入token的Rank内索引，由AIV连续块基址加核内位置。",
+          "reads": [
+            "vec_core_idx"
+          ],
+          "writes": [
+            "token_idx"
+          ]
+        },
+        {
+          "line": 262,
+          "kind": "declaration",
+          "explanation": "在生成接收槽与全局SGE索引中更新/计算“const auto entry_idx = i * kNumTopk + group_lane_idx;”。 entry_idx：本AIV token位置×Top-K+路由位置，定位路由暂存；group_lane_idx：同token组内Top-K路由位置。",
+          "reads": [
+            "kNumTopk",
+            "group_lane_idx"
+          ],
+          "writes": [
+            "entry_idx"
+          ]
+        },
+        {
+          "line": 263,
+          "kind": "declaration",
+          "explanation": "在生成接收槽与全局SGE索引中更新/计算“int dst_rank_idx = -1, dst_slot_idx = -1, global_sgep_idx = -1;”。 dst_rank_idx：全局专家ID除每Rank专家数得到目标Rank，去重后可能变为-1；dst_slot_idx：目标Rank中当前源Rank接收切片内槽号，-1代表无有效路由；global_sgep_idx：lsqe_base_idx×6+核内目标Rank序号，对应逆SGE表位置。",
+          "reads": [
+            "dst_slot_idx",
+            "global_sgep_idx"
+          ],
+          "writes": [
+            "dst_rank_idx",
+            "dst_slot_idx",
+            "global_sgep_idx"
+          ]
+        },
+        {
+          "line": 264,
+          "kind": "branch",
+          "explanation": "生成接收槽与全局SGE索引的分支条件为“if (i < kNumMaxTokensPerVecCore and token_idx < num_tokens and group_lane_idx < kNumTopk)”；首次dispatch的handle同时支持后续cached发送和combine回程。",
+          "reads": [
+            "token_idx",
+            "num_tokens",
+            "group_lane_idx",
+            "kNumTopk"
+          ],
+          "writes": []
+        },
+        {
+          "line": 265,
+          "kind": "comment",
+          "explanation": "注释说明生成接收槽与全局SGE索引的实现意图（Read rank index）；远端slot=prefix+sgep；global_sgep_idx=lsqe_base_idx*6+sgep；本地slot=prefix+local序号；写GM缓存handle。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 266,
+          "kind": "statement",
+          "explanation": "在生成接收槽与全局SGE索引中更新/计算“dst_rank_idx = ub_layout->dst_rank_idx[entry_idx];”。 dst_rank_idx：全局专家ID除每Rank专家数得到目标Rank，去重后可能变为-1；entry_idx：本AIV token位置×Top-K+路由位置，定位路由暂存。",
+          "reads": [
+            "ub_layout",
+            "entry_idx",
+            "dst_rank_idx"
+          ],
+          "writes": [
+            "dst_rank_idx"
+          ]
+        },
+        {
+          "line": 267,
+          "kind": "blank",
+          "explanation": "在生成接收槽与全局SGE索引中，分隔“dst_rank_idx = ub_layout->dst_rank_idx[entry_idx];”与随后“// Assign slots”两步；此处没有数据写入。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 268,
+          "kind": "comment",
+          "explanation": "注释说明生成接收槽与全局SGE索引的实现意图（Assign slots）；远端slot=prefix+sgep；global_sgep_idx=lsqe_base_idx*6+sgep；本地slot=prefix+local序号；写GM缓存handle。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 269,
+          "kind": "branch",
+          "explanation": "生成接收槽与全局SGE索引的分支条件为“if (dst_rank_idx >= 0)”；首次dispatch的handle同时支持后续cached发送和combine回程。",
+          "reads": [
+            "dst_rank_idx"
+          ],
+          "writes": []
+        },
+        {
+          "line": 270,
+          "kind": "branch",
+          "explanation": "生成接收槽与全局SGE索引的分支条件为“if (dst_rank_idx != rank_idx)”；首次dispatch的handle同时支持后续cached发送和combine回程。",
+          "reads": [
+            "dst_rank_idx",
+            "rank_idx"
+          ],
+          "writes": []
+        },
+        {
+          "line": 271,
+          "kind": "declaration",
+          "explanation": "从UB sgep_idx读取首次Rank去重atomic序号，是本AIV当前目标Rank token顺序；与SQ编码380行同名局部变量职责不同。",
+          "reads": [
+            "ub_layout",
+            "entry_idx",
+            "sgep_idx"
+          ],
+          "writes": [
+            "sgep_idx"
+          ]
+        },
+        {
+          "line": 272,
+          "kind": "statement",
+          "explanation": "远端接收槽=前序AIV的该目标Rank token总数+本AIV该Rank atomic序号，保证核间与核内槽互不重叠。",
+          "reads": [
+            "ub_layout",
+            "rank_histogram",
+            "dst_rank_idx",
+            "sgep_idx"
+          ],
+          "writes": [
+            "dst_slot_idx"
+          ]
+        },
+        {
+          "line": 273,
+          "kind": "declaration",
+          "explanation": "在生成接收槽与全局SGE索引中更新/计算“const auto lsqe_base_idx = ub_layout->lsqe_base_idx[dst_rank_idx];”。 lsqe_base_idx：当前目标Rank在AIV逻辑SQ区的起始SQ号；dst_rank_idx：全局专家ID除每Rank专家数得到目标Rank，去重后可能变为-1。",
+          "reads": [
+            "ub_layout",
+            "dst_rank_idx",
+            "lsqe_base_idx"
+          ],
+          "writes": [
+            "lsqe_base_idx"
+          ]
+        },
+        {
+          "line": 274,
+          "kind": "statement",
+          "explanation": "用目标Rank逻辑SQ起点×每SQ六pair再加sgep_idx，生成全局SGE pair索引，允许逆查原token。",
+          "reads": [
+            "lsqe_base_idx",
+            "kNumSGEPairsPerSQE",
+            "sgep_idx"
+          ],
+          "writes": [
+            "global_sgep_idx"
+          ]
+        },
+        {
+          "line": 275,
+          "kind": "statement",
+          "explanation": "在生成接收槽与全局SGE索引中更新/计算“ub_layout->sgep_to_entry[global_sgep_idx] = entry_idx;”。 sgep_to_entry：全局SGE pair位置到本AIV路由entry的逆映射；global_sgep_idx：lsqe_base_idx×6+核内目标Rank序号，对应逆SGE表位置；entry_idx：本AIV token位置×Top-K+路由位置，定位路由暂存。",
+          "reads": [
+            "entry_idx"
+          ],
+          "writes": [
+            "ub_layout",
+            "sgep_to_entry"
+          ]
+        },
+        {
+          "line": 276,
+          "kind": "statement",
+          "explanation": "结束if (dst_rank_idx != rank_idx) {并进入else {，在生成接收槽与全局SGE索引里处理相反/后续分支。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 277,
+          "kind": "statement",
+          "explanation": "在生成接收槽与全局SGE索引中更新/计算“dst_slot_idx = ub_layout->rank_histogram[dst_rank_idx] + ub_layout->local_copy_dst_slot_idx[i];”。 dst_slot_idx：目标Rank中当前源Rank接收切片内槽号，-1代表无有效路由；rank_histogram：初始每目标Rank去重token数；跨核扫描后复用为本AIV排他前缀；dst_rank_idx：全局专家ID除每Rank专家数得到目标Rank，去重后可能变为-1。",
+          "reads": [
+            "ub_layout",
+            "rank_histogram",
+            "dst_rank_idx",
+            "local_copy_dst_slot_idx"
+          ],
+          "writes": [
+            "dst_slot_idx"
+          ]
+        },
+        {
+          "line": 278,
+          "kind": "brace",
+          "explanation": "结束由“} else {”开启的作用域；到此生成接收槽与全局SGE索引对应状态更新完成，此括号不增加额外同步。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 279,
+          "kind": "brace",
+          "explanation": "结束由“if (dst_rank_idx >= 0) {”开启的作用域；到此生成接收槽与全局SGE索引对应状态更新完成，此括号不增加额外同步。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 280,
+          "kind": "statement",
+          "explanation": "在生成接收槽与全局SGE索引中更新/计算“ub_layout->dst_slot_idx[entry_idx] = dst_slot_idx;”。 dst_slot_idx：目标Rank中当前源Rank接收切片内槽号，-1代表无有效路由；entry_idx：本AIV token位置×Top-K+路由位置，定位路由暂存。",
+          "reads": [
+            "entry_idx",
+            "dst_slot_idx"
+          ],
+          "writes": [
+            "ub_layout",
+            "dst_slot_idx"
+          ]
+        },
+        {
+          "line": 281,
+          "kind": "statement",
+          "explanation": "把当前token/Top-K route的dst_slot_idx写入GM handle；重复同Rank被去重的lane保持-1。",
+          "reads": [
+            "group_lane_idx",
+            "dst_slot_idx"
+          ],
+          "writes": [
+            "dst_buffer_slot_idx"
+          ]
+        },
+        {
+          "line": 282,
+          "kind": "statement",
+          "explanation": "把该route远端global_sgep_idx缓存到GM handle；本地self-copy与无效route均使用-1。",
+          "reads": [
+            "group_lane_idx",
+            "global_sgep_idx"
+          ],
+          "writes": [
+            "dst_gsge_idx"
+          ]
+        },
+        {
+          "line": 283,
+          "kind": "brace",
+          "explanation": "结束由“if (i < kNumMaxTokensPerVecCore and token_idx < num_tokens and group_lane_idx < kNumTopk) {”开启的作用域；到此生成接收槽与全局SGE索引对应状态更新完成，此括号不增加额外同步。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 284,
+          "kind": "blank",
+          "explanation": "在发布self-copy槽准备完成中，分隔“}”与随后“// For local copies”两步；此处没有数据写入。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 285,
+          "kind": "comment",
+          "explanation": "注释说明发布self-copy槽准备完成的实现意图（For local copies）；ballot限routing_group_mask，无本Rank路由设local_copy_dst_slot_idx=-1；有命中存dst_slot_idx；全thread同步后thread0发布local_copy_ready=1。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 286,
+          "kind": "branch",
+          "explanation": "发布self-copy槽准备完成的分支条件为“if (i < kNumMaxTokensPerVecCore and token_idx < num_tokens)”；同token只需一份本地接收记录；ready不能早于槽映射完成。",
+          "reads": [
+            "token_idx",
+            "num_tokens"
+          ],
+          "writes": []
+        },
+        {
+          "line": 287,
+          "kind": "branch",
+          "explanation": "发布self-copy槽准备完成的分支条件为“if ((asc_ballot(dst_rank_idx == rank_idx) & routing_group_mask) == 0)”；同token只需一份本地接收记录；ready不能早于槽映射完成。",
+          "reads": [
+            "dst_rank_idx",
+            "rank_idx",
+            "routing_group_mask"
+          ],
+          "writes": []
+        },
+        {
+          "line": 288,
+          "kind": "branch",
+          "explanation": "发布self-copy槽准备完成的分支条件为“if (group_lane_idx == 0)”；同token只需一份本地接收记录；ready不能早于槽映射完成。",
+          "reads": [
+            "group_lane_idx"
+          ],
+          "writes": []
+        },
+        {
+          "line": 289,
+          "kind": "statement",
+          "explanation": "在发布self-copy槽准备完成中更新/计算“ub_layout->local_copy_dst_slot_idx[i] = -1;”。 local_copy_dst_slot_idx：每个本AIV token的本Rank接收槽，-1表示无self-copy。",
+          "reads": [],
+          "writes": [
+            "ub_layout",
+            "local_copy_dst_slot_idx"
+          ]
+        },
+        {
+          "line": 290,
+          "kind": "statement",
+          "explanation": "结束if ((asc_ballot(dst_rank_idx == rank_idx) & routing_group_mask) == 0) {并进入else if (dst_rank_idx == rank_idx) {，在发布self-copy槽准备完成里处理相反/后续分支。",
+          "reads": [
+            "dst_rank_idx",
+            "rank_idx"
+          ],
+          "writes": []
+        },
+        {
+          "line": 291,
+          "kind": "statement",
+          "explanation": "在发布self-copy槽准备完成中更新/计算“ub_layout->local_copy_dst_slot_idx[i] = dst_slot_idx;”。 local_copy_dst_slot_idx：每个本AIV token的本Rank接收槽，-1表示无self-copy；dst_slot_idx：目标Rank中当前源Rank接收切片内槽号，-1代表无有效路由。",
+          "reads": [
+            "dst_slot_idx"
+          ],
+          "writes": [
+            "ub_layout",
+            "local_copy_dst_slot_idx"
+          ]
+        },
+        {
+          "line": 292,
+          "kind": "brace",
+          "explanation": "结束由“} else if (dst_rank_idx == rank_idx) {”开启的作用域；到此发布self-copy槽准备完成对应状态更新完成，此括号不增加额外同步。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 293,
+          "kind": "brace",
+          "explanation": "结束由“if (i < kNumMaxTokensPerVecCore and token_idx < num_tokens) {”开启的作用域；到此发布self-copy槽准备完成对应状态更新完成，此括号不增加额外同步。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 294,
+          "kind": "brace",
+          "explanation": "结束由“for (int i = group_idx; i < num_iterations; i += num_groups_per_wave) {”开启的作用域；到此发布self-copy槽准备完成对应状态更新完成，此括号不增加额外同步。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 295,
+          "kind": "brace",
+          "explanation": "结束由“} else {”开启的作用域；到此发布self-copy槽准备完成对应状态更新完成，此括号不增加额外同步。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 296,
+          "kind": "call",
+          "explanation": "等待当前SIMT worker所有thread，保证前述UB状态已在worker内汇合；调用本行“asc_syncthreads();”。 ballot限routing_group_mask，无本Rank路由设local_copy_dst_slot_idx=-1；有命中存dst_slot_idx；全thread同步后thread0发布local_copy_ready=1。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 297,
+          "kind": "branch",
+          "explanation": "发布self-copy槽准备完成的分支条件为“if (thread_idx == 0)”；同token只需一份本地接收记录；ready不能早于槽映射完成。",
+          "reads": [
+            "thread_idx"
+          ],
+          "writes": []
+        },
+        {
+          "line": 298,
+          "kind": "statement",
+          "explanation": "所有SIMT thread已通过syncthreads后，thread0发布local_copy_ready=1；Scalar此后可以读取UB self-copy槽号。",
+          "reads": [],
+          "writes": [
+            "ub_layout",
+            "local_copy_ready"
+          ]
+        },
+        {
+          "line": 299,
+          "kind": "blank",
+          "explanation": "在发布self-copy槽准备完成中，分隔“ub_layout->local_copy_ready = 1;”与随后“// Load descriptors while the scalar pipeline copies local payloads.”两步；此处没有数据写入。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 300,
+          "kind": "comment",
+          "explanation": "注释说明加载通信描述符并检查SQ的实现意图（Load descriptors while the scalar pipeline copies local payloads.）；load_peer_info跳过本Rank；warp1加载jetty_info；检查lsqe_counter*4<=kSQDepth以及packed_head对齐，否则trap。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 301,
+          "kind": "branch",
+          "explanation": "加载通信描述符并检查SQ的分支条件为“if (thread_idx < kNumRanks and thread_idx != rank_idx)”；描述符与Scalar self-copy可重叠，但写WQEBB前必须证明容量和head对齐。",
+          "reads": [
+            "thread_idx",
+            "kNumRanks",
+            "rank_idx"
+          ],
+          "writes": []
+        },
+        {
+          "line": 302,
+          "kind": "statement",
+          "explanation": "从jetty_ptrs加载排除本Rank后的peer通信描述符至UB；调用本行“handle::HcommPeerInfo::load_peer_info(ub_layout->peer_info + thread_idx, jetty_ptrs,”。 peer_info：peer注册窗口基址及URMA鉴权信息；thread_idx：SIMT thread坐标；作为专家/Rank桶并行索引。",
+          "reads": [
+            "ub_layout",
+            "peer_info",
+            "thread_idx",
+            "jetty_ptrs"
+          ],
+          "writes": [
+            "ub_layout",
+            "peer_info"
+          ]
+        },
+        {
+          "line": 303,
+          "kind": "statement",
+          "explanation": "peer描述符表不包含本Rank：thread_idx<rank_idx用原索引，之后减1，匹配压缩nonself peer表。",
+          "reads": [
+            "thread_idx",
+            "rank_idx"
+          ],
+          "writes": []
+        },
+        {
+          "line": 304,
+          "kind": "branch",
+          "explanation": "加载通信描述符并检查SQ的分支条件为“if (warp_idx == 1 and kNumRanks > 1)”；描述符与Scalar self-copy可重叠，但写WQEBB前必须证明容量和head对齐。",
+          "reads": [
+            "warp_idx",
+            "kNumRanks"
+          ],
+          "writes": []
+        },
+        {
+          "line": 305,
+          "kind": "statement",
+          "explanation": "按vec_core_idx加载该AIV私有Jetty的SQ/CQ与head快照到UB；调用本行“handle::HcommJettyInfo::load_jetty_info(&ub_layout->jetty_info, jetty_ptrs, vec_core_idx, lane_idx);”。 jetty_info：每AIV私有SQ/CQ/head/doorbell地址快照；lane_idx：warp内lane；执行shuffle、扫描和WQEBB编码。",
+          "reads": [
+            "ub_layout",
+            "jetty_info",
+            "jetty_ptrs",
+            "vec_core_idx",
+            "lane_idx"
+          ],
+          "writes": [
+            "ub_layout",
+            "jetty_info"
+          ]
+        },
+        {
+          "line": 306,
+          "kind": "comment",
+          "explanation": "注释说明加载通信描述符并检查SQ的实现意图（Check SQ capacity before releasing other warps to write WQEBBs.）；load_peer_info跳过本Rank；warp1加载jetty_info；检查lsqe_counter*4<=kSQDepth以及packed_head对齐，否则trap。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 307,
+          "kind": "branch",
+          "explanation": "加载通信描述符并检查SQ的分支条件为“if (lane_idx == 0 and static_cast<uint64_t>(ub_layout->lsqe_counter) * kNumWQEBBsPerSQESlot > handle::kSQDepth)”；描述符与Scalar self-copy可重叠，但写WQEBB前必须证明容量和head对齐。",
+          "reads": [
+            "lane_idx",
+            "ub_layout",
+            "lsqe_counter"
+          ],
+          "writes": []
+        },
+        {
+          "line": 308,
+          "kind": "call",
+          "explanation": "SQ所需固定WQEBB槽数超过kSQDepth时trap，禁止各warp覆盖尚未安全容纳的设备SQ环。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 309,
+          "kind": "brace",
+          "explanation": "结束由“if (warp_idx == 1 and kNumRanks > 1) {”开启的作用域；到此加载通信描述符并检查SQ对应状态更新完成，此括号不增加额外同步。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 310,
+          "kind": "call",
+          "explanation": "等待当前SIMT worker所有thread，保证前述UB状态已在worker内汇合；调用本行“asc_syncthreads();”。 load_peer_info跳过本Rank；warp1加载jetty_info；检查lsqe_counter*4<=kSQDepth以及packed_head对齐，否则trap。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 311,
+          "kind": "branch",
+          "explanation": "加载通信描述符并检查SQ的分支条件为“if (thread_idx == 0 and kNumRanks > 1 and”；描述符与Scalar self-copy可重叠，但写WQEBB前必须证明容量和head对齐。",
+          "reads": [
+            "thread_idx",
+            "kNumRanks"
+          ],
+          "writes": []
+        },
+        {
+          "line": 312,
+          "kind": "statement",
+          "explanation": "在加载通信描述符并检查SQ中更新/计算“static_cast<uint32_t>(ub_layout->jetty_info.packed_head) % kSQEBBAlignment != 0)”。 jetty_info：每AIV私有SQ/CQ/head/doorbell地址快照。",
+          "reads": [
+            "ub_layout",
+            "jetty_info"
+          ],
+          "writes": []
+        },
+        {
+          "line": 313,
+          "kind": "call",
+          "explanation": "SQ packed_head未按kSQEBBAlignment对齐时trap，避免固定四WQEBB槽从非法边界编码。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 314,
+          "kind": "blank",
+          "explanation": "在加载通信描述符并检查SQ中，分隔“__asc_simt_vf::__trap();”与随后“if constexpr (not kCachedMode) {”两步；此处没有数据写入。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 315,
+          "kind": "branch",
+          "explanation": "向目标Rank发布源Rank总数的分支条件为“if constexpr (not kCachedMode)”；接收流按来源Rank分区，此通知不是payload网络传输完成证据。",
+          "reads": [
+            "kCachedMode"
+          ],
+          "writes": []
+        },
+        {
+          "line": 316,
+          "kind": "comment",
+          "explanation": "注释说明向目标Rank发布源Rank总数的实现意图（scatter rank counts to remote ranks）；get_sym_ptr映射到peer的remote_rank_histogram[rank_idx]，写arrival=V和低位总量。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 317,
+          "kind": "loop",
+          "explanation": "向目标Rank发布源Rank总数的迭代条件为“for (int peer_idx = vec_core_idx + thread_idx * kNumVecCores; peer_idx < kNumRanks; peer_idx += kNumVecCores * kNumThreads)”；接收流按来源Rank分区，此通知不是payload网络传输完成证据。",
+          "reads": [
+            "vec_core_idx",
+            "thread_idx",
+            "kNumVecCores",
+            "kNumRanks",
+            "peer_idx"
+          ],
+          "writes": [
+            "peer_idx"
+          ]
+        },
+        {
+          "line": 318,
+          "kind": "statement",
+          "explanation": "按workspace common_signals内对称基址表把本地偏移转成peer可写GM地址；调用本行“auto ptr = layout::get_sym_ptr(”。 get_sym_ptr映射到peer的remote_rank_histogram[rank_idx]，写arrival=V和低位总量。",
+          "reads": [],
+          "writes": [
+            "ptr"
+          ]
+        },
+        {
+          "line": 319,
+          "kind": "statement",
+          "explanation": "get_sym_ptr使用common_signals中的对称注册地址表，把本地workspace字段偏移变成目标peer GM地址。",
+          "reads": [
+            "workspace_layout"
+          ],
+          "writes": []
+        },
+        {
+          "line": 320,
+          "kind": "statement",
+          "explanation": "目标字段按当前源rank_idx定位remote_rank_histogram，接收端以来源Rank维读取。",
+          "reads": [
+            "workspace_layout",
+            "rank_idx"
+          ],
+          "writes": []
+        },
+        {
+          "line": 321,
+          "kind": "statement",
+          "explanation": "peer_idx选择应写入的目标Rank，地址偏移相同但物理owner是该peer。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 322,
+          "kind": "brace",
+          "explanation": "闭合第318行“auto ptr = layout::get_sym_ptr(”的实参列表；目标Rank能够构造来源Rank接收流长度。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 323,
+          "kind": "statement",
+          "explanation": "把当前源Rank发往peer的总去重token数写入目标peer通知区，arrival编码为V；这表示计数已齐，不代表payload已完成。",
+          "reads": [
+            "kNumVecCores",
+            "ub_layout",
+            "rank_psum"
+          ],
+          "writes": [
+            "ptr"
+          ]
+        },
+        {
+          "line": 324,
+          "kind": "brace",
+          "explanation": "结束由“for (int peer_idx = vec_core_idx + thread_idx * kNumVecCores; peer_idx < kNumRanks; peer_idx += kNumVecCores * kNumThreads) {”开启的作用域；到此向目标Rank发布源Rank总数对应状态更新完成，此括号不增加额外同步。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 325,
+          "kind": "brace",
+          "explanation": "结束由“if constexpr (not kCachedMode) {”开启的作用域；到此向目标Rank发布源Rank总数对应状态更新完成，此括号不增加额外同步。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 326,
+          "kind": "blank",
+          "explanation": "在向目标Rank发布源Rank总数中，分隔“}”与随后“// Write SQEs”两步；此处没有数据写入。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 327,
+          "kind": "comment",
+          "explanation": "注释说明将逻辑SQ映射到物理SQE的实现意图（Write SQEs）；warp分摊SQ数，lane0 atomic取得psqe_idx；前6lane按psqe_idx*6+lane查sgep_to_entry并取目标Rank/槽。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 328,
+          "kind": "declaration",
+          "explanation": "在将逻辑SQ映射到物理SQE中更新/计算“static constexpr int kNumWQEBBLanes = handle::kNumWQEBBBytes / sizeof(uint64_t);”。 warp分摊SQ数，lane0 atomic取得psqe_idx；前6lane按psqe_idx*6+lane查sgep_to_entry并取目标Rank/槽。",
+          "reads": [],
+          "writes": [
+            "kNumWQEBBLanes"
+          ]
+        },
+        {
+          "line": 329,
+          "kind": "declaration",
+          "explanation": "在将逻辑SQ映射到物理SQE中更新/计算“static constexpr int kNumWriteHeaderLanes = sizeof(AscendC::HcommUrmaSqeCtx) / sizeof(uint64_t);”。 warp分摊SQ数，lane0 atomic取得psqe_idx；前6lane按psqe_idx*6+lane查sgep_to_entry并取目标Rank/槽。",
+          "reads": [],
+          "writes": [
+            "kNumWriteHeaderLanes"
+          ]
+        },
+        {
+          "line": 330,
+          "kind": "declaration",
+          "explanation": "在将逻辑SQ映射到物理SQE中更新/计算“static constexpr int kNumSGEPairLanes = 2 * sizeof(AscendC::HcommUrmaSgeCtx) / sizeof(uint64_t);”。 warp分摊SQ数，lane0 atomic取得psqe_idx；前6lane按psqe_idx*6+lane查sgep_to_entry并取目标Rank/槽。",
+          "reads": [],
+          "writes": [
+            "kNumSGEPairLanes"
+          ]
+        },
+        {
+          "line": 331,
+          "kind": "declaration",
+          "explanation": "在将逻辑SQ映射到物理SQE中更新/计算“const int num_sqes = ub_layout->lsqe_counter;”。 num_sqes：本AIV全部远端逻辑SQE数量；lsqe_counter：逻辑SQE总数，各远端Rank预留SQ区累计值。",
+          "reads": [
+            "ub_layout",
+            "lsqe_counter"
+          ],
+          "writes": [
+            "num_sqes"
+          ]
+        },
+        {
+          "line": 332,
+          "kind": "blank",
+          "explanation": "在将逻辑SQ映射到物理SQE中，分隔“const int num_sqes = ub_layout->lsqe_counter;”与随后“const int num_sqes_per_warp = math::ceil_div(num_sqes, kNumWarps);”两步；此处没有数据写入。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 333,
+          "kind": "declaration",
+          "explanation": "在将逻辑SQ映射到物理SQE中更新/计算“const int num_sqes_per_warp = math::ceil_div(num_sqes, kNumWarps);”。 num_sqes_per_warp：SQ数按warp向上整除的分配额度；num_sqes：本AIV全部远端逻辑SQE数量。",
+          "reads": [
+            "num_sqes"
+          ],
+          "writes": [
+            "num_sqes_per_warp"
+          ]
+        },
+        {
+          "line": 334,
+          "kind": "declaration",
+          "explanation": "在将逻辑SQ映射到物理SQE中更新/计算“const int start_lsqe_idx = warp_idx * num_sqes_per_warp;”。 start_lsqe_idx：当前warp分配范围起点；warp_idx：当前warp编号；分配SQ与self-copy任务；num_sqes_per_warp：SQ数按warp向上整除的分配额度。",
+          "reads": [
+            "warp_idx",
+            "num_sqes_per_warp"
+          ],
+          "writes": [
+            "start_lsqe_idx"
+          ]
+        },
+        {
+          "line": 335,
+          "kind": "declaration",
+          "explanation": "在将逻辑SQ映射到物理SQE中更新/计算“const int end_lsqe_idx = math::min(start_lsqe_idx + num_sqes_per_warp, num_sqes);”。 end_lsqe_idx：当前warp范围末端，被num_sqes截断；start_lsqe_idx：当前warp分配范围起点；num_sqes_per_warp：SQ数按warp向上整除的分配额度。",
+          "reads": [
+            "start_lsqe_idx",
+            "num_sqes_per_warp",
+            "num_sqes"
+          ],
+          "writes": [
+            "end_lsqe_idx"
+          ]
+        },
+        {
+          "line": 336,
+          "kind": "loop",
+          "explanation": "将逻辑SQ映射到物理SQE的迭代条件为“for (int i = start_lsqe_idx; i < end_lsqe_idx; ++ i)”；物理SQ序号连续分配；同peer逻辑区保证该SQ目标Rank一致。",
+          "reads": [
+            "start_lsqe_idx",
+            "end_lsqe_idx",
+            "i"
+          ],
+          "writes": [
+            "i"
+          ]
+        },
+        {
+          "line": 337,
+          "kind": "comment",
+          "explanation": "注释说明将逻辑SQ映射到物理SQE的实现意图（Allocate physical SQE）；warp分摊SQ数，lane0 atomic取得psqe_idx；前6lane按psqe_idx*6+lane查sgep_to_entry并取目标Rank/槽。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 338,
+          "kind": "declaration",
+          "explanation": "在将逻辑SQ映射到物理SQE中更新/计算“int psqe_idx = 0;”。 psqe_idx：当前warp独占的连续物理SQ号。",
+          "reads": [],
+          "writes": [
+            "psqe_idx"
+          ]
+        },
+        {
+          "line": 339,
+          "kind": "branch",
+          "explanation": "将逻辑SQ映射到物理SQE的分支条件为“if (lane_idx == 0)”；物理SQ序号连续分配；同peer逻辑区保证该SQ目标Rank一致。",
+          "reads": [
+            "lane_idx"
+          ],
+          "writes": []
+        },
+        {
+          "line": 340,
+          "kind": "call",
+          "explanation": "原子加入计数或为调用thread分配唯一旧计数序号；调用本行“psqe_idx = asc_atomic_add(&ub_layout->psqe_counter, 1);”。 psqe_idx：当前warp独占的连续物理SQ号；psqe_counter：warp竞争取得连续物理SQE槽号的UB原子计数。",
+          "reads": [
+            "ub_layout",
+            "psqe_counter"
+          ],
+          "writes": [
+            "ub_layout",
+            "psqe_counter",
+            "psqe_idx"
+          ]
+        },
+        {
+          "line": 341,
+          "kind": "statement",
+          "explanation": "warp shuffle广播指定lane的值；调用本行“psqe_idx = simt::exchange(psqe_idx, 0);”。 psqe_idx：当前warp独占的连续物理SQ号。",
+          "reads": [
+            "psqe_idx"
+          ],
+          "writes": [
+            "psqe_idx"
+          ]
+        },
+        {
+          "line": 342,
+          "kind": "blank",
+          "explanation": "在将逻辑SQ映射到物理SQE中，分隔“psqe_idx = simt::exchange(psqe_idx, 0);”与随后“// Now we need to know the SGEs' source and destination (rank and slot)”两步；此处没有数据写入。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 343,
+          "kind": "comment",
+          "explanation": "注释说明将逻辑SQ映射到物理SQE的实现意图（Now we need to know the SGEs' source and destination (rank and slot)）；warp分摊SQ数，lane0 atomic取得psqe_idx；前6lane按psqe_idx*6+lane查sgep_to_entry并取目标Rank/槽。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 344,
+          "kind": "comment",
+          "explanation": "注释说明将逻辑SQ映射到物理SQE的实现意图（Also, we use `entry_idx` to see whether the SGE is valid）；warp分摊SQ数，lane0 atomic取得psqe_idx；前6lane按psqe_idx*6+lane查sgep_to_entry并取目标Rank/槽。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 345,
+          "kind": "statement",
+          "explanation": "在编译期限制此实例的容量、索引或硬件协议假设；调用本行“EP_STATIC_ASSERT(kNumSGEPairsPerSQE <= warpSize);”。 warp分摊SQ数，lane0 atomic取得psqe_idx；前6lane按psqe_idx*6+lane查sgep_to_entry并取目标Rank/槽。",
+          "reads": [
+            "kNumSGEPairsPerSQE"
+          ],
+          "writes": []
+        },
+        {
+          "line": 346,
+          "kind": "declaration",
+          "explanation": "在将逻辑SQ映射到物理SQE中更新/计算“int entry_idx = -1, dst_rank_idx = -1, dst_slot_idx = -1;”。 entry_idx：本AIV token位置×Top-K+路由位置，定位路由暂存；dst_rank_idx：全局专家ID除每Rank专家数得到目标Rank，去重后可能变为-1；dst_slot_idx：目标Rank中当前源Rank接收切片内槽号，-1代表无有效路由。",
+          "reads": [
+            "dst_rank_idx",
+            "dst_slot_idx"
+          ],
+          "writes": [
+            "entry_idx",
+            "dst_rank_idx",
+            "dst_slot_idx"
+          ]
+        },
+        {
+          "line": 347,
+          "kind": "branch",
+          "explanation": "将逻辑SQ映射到物理SQE的分支条件为“if (lane_idx < kNumSGEPairsPerSQE)”；物理SQ序号连续分配；同peer逻辑区保证该SQ目标Rank一致。",
+          "reads": [
+            "lane_idx",
+            "kNumSGEPairsPerSQE"
+          ],
+          "writes": []
+        },
+        {
+          "line": 348,
+          "kind": "declaration",
+          "explanation": "用连续物理SQ号psqe_idx×6加lane_idx查候选pair；各peer逻辑SQ区的padding已在sgep_to_entry清为-1。",
+          "reads": [
+            "psqe_idx",
+            "kNumSGEPairsPerSQE",
+            "lane_idx"
+          ],
+          "writes": [
+            "global_sge_idx"
+          ]
+        },
+        {
+          "line": 349,
+          "kind": "statement",
+          "explanation": "在将逻辑SQ映射到物理SQE中更新/计算“entry_idx = ub_layout->sgep_to_entry[global_sge_idx];”。 entry_idx：本AIV token位置×Top-K+路由位置，定位路由暂存；sgep_to_entry：全局SGE pair位置到本AIV路由entry的逆映射；global_sge_idx：物理SQ号×6+lane对应的候选pair位置。",
+          "reads": [
+            "ub_layout",
+            "sgep_to_entry",
+            "global_sge_idx"
+          ],
+          "writes": [
+            "entry_idx"
+          ]
+        },
+        {
+          "line": 350,
+          "kind": "branch",
+          "explanation": "将逻辑SQ映射到物理SQE的分支条件为“if (entry_idx >= 0)”；物理SQ序号连续分配；同peer逻辑区保证该SQ目标Rank一致。",
+          "reads": [
+            "entry_idx"
+          ],
+          "writes": []
+        },
+        {
+          "line": 351,
+          "kind": "statement",
+          "explanation": "在将逻辑SQ映射到物理SQE中更新/计算“dst_rank_idx = ub_layout->dst_rank_idx[entry_idx];”。 dst_rank_idx：全局专家ID除每Rank专家数得到目标Rank，去重后可能变为-1；entry_idx：本AIV token位置×Top-K+路由位置，定位路由暂存。",
+          "reads": [
+            "ub_layout",
+            "entry_idx",
+            "dst_rank_idx"
+          ],
+          "writes": [
+            "dst_rank_idx"
+          ]
+        },
+        {
+          "line": 352,
+          "kind": "statement",
+          "explanation": "在将逻辑SQ映射到物理SQE中更新/计算“dst_slot_idx = ub_layout->dst_slot_idx[entry_idx];”。 dst_slot_idx：目标Rank中当前源Rank接收切片内槽号，-1代表无有效路由；entry_idx：本AIV token位置×Top-K+路由位置，定位路由暂存。",
+          "reads": [
+            "ub_layout",
+            "entry_idx",
+            "dst_slot_idx"
+          ],
+          "writes": [
+            "dst_slot_idx"
+          ]
+        },
+        {
+          "line": 353,
+          "kind": "brace",
+          "explanation": "结束由“if (entry_idx >= 0) {”开启的作用域；到此将逻辑SQ映射到物理SQE对应状态更新完成，此括号不增加额外同步。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 354,
+          "kind": "brace",
+          "explanation": "结束由“if (lane_idx < kNumSGEPairsPerSQE) {”开启的作用域；到此将逻辑SQ映射到物理SQE对应状态更新完成，此括号不增加额外同步。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 355,
+          "kind": "blank",
+          "explanation": "在计算SQE头和SGE编码lane中，分隔“}”与随后“// Create SQE”两步；此处没有数据写入。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 356,
+          "kind": "comment",
+          "explanation": "注释说明计算SQE头和SGE编码lane的实现意图（Create SQE）；num_sges=2*num_sgeps；头48B占6lane；每pair占4lane；广播lane0目标Rank/槽与sgep_entry_idx。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 357,
+          "kind": "comment",
+          "explanation": "注释说明计算SQE头和SGE编码lane的实现意图（48B header + 16B * 12 SGEs <= 4 x 64B WQEBBs）；num_sges=2*num_sgeps；头48B占6lane；每pair占4lane；广播lane0目标Rank/槽与sgep_entry_idx。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 358,
+          "kind": "comment",
+          "explanation": "注释说明计算SQE头和SGE编码lane的实现意图（Header uses 6 lanes）；num_sges=2*num_sgeps；头48B占6lane；每pair占4lane；广播lane0目标Rank/槽与sgep_entry_idx。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 359,
+          "kind": "comment",
+          "explanation": "注释说明计算SQE头和SGE编码lane的实现意图（SGE pair uses 4 lanes）；num_sges=2*num_sgeps；头48B占6lane；每pair占4lane；广播lane0目标Rank/槽与sgep_entry_idx。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 360,
+          "kind": "comment",
+          "explanation": "注释说明计算SQE头和SGE编码lane的实现意图（For example）；num_sges=2*num_sgeps；头48B占6lane；每pair占4lane；广播lane0目标Rank/槽与sgep_entry_idx。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 361,
+          "kind": "comment",
+          "explanation": "注释说明计算SQE头和SGE编码lane的实现意图（Lane 6/7: SGE 0, SGEP 0 token data (the token index is from lane 0)）；num_sges=2*num_sgeps；头48B占6lane；每pair占4lane；广播lane0目标Rank/槽与sgep_entry_idx。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 362,
+          "kind": "comment",
+          "explanation": "此示例给pair0的hidden SGE源地址=x+token_idx*hidden字节；token编号由lane0广播。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 363,
+          "kind": "comment",
+          "explanation": "注释说明计算SQE头和SGE编码lane的实现意图（Lane 8/9: SGE 1, SGEP 0 token meta (the token index is from lane 0)）；num_sges=2*num_sgeps；头48B占6lane；每pair占4lane；广播lane0目标Rank/槽与sgep_entry_idx。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 364,
+          "kind": "comment",
+          "explanation": "pair0 metadata SGE从metadata_send_buffer中lane0对应token的metadata步长位置读取。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 365,
+          "kind": "comment",
+          "explanation": "注释说明计算SQE头和SGE编码lane的实现意图（Lane 10/11: SGE 2, SGEP 1 token data (the token index is from lane 1)）；num_sges=2*num_sgeps；头48B占6lane；每pair占4lane；广播lane0目标Rank/槽与sgep_entry_idx。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 366,
+          "kind": "comment",
+          "explanation": "此示例给pair1的hidden SGE源地址，同一个地址公式使用来自lane1的另一个token编号。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 367,
+          "kind": "comment",
+          "explanation": "注释说明计算SQE头和SGE编码lane的实现意图（Lane 12/13: SGE 3, SGEP 1 token meta (the token index is from lane 1)）；num_sges=2*num_sgeps；头48B占6lane；每pair占4lane；广播lane0目标Rank/槽与sgep_entry_idx。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 368,
+          "kind": "comment",
+          "explanation": "pair1 metadata SGE用lane1对应token索引读取紧凑metadata，因此与pair0hidden不属于同一token。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 369,
+          "kind": "comment",
+          "explanation": "注释说明计算SQE头和SGE编码lane的实现意图（...）；num_sges=2*num_sgeps；头48B占6lane；每pair占4lane；广播lane0目标Rank/槽与sgep_entry_idx。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 370,
+          "kind": "statement",
+          "explanation": "在编译期限制此实例的容量、索引或硬件协议假设；调用本行“EP_STATIC_ASSERT(kNumSGEPairsPerSQE == 6);”。 num_sges=2*num_sgeps；头48B占6lane；每pair占4lane；广播lane0目标Rank/槽与sgep_entry_idx。",
+          "reads": [
+            "kNumSGEPairsPerSQE"
+          ],
+          "writes": []
+        },
+        {
+          "line": 371,
+          "kind": "declaration",
+          "explanation": "warp归约entry_idx>=0的有效lane数，取得当前SQ真实pair数，只有前六lane可能有效。",
+          "reads": [
+            "entry_idx"
+          ],
+          "writes": [
+            "num_sgeps"
+          ]
+        },
+        {
+          "line": 372,
+          "kind": "declaration",
+          "explanation": "在计算SQE头和SGE编码lane中更新/计算“const auto num_sges = num_sgeps * 2;”。 num_sges：每pair由hidden和metadata两个SGE组成的总SGE数；num_sgeps：当前SQ有效pair数量，由entry_idx>=0的warp归约得到。",
+          "reads": [
+            "num_sgeps"
+          ],
+          "writes": [
+            "num_sges"
+          ]
+        },
+        {
+          "line": 373,
+          "kind": "declaration",
+          "explanation": "在计算SQE头和SGE编码lane中更新/计算“const auto num_wqebbs = math::ceil_div(”。 num_wqebbs：48B头加16B×SGE数向64B整除后的真实WQEBB数。",
+          "reads": [],
+          "writes": [
+            "num_wqebbs"
+          ]
+        },
+        {
+          "line": 374,
+          "kind": "statement",
+          "explanation": "SQ编码长度为48B WRITE头加num_sges条16B SGE，转成int后供ceil_div。",
+          "reads": [
+            "num_sges"
+          ],
+          "writes": []
+        },
+        {
+          "line": 375,
+          "kind": "statement",
+          "explanation": "以handle::kNumWQEBBBytes=64为单位向上整除，得到本SQ真实有效WQEBB数。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 376,
+          "kind": "declaration",
+          "explanation": "warp shuffle广播指定lane的值；调用本行“const auto sqe_dst_rank_idx = simt::exchange(dst_rank_idx, 0);”。 sqe_dst_rank_idx：从lane0广播的当前SQ统一目标Rank；dst_rank_idx：全局专家ID除每Rank专家数得到目标Rank，去重后可能变为-1。",
+          "reads": [
+            "dst_rank_idx"
+          ],
+          "writes": [
+            "sqe_dst_rank_idx"
+          ]
+        },
+        {
+          "line": 377,
+          "kind": "declaration",
+          "explanation": "warp shuffle广播指定lane的值；调用本行“const auto sqe_dst_slot_idx = simt::exchange(dst_slot_idx, 0);”。 sqe_dst_slot_idx：从lane0广播的远端连续写入起点；dst_slot_idx：目标Rank中当前源Rank接收切片内槽号，-1代表无有效路由。",
+          "reads": [
+            "dst_slot_idx"
+          ],
+          "writes": [
+            "sqe_dst_slot_idx"
+          ]
+        },
+        {
+          "line": 378,
+          "kind": "declaration",
+          "explanation": "在计算SQE头和SGE编码lane中更新/计算“const auto peer_info = ub_layout->peer_info + sqe_dst_rank_idx;”。 peer_info：peer注册窗口基址及URMA鉴权信息；sqe_dst_rank_idx：从lane0广播的当前SQ统一目标Rank。",
+          "reads": [
+            "ub_layout",
+            "sqe_dst_rank_idx",
+            "peer_info"
+          ],
+          "writes": [
+            "peer_info"
+          ]
+        },
+        {
+          "line": 379,
+          "kind": "declaration",
+          "explanation": "在计算SQE头和SGE编码lane中更新/计算“const auto peer_info_words = reinterpret_cast<__ubuf__ uint64_t*>(peer_info);”。 peer_info_words：peer描述符的64位视图，匹配SQ头lane编码；peer_info：peer注册窗口基址及URMA鉴权信息。",
+          "reads": [
+            "peer_info"
+          ],
+          "writes": [
+            "peer_info_words"
+          ]
+        },
+        {
+          "line": 380,
+          "kind": "declaration",
+          "explanation": "在计算SQE头和SGE编码lane中更新/计算“const auto sgep_idx = lane_idx < kNumWriteHeaderLanes ? 0 :”。 sgep_idx：当前SQE word对应的SGE pair lane号；lane_idx：warp内lane；执行shuffle、扫描和WQEBB编码。",
+          "reads": [
+            "lane_idx"
+          ],
+          "writes": [
+            "sgep_idx"
+          ]
+        },
+        {
+          "line": 381,
+          "kind": "statement",
+          "explanation": "用(lane-头6lane)/pair4lane映射当前word对应pair，并夹到第5pair；头lane始终取pair0。",
+          "reads": [
+            "lane_idx",
+            "kNumSGEPairsPerSQE"
+          ],
+          "writes": []
+        },
+        {
+          "line": 382,
+          "kind": "declaration",
+          "explanation": "warp shuffle广播指定lane的值；调用本行“const auto sgep_entry_idx = simt::exchange(entry_idx, sgep_idx);”。 sgep_entry_idx：通过shuffle取得当前word所对应的token route entry；entry_idx：本AIV token位置×Top-K+路由位置，定位路由暂存；sgep_idx：当前SQE word对应的SGE pair lane号。",
+          "reads": [
+            "entry_idx",
+            "sgep_idx"
+          ],
+          "writes": [
+            "sgep_entry_idx"
+          ]
+        },
+        {
+          "line": 383,
+          "kind": "blank",
+          "explanation": "在编码SQ环owner与WRITE头中，分隔“const auto sgep_entry_idx = simt::exchange(entry_idx, sgep_idx);”与随后“const auto slot_head =”两步；此处没有数据写入。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 384,
+          "kind": "declaration",
+          "explanation": "在编码SQ环owner与WRITE头中更新/计算“const auto slot_head =”。 slot_head：SQ当前head加物理SQ号×4，定位固定四WQEBB槽。",
+          "reads": [],
+          "writes": [
+            "slot_head"
+          ]
+        },
+        {
+          "line": 385,
+          "kind": "statement",
+          "explanation": "固定槽首址以Jetty当前packed_head的低32位WQEBB head为起点。",
+          "reads": [
+            "ub_layout",
+            "jetty_info"
+          ],
+          "writes": []
+        },
+        {
+          "line": 386,
+          "kind": "statement",
+          "explanation": "加psqe_idx*4，为每条物理SQ保留四WQEBB固定跨度，包含填NOP的空尾块。",
+          "reads": [
+            "psqe_idx"
+          ],
+          "writes": []
+        },
+        {
+          "line": 387,
+          "kind": "declaration",
+          "explanation": "在编码SQ环owner与WRITE头中更新/计算“const auto wqebb_head = slot_head + lane_idx / kNumWQEBBLanes;”。 wqebb_head：当前lane负责的WQEBB绝对环序号；slot_head：SQ当前head加物理SQ号×4，定位固定四WQEBB槽；lane_idx：warp内lane；执行shuffle、扫描和WQEBB编码。",
+          "reads": [
+            "slot_head",
+            "lane_idx"
+          ],
+          "writes": [
+            "wqebb_head"
+          ]
+        },
+        {
+          "line": 388,
+          "kind": "declaration",
+          "explanation": "对当前WQEBB绝对环序号按SQDepth位判断轮次，构造bit31 owner；环回时翻转，区分新旧WQE。",
+          "reads": [
+            "owner_bit",
+            "wqebb_head"
+          ],
+          "writes": [
+            "owner_bit"
+          ]
+        },
+        {
+          "line": 389,
+          "kind": "declaration",
+          "explanation": "在编码SQ环owner与WRITE头中更新/计算“const auto sq_wqebb_idx = wqebb_head % handle::kSQDepth;”。 sq_wqebb_idx：WQEBB绝对序号模SQDepth后的环内索引；wqebb_head：当前lane负责的WQEBB绝对环序号。",
+          "reads": [
+            "wqebb_head"
+          ],
+          "writes": [
+            "sq_wqebb_idx"
+          ]
+        },
+        {
+          "line": 390,
+          "kind": "blank",
+          "explanation": "在编码SQ环owner与WRITE头中，分隔“const auto sq_wqebb_idx = wqebb_head % handle::kSQDepth;”与随后“uint64_t sqe_word = 0;”两步；此处没有数据写入。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 391,
+          "kind": "declaration",
+          "explanation": "在编码SQ环owner与WRITE头中更新/计算“uint64_t sqe_word = 0;”。 sqe_word：当前lane写入的64位WRITE头、SGE或NOP字段。",
+          "reads": [],
+          "writes": [
+            "sqe_word"
+          ]
+        },
+        {
+          "line": 392,
+          "kind": "branch",
+          "explanation": "编码SQ环owner与WRITE头的分支条件为“if (lane_idx == 0)”；固定4 WQEBB槽避免不同有效SGE数影响下一SQ定位，最后SQ建立drain完成依据。",
+          "reads": [
+            "lane_idx"
+          ],
+          "writes": []
+        },
+        {
+          "line": 393,
+          "kind": "statement",
+          "explanation": "在编码SQ环owner与WRITE头中更新/计算“sqe_word = handle::kWriteSQEHeaderTemplate | owner_bit | static_cast<uint64_t>(sq_wqebb_idx);”。 sqe_word：当前lane写入的64位WRITE头、SGE或NOP字段；owner_bit：按SQDepth轮次翻转的SQ所有权位，置于bit31；sq_wqebb_idx：WQEBB绝对序号模SQDepth后的环内索引。",
+          "reads": [
+            "sqe_word",
+            "owner_bit",
+            "sq_wqebb_idx"
+          ],
+          "writes": [
+            "sqe_word"
+          ]
+        },
+        {
+          "line": 394,
+          "kind": "comment",
+          "explanation": "注释说明编码SQ环owner与WRITE头的实现意图（Request strong order and CQE for the last physical SQE.）；slot_head=head+psqe_idx*4；WQEBB owner按环轮次翻转；末物理SQ添加strong-order/CQE；远端地址加recv_buffer_offset+slot*T。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 395,
+          "kind": "branch",
+          "explanation": "仅psqe_idx+1==num_sqes的末物理SQ请求最终strong-order/CQE，drain凭最终完成覆盖前序WRITE。",
+          "reads": [
+            "psqe_idx",
+            "num_sqes"
+          ],
+          "writes": []
+        },
+        {
+          "line": 396,
+          "kind": "statement",
+          "explanation": "仅最后一个物理SQE增加strong-order与CQE标志，后续drain使用该完成证据覆盖此前WRITE。",
+          "reads": [],
+          "writes": [
+            "sqe_word"
+          ]
+        },
+        {
+          "line": 397,
+          "kind": "statement",
+          "explanation": "结束if (lane_idx == 0) {并进入else if (lane_idx < kNumWriteHeaderLanes) {，在编码SQ环owner与WRITE头里处理相反/后续分支。",
+          "reads": [
+            "lane_idx"
+          ],
+          "writes": []
+        },
+        {
+          "line": 398,
+          "kind": "statement",
+          "explanation": "在编码SQ环owner与WRITE头中更新/计算“sqe_word = peer_info_words[lane_idx - 1];”。 sqe_word：当前lane写入的64位WRITE头、SGE或NOP字段；peer_info_words：peer描述符的64位视图，匹配SQ头lane编码；lane_idx：warp内lane；执行shuffle、扫描和WQEBB编码。",
+          "reads": [
+            "peer_info_words",
+            "lane_idx"
+          ],
+          "writes": [
+            "sqe_word"
+          ]
+        },
+        {
+          "line": 399,
+          "kind": "branch",
+          "explanation": "编码SQ环owner与WRITE头的分支条件为“if (lane_idx == 1)”；固定4 WQEBB槽避免不同有效SGE数影响下一SQ定位，最后SQ建立drain完成依据。",
+          "reads": [
+            "lane_idx"
+          ],
+          "writes": []
+        },
+        {
+          "line": 400,
+          "kind": "statement",
+          "explanation": "在编码SQ环owner与WRITE头中更新/计算“sqe_word |= static_cast<uint64_t>(num_sges) << 24;  // num_sges”。 sqe_word：当前lane写入的64位WRITE头、SGE或NOP字段；num_sges：每pair由hidden和metadata两个SGE组成的总SGE数。",
+          "reads": [
+            "num_sges"
+          ],
+          "writes": [
+            "sqe_word"
+          ]
+        },
+        {
+          "line": 401,
+          "kind": "branch",
+          "explanation": "编码SQ环owner与WRITE头的分支条件为“if (lane_idx == 5)”；固定4 WQEBB槽避免不同有效SGE数影响下一SQ定位，最后SQ建立drain完成依据。",
+          "reads": [
+            "lane_idx"
+          ],
+          "writes": []
+        },
+        {
+          "line": 402,
+          "kind": "statement",
+          "explanation": "在peer注册基址字段上加recv_buffer_offset和目标slot×完整token步长，WRITE目的地址是目标Rank中当前源Rank接收分区。",
+          "reads": [
+            "sqe_word",
+            "sqe_dst_slot_idx"
+          ],
+          "writes": [
+            "sqe_word"
+          ]
+        },
+        {
+          "line": 403,
+          "kind": "statement",
+          "explanation": "结束} else if (lane_idx < kNumWriteHeaderLanes) {并进入else if (lane_idx < kNumWriteHeaderLanes + num_sgeps * kNumSGEPairLanes) {，在编码hidden和metadata SGE并写SQ里处理相反/后续分支。",
+          "reads": [
+            "lane_idx",
+            "num_sgeps"
+          ],
+          "writes": []
+        },
+        {
+          "line": 404,
+          "kind": "declaration",
+          "explanation": "在编码hidden和metadata SGE并写SQ中更新/计算“const auto sgep_lane_idx = (lane_idx - kNumWriteHeaderLanes) % kNumSGEPairLanes;”。 sgep_lane_idx：pair内四个word的选择：hidden长度/地址、metadata长度/地址；lane_idx：warp内lane；执行shuffle、扫描和WQEBB编码。",
+          "reads": [
+            "lane_idx"
+          ],
+          "writes": [
+            "sgep_lane_idx"
+          ]
+        },
+        {
+          "line": 405,
+          "kind": "declaration",
+          "explanation": "在编码hidden和metadata SGE并写SQ中更新/计算“const auto token_idx = vec_core_idx * kNumMaxTokensPerVecCore + sgep_entry_idx / kNumTopk;”。 token_idx：输入token的Rank内索引，由AIV连续块基址加核内位置；sgep_entry_idx：通过shuffle取得当前word所对应的token route entry。",
+          "reads": [
+            "vec_core_idx",
+            "sgep_entry_idx",
+            "kNumTopk"
+          ],
+          "writes": [
+            "token_idx"
+          ]
+        },
+        {
+          "line": 406,
+          "kind": "branch",
+          "explanation": "编码hidden和metadata SGE并写SQ的分支条件为“if (sgep_lane_idx == 0)”；payload由URMA直接读x与metadata，无须先把hidden搬入发送staging；此循环不能随意加全thread屏障。",
+          "reads": [
+            "sgep_lane_idx"
+          ],
+          "writes": []
+        },
+        {
+          "line": 407,
+          "kind": "statement",
+          "explanation": "在编码hidden和metadata SGE并写SQ中更新/计算“sqe_word = static_cast<uint64_t>(num_hidden_bytes);”。 sqe_word：当前lane写入的64位WRITE头、SGE或NOP字段。",
+          "reads": [],
+          "writes": [
+            "sqe_word"
+          ]
+        },
+        {
+          "line": 408,
+          "kind": "statement",
+          "explanation": "结束if (sgep_lane_idx == 0) {并进入else if (sgep_lane_idx == 1) {，在编码hidden和metadata SGE并写SQ里处理相反/后续分支。",
+          "reads": [
+            "sgep_lane_idx"
+          ],
+          "writes": []
+        },
+        {
+          "line": 409,
+          "kind": "statement",
+          "explanation": "hidden SGE直接引用x+token_idx×num_hidden_bytes；远端发送hidden不经过UB staging。",
+          "reads": [
+            "x",
+            "token_idx"
+          ],
+          "writes": [
+            "sqe_word"
+          ]
+        },
+        {
+          "line": 410,
+          "kind": "statement",
+          "explanation": "结束} else if (sgep_lane_idx == 1) {并进入else if (sgep_lane_idx == 2) {，在编码hidden和metadata SGE并写SQ里处理相反/后续分支。",
+          "reads": [
+            "sgep_lane_idx"
+          ],
+          "writes": []
+        },
+        {
+          "line": 411,
+          "kind": "statement",
+          "explanation": "在编码hidden和metadata SGE并写SQ中更新/计算“sqe_word = static_cast<uint64_t>(num_metadata_bytes);”。 sqe_word：当前lane写入的64位WRITE头、SGE或NOP字段。",
+          "reads": [
+            "num_metadata_bytes"
+          ],
+          "writes": [
+            "sqe_word"
+          ]
+        },
+        {
+          "line": 412,
+          "kind": "statement",
+          "explanation": "结束} else if (sgep_lane_idx == 2) {并进入else {，在编码hidden和metadata SGE并写SQ里处理相反/后续分支。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 413,
+          "kind": "statement",
+          "explanation": "metadata SGE地址以metadata_send_buffer GM首址为基准，下一行加本token紧凑metadata步长。",
+          "reads": [
+            "metadata_send_buffer"
+          ],
+          "writes": [
+            "sqe_word"
+          ]
+        },
+        {
+          "line": 414,
+          "kind": "statement",
+          "explanation": "metadata源GM地址加token_idx*num_metadata_bytes，定位与hidden同一token的紧凑metadata段。",
+          "reads": [
+            "token_idx",
+            "num_metadata_bytes"
+          ],
+          "writes": []
+        },
+        {
+          "line": 415,
+          "kind": "brace",
+          "explanation": "结束由“} else {”开启的作用域；到此编码hidden和metadata SGE并写SQ对应状态更新完成，此括号不增加额外同步。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 416,
+          "kind": "statement",
+          "explanation": "结束} else if (lane_idx < kNumWriteHeaderLanes + num_sgeps * kNumSGEPairLanes) {并进入else if (lane_idx >= num_wqebbs * kNumWQEBBLanes and lane_idx % kNumWQEBBLanes == 0) {，在编码hidden和metadata SGE并写SQ里处理相反/后续分支。",
+          "reads": [
+            "lane_idx",
+            "num_wqebbs"
+          ],
+          "writes": []
+        },
+        {
+          "line": 417,
+          "kind": "statement",
+          "explanation": "真实WQEBB少于固定四槽时，在多余WQEBB首lane写NOP头并保持owner/环索引，使SQ始终前进四个WQEBB。",
+          "reads": [
+            "sqe_word",
+            "owner_bit",
+            "sq_wqebb_idx"
+          ],
+          "writes": [
+            "sqe_word"
+          ]
+        },
+        {
+          "line": 418,
+          "kind": "brace",
+          "explanation": "结束由“} else if (lane_idx >= num_wqebbs * kNumWQEBBLanes and lane_idx % kNumWQEBBLanes == 0) {”开启的作用域；到此编码hidden和metadata SGE并写SQ对应状态更新完成，此括号不增加额外同步。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 419,
+          "kind": "blank",
+          "explanation": "在编码hidden和metadata SGE并写SQ中，分隔“}”与随后“// TODO: we can assume SQ depth is power of 2”两步；此处没有数据写入。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 420,
+          "kind": "comment",
+          "explanation": "注释说明编码hidden和metadata SGE并写SQ的实现意图（TODO: we can assume SQ depth is power of 2）；SGE lane对分别写长度与源地址；尾部WQEBB填NOP；asc_stcg写sq_base_addr+ring_idx*8+lane%8。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 421,
+          "kind": "comment",
+          "explanation": "注释说明编码hidden和metadata SGE并写SQ的实现意图（TODO: some of the expression can use i32）；SGE lane对分别写长度与源地址；尾部WQEBB填NOP；asc_stcg写sq_base_addr+ring_idx*8+lane%8。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 422,
+          "kind": "call",
+          "explanation": "以SIMT GM store写出64位字段；此调用本身不等于URMA doorbell或CQ drain；调用本行“asc_stcg(”。 SGE lane对分别写长度与源地址；尾部WQEBB填NOP；asc_stcg写sq_base_addr+ring_idx*8+lane%8。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 423,
+          "kind": "statement",
+          "explanation": "asc_stcg目标是jetty_info.sq_base_addr指向的GM SQ环首址，按64位word视图写描述符。",
+          "reads": [
+            "ub_layout",
+            "jetty_info"
+          ],
+          "writes": [
+            "ub_layout",
+            "jetty_info",
+            "sq_base_addr"
+          ]
+        },
+        {
+          "line": 424,
+          "kind": "statement",
+          "explanation": "目标word偏移=环内WQEBB索引*每块8word+lane内word，多个lane合写当前固定SQ槽。",
+          "reads": [
+            "sq_wqebb_idx",
+            "lane_idx"
+          ],
+          "writes": []
+        },
+        {
+          "line": 425,
+          "kind": "statement",
+          "explanation": "将当前lane已编码的64位sqe_word存入上述GM SQ位置；这里只写WQE，不敲doorbell。",
+          "reads": [
+            "sqe_word"
+          ],
+          "writes": []
+        },
+        {
+          "line": 426,
+          "kind": "blank",
+          "explanation": "在编码hidden和metadata SGE并写SQ中，分隔“sqe_word);”与随后“// TODO(Kexing): `syncthreads` and notify doorbell”两步；此处没有数据写入。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 427,
+          "kind": "comment",
+          "explanation": "注释说明编码hidden和metadata SGE并写SQ的实现意图（TODO(Kexing): `syncthreads` and notify doorbell）；SGE lane对分别写长度与源地址；尾部WQEBB填NOP；asc_stcg写sq_base_addr+ring_idx*8+lane%8。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 428,
+          "kind": "comment",
+          "explanation": "注释说明编码hidden和metadata SGE并写SQ的实现意图（NOTES: if you do `syncthreads`, please make sure the `i` iteration count is same）；SGE lane对分别写长度与源地址；尾部WQEBB填NOP；asc_stcg写sq_base_addr+ring_idx*8+lane%8。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 429,
+          "kind": "brace",
+          "explanation": "结束由“for (int i = start_lsqe_idx; i < end_lsqe_idx; ++ i) {”开启的作用域；到此编码hidden和metadata SGE并写SQ对应状态更新完成，此括号不增加额外同步。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 430,
+          "kind": "blank",
+          "explanation": "在metadata就绪后本地SIMT copy中，分隔“}”与随后“while (ub_layout->metadata_ready != 1)”两步；此处没有数据写入。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 431,
+          "kind": "loop",
+          "explanation": "等待Scalar把metadata_ready置1；Scalar发布前已等待metadata MTE3写GM完成，避免SIMT读未完成数据。",
+          "reads": [
+            "ub_layout",
+            "metadata_ready"
+          ],
+          "writes": []
+        },
+        {
+          "line": 432,
+          "kind": "statement",
+          "explanation": "在metadata尚未完成时短暂等待，避免提前读取GM来源；调用本行“simt::nop<15>();”。 等待ready，按warp遍历本地token，用64位asc_stcg把metadata从发送buffer写到本Rankrecv slot的hidden末尾；cached随后return。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 433,
+          "kind": "call",
+          "explanation": "等待当前SIMT worker所有thread，保证前述UB状态已在worker内汇合；调用本行“asc_syncthreads();”。 等待ready，按warp遍历本地token，用64位asc_stcg把metadata从发送buffer写到本Rankrecv slot的hidden末尾；cached随后return。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 434,
+          "kind": "declaration",
+          "explanation": "在metadata就绪后本地SIMT copy中更新/计算“const auto num_iters = math::max(0, math::min(kNumMaxTokensPerVecCore, num_tokens - vec_core_idx * kNumMaxTokensPerVecCore));”。 num_iters：当前AIV有效token数，夹住最后不满块。",
+          "reads": [
+            "num_tokens",
+            "vec_core_idx"
+          ],
+          "writes": [
+            "num_iters"
+          ]
+        },
+        {
+          "line": 435,
+          "kind": "loop",
+          "explanation": "metadata就绪后本地SIMT copy的迭代条件为“for (int i = warp_idx; i < num_iters; i += kNumWarps)”；metadata独立于Scalar hidden搬运，ready保证GM来源可读。",
+          "reads": [
+            "warp_idx",
+            "num_iters",
+            "i"
+          ],
+          "writes": [
+            "i"
+          ]
+        },
+        {
+          "line": 436,
+          "kind": "declaration",
+          "explanation": "在metadata就绪后本地SIMT copy中更新/计算“const auto dst_slot_idx = ub_layout->local_copy_dst_slot_idx[i];”。 dst_slot_idx：目标Rank中当前源Rank接收切片内槽号，-1代表无有效路由；local_copy_dst_slot_idx：每个本AIV token的本Rank接收槽，-1表示无self-copy。",
+          "reads": [
+            "ub_layout",
+            "local_copy_dst_slot_idx"
+          ],
+          "writes": [
+            "dst_slot_idx"
+          ]
+        },
+        {
+          "line": 437,
+          "kind": "branch",
+          "explanation": "metadata就绪后本地SIMT copy的分支条件为“if (dst_slot_idx >= 0)”；metadata独立于Scalar hidden搬运，ready保证GM来源可读。",
+          "reads": [
+            "dst_slot_idx"
+          ],
+          "writes": []
+        },
+        {
+          "line": 438,
+          "kind": "declaration",
+          "explanation": "在metadata就绪后本地SIMT copy中更新/计算“const auto token_idx = vec_core_idx * kNumMaxTokensPerVecCore + i;”。 token_idx：输入token的Rank内索引，由AIV连续块基址加核内位置。",
+          "reads": [
+            "vec_core_idx"
+          ],
+          "writes": [
+            "token_idx"
+          ]
+        },
+        {
+          "line": 439,
+          "kind": "declaration",
+          "explanation": "在metadata就绪后本地SIMT copy中更新/计算“const auto src = reinterpret_cast<__gm__ const uint64_t*>(metadata_send_buffer + static_cast<int64_t>(token_idx) * num_metadata_bytes);”。 src：metadata_send_buffer中当前token的64位GM来源地址；token_idx：输入token的Rank内索引，由AIV连续块基址加核内位置。",
+          "reads": [
+            "metadata_send_buffer",
+            "token_idx",
+            "num_metadata_bytes"
+          ],
+          "writes": [
+            "src"
+          ]
+        },
+        {
+          "line": 440,
+          "kind": "declaration",
+          "explanation": "在metadata就绪后本地SIMT copy中更新/计算“const auto dst = reinterpret_cast<__gm__ uint64_t*>(”。 dst：当前Rank接收槽hidden之后的metadata 64位GM目标。",
+          "reads": [],
+          "writes": [
+            "dst"
+          ]
+        },
+        {
+          "line": 441,
+          "kind": "statement",
+          "explanation": "self-copy metadata目的以当前workspace common_signals首址加recv_buffer_offset，回到本Rank接收源切片首址。",
+          "reads": [
+            "workspace_layout"
+          ],
+          "writes": []
+        },
+        {
+          "line": 442,
+          "kind": "statement",
+          "explanation": "再加slot*完整token字节数与hidden字节数，定位该slot metadata首word。",
+          "reads": [
+            "dst_slot_idx"
+          ],
+          "writes": []
+        },
+        {
+          "line": 443,
+          "kind": "loop",
+          "explanation": "metadata就绪后本地SIMT copy的迭代条件为“for (int word_idx = lane_idx; word_idx < num_metadata_bytes / sizeof(uint64_t); word_idx += warpSize)”；metadata独立于Scalar hidden搬运，ready保证GM来源可读。",
+          "reads": [
+            "lane_idx",
+            "num_metadata_bytes",
+            "word_idx"
+          ],
+          "writes": [
+            "word_idx"
+          ]
+        },
+        {
+          "line": 444,
+          "kind": "call",
+          "explanation": "按warp lane逐64位word，将metadata_send_buffer当前token metadata存入本Rankrecv slot的hidden末尾；这是self-copy，不是URMA。",
+          "reads": [
+            "dst",
+            "src"
+          ],
+          "writes": [
+            "dst"
+          ]
+        },
+        {
+          "line": 445,
+          "kind": "brace",
+          "explanation": "结束由“if (dst_slot_idx >= 0) {”开启的作用域；到此metadata就绪后本地SIMT copy对应状态更新完成，此括号不增加额外同步。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 446,
+          "kind": "brace",
+          "explanation": "结束由“for (int i = warp_idx; i < num_iters; i += kNumWarps) {”开启的作用域；到此metadata就绪后本地SIMT copy对应状态更新完成，此括号不增加额外同步。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 447,
+          "kind": "blank",
+          "explanation": "在metadata就绪后本地SIMT copy中，分隔“}”与随后“if constexpr (kCachedMode)”两步；此处没有数据写入。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 448,
+          "kind": "branch",
+          "explanation": "metadata就绪后本地SIMT copy的分支条件为“if constexpr (kCachedMode)”；metadata独立于Scalar hidden搬运，ready保证GM来源可读。",
+          "reads": [
+            "kCachedMode"
+          ],
+          "writes": []
+        },
+        {
+          "line": 449,
+          "kind": "statement",
+          "explanation": "cached dispatch立即返回，不重复发送expert/rank计数和host count；这些来自原handle。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 450,
+          "kind": "blank",
+          "explanation": "在汇总本Rank专家频数并发往owner中，分隔“return;”与随后“// Expert reduction: wait for all vector cores, send to remote and clean reduction workspace”两步；此处没有数据写入。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 451,
+          "kind": "comment",
+          "explanation": "注释说明汇总本Rank专家频数并发往owner的实现意图（Expert reduction: wait for all vector cores, send to remote and clean reduction workspace）；仅AIV0等待V到达，按expert/(E/W)计算owner Rank，把arrival=1+count原子加入远端本地专家桶，再清本地reduction状态。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 452,
+          "kind": "branch",
+          "explanation": "汇总本Rank专家频数并发往owner的分支条件为“if (vec_core_idx == 0 and thread_idx < kNumExperts)”；专家计数决定输出展开大小，不能用去重后的Rank token数替代。",
+          "reads": [
+            "vec_core_idx",
+            "thread_idx",
+            "kNumExperts"
+          ],
+          "writes": []
+        },
+        {
+          "line": 453,
+          "kind": "declaration",
+          "explanation": "轮询GM reduction到指定arrival数量，可选超时；返回高位状态与低位数值；调用本行“const auto status = reduction::simt::wait_ready(”。 status：高8位arrival状态与低24位归约计数的编码。",
+          "reads": [],
+          "writes": [
+            "status"
+          ]
+        },
+        {
+          "line": 454,
+          "kind": "statement",
+          "explanation": "等待当前专家local GM reduction收齐V个AIV到达，返回status包含全部核原始expert频数。",
+          "reads": [
+            "workspace_layout",
+            "thread_idx",
+            "kNumVecCores"
+          ],
+          "writes": []
+        },
+        {
+          "line": 455,
+          "kind": "blank",
+          "explanation": "在汇总本Rank专家频数并发往owner中，分隔“workspace_layout.get_local_expert_histogram_ptr(thread_idx), kNumVecCores);”与随后“// Send to the responsible rank”两步；此处没有数据写入。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 456,
+          "kind": "comment",
+          "explanation": "注释说明汇总本Rank专家频数并发往owner的实现意图（Send to the responsible rank）；仅AIV0等待V到达，按expert/(E/W)计算owner Rank，把arrival=1+count原子加入远端本地专家桶，再清本地reduction状态。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 457,
+          "kind": "declaration",
+          "explanation": "在汇总本Rank专家频数并发往owner中更新/计算“const auto dst_rank_idx = thread_idx / kNumExpertsPerRank;”。 dst_rank_idx：全局专家ID除每Rank专家数得到目标Rank，去重后可能变为-1；thread_idx：SIMT thread坐标；作为专家/Rank桶并行索引。",
+          "reads": [
+            "thread_idx"
+          ],
+          "writes": [
+            "dst_rank_idx"
+          ]
+        },
+        {
+          "line": 458,
+          "kind": "declaration",
+          "explanation": "取reduction低24位数值，不把高8位arrival计入token数量；调用本行“const auto num_local_tokens = reduction::get_reduction_value(status);”。 num_local_tokens：所有本Rank AIV累加的当前专家原始命中数；status：高8位arrival状态与低24位归约计数的编码。",
+          "reads": [
+            "status"
+          ],
+          "writes": [
+            "num_local_tokens"
+          ]
+        },
+        {
+          "line": 459,
+          "kind": "declaration",
+          "explanation": "在汇总本Rank专家频数并发往owner中更新/计算“const auto dst_expert_idx = thread_idx - dst_rank_idx * kNumExpertsPerRank;”。 dst_expert_idx：输入Top-K全局专家ID或目标owner内专家索引；thread_idx：SIMT thread坐标；作为专家/Rank桶并行索引；dst_rank_idx：全局专家ID除每Rank专家数得到目标Rank，去重后可能变为-1。",
+          "reads": [
+            "thread_idx",
+            "dst_rank_idx"
+          ],
+          "writes": [
+            "dst_expert_idx"
+          ]
+        },
+        {
+          "line": 460,
+          "kind": "call",
+          "explanation": "原子加入计数或为调用thread分配唯一旧计数序号；调用本行“asc_atomic_add(”。 仅AIV0等待V到达，按expert/(E/W)计算owner Rank，把arrival=1+count原子加入远端本地专家桶，再清本地reduction状态。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 461,
+          "kind": "statement",
+          "explanation": "按workspace common_signals内对称基址表把本地偏移转成peer可写GM地址；调用本行“layout::get_sym_ptr(workspace_layout.get_common_signals(),”。 仅AIV0等待V到达，按expert/(E/W)计算owner Rank，把arrival=1+count原子加入远端本地专家桶，再清本地reduction状态。",
+          "reads": [
+            "workspace_layout"
+          ],
+          "writes": []
+        },
+        {
+          "line": 462,
+          "kind": "statement",
+          "explanation": "将本local专家桶偏移映射到dst_rank_idx拥有的remote_expert_histogram，后续该Rank等待W来源。",
+          "reads": [
+            "workspace_layout",
+            "dst_expert_idx",
+            "dst_rank_idx"
+          ],
+          "writes": [
+            "workspace_layout"
+          ]
+        },
+        {
+          "line": 463,
+          "kind": "statement",
+          "explanation": "远端原子累加贡献由arrival=1加当前源Rank专家原始num_local_tokens组成。",
+          "reads": [
+            "num_local_tokens"
+          ],
+          "writes": []
+        },
+        {
+          "line": 464,
+          "kind": "brace",
+          "explanation": "闭合外层asc_atomic_add，已给出远端专家GM地址和arrival/count贡献；此后才能清本地reduction桶。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 465,
+          "kind": "blank",
+          "explanation": "在汇总本Rank专家频数并发往owner中，分隔“);”与随后“// Clean for later usages”两步；此处没有数据写入。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 466,
+          "kind": "comment",
+          "explanation": "注释说明汇总本Rank专家频数并发往owner的实现意图（Clean for later usages）；仅AIV0等待V到达，按expert/(E/W)计算owner Rank，把arrival=1+count原子加入远端本地专家桶，再清本地reduction状态。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 467,
+          "kind": "statement",
+          "explanation": "将当前专家local GM reduction桶写0，复用workspace前必须消除本次arrival状态。",
+          "reads": [
+            "thread_idx"
+          ],
+          "writes": [
+            "workspace_layout"
+          ]
+        },
+        {
+          "line": 468,
+          "kind": "brace",
+          "explanation": "结束由“if (vec_core_idx == 0 and thread_idx < kNumExperts) {”开启的作用域；到此汇总本Rank专家频数并发往owner对应状态更新完成，此括号不增加额外同步。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 469,
+          "kind": "blank",
+          "explanation": "在接收专家全域计数并通知host中，分隔“}”与随后“// Expert reduction: wait for all ranks' arrival”两步；此处没有数据写入。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 470,
+          "kind": "comment",
+          "explanation": "注释说明接收专家全域计数并通知host的实现意图（Expert reduction: wait for all ranks' arrival）；AIV0取得原始num_recv_tokens；kDoCPUSync写对齐后的host count；写GM未对齐计数、UB histogram与可选累计统计，再清远端桶。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 471,
+          "kind": "branch",
+          "explanation": "接收专家全域计数并通知host的分支条件为“if (vec_core_idx == 0 and thread_idx < kNumExpertsPerRank)”；host分配对齐输出，epilogue仍需原始count来识别padding范围。",
+          "reads": [
+            "vec_core_idx",
+            "thread_idx"
+          ],
+          "writes": []
+        },
+        {
+          "line": 472,
+          "kind": "declaration",
+          "explanation": "轮询GM reduction到指定arrival数量，可选超时；返回高位状态与低位数值；调用本行“const auto status = reduction::simt::wait_ready<kNumTimeoutCycles>(”。 status：高8位arrival状态与低24位归约计数的编码。",
+          "reads": [
+            "kNumTimeoutCycles"
+          ],
+          "writes": [
+            "status"
+          ]
+        },
+        {
+          "line": 473,
+          "kind": "statement",
+          "explanation": "等待本Rank当前专家remote reduction收齐W个来源Rank，带kNumTimeoutCycles超时边界。",
+          "reads": [
+            "workspace_layout",
+            "thread_idx",
+            "kNumRanks"
+          ],
+          "writes": []
+        },
+        {
+          "line": 474,
+          "kind": "blank",
+          "explanation": "在接收专家全域计数并通知host中，分隔“workspace_layout.get_remote_expert_histogram_ptr(thread_idx), kNumRanks);”与随后“// Record the token count into UB, GM and host buffers”两步；此处没有数据写入。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 475,
+          "kind": "comment",
+          "explanation": "注释说明接收专家全域计数并通知host的实现意图（Record the token count into UB, GM and host buffers）；AIV0取得原始num_recv_tokens；kDoCPUSync写对齐后的host count；写GM未对齐计数、UB histogram与可选累计统计，再清远端桶。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 476,
+          "kind": "comment",
+          "explanation": "注释说明接收专家全域计数并通知host的实现意图（TODO: the results to host may be not aligned）；AIV0取得原始num_recv_tokens；kDoCPUSync写对齐后的host count；写GM未对齐计数、UB histogram与可选累计统计，再清远端桶。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 477,
+          "kind": "declaration",
+          "explanation": "取reduction低24位数值，不把高8位arrival计入token数量；调用本行“const auto num_recv_tokens = reduction::get_reduction_value(status);”。 num_recv_tokens：所有来源Rank的当前本地专家原始接收数；status：高8位arrival状态与低24位归约计数的编码。",
+          "reads": [
+            "status"
+          ],
+          "writes": [
+            "num_recv_tokens"
+          ]
+        },
+        {
+          "line": 478,
+          "kind": "branch",
+          "explanation": "接收专家全域计数并通知host的分支条件为“if constexpr (kDoCPUSync)”；host分配对齐输出，epilogue仍需原始count来识别padding范围。",
+          "reads": [
+            "kDoCPUSync"
+          ],
+          "writes": []
+        },
+        {
+          "line": 479,
+          "kind": "statement",
+          "explanation": "向mapped host workspace当前专家通知字段写入下一行编码后的对齐count；host owner是EPBuffer。",
+          "reads": [],
+          "writes": [
+            "host_workspace_layout",
+            "thread_idx"
+          ]
+        },
+        {
+          "line": 480,
+          "kind": "statement",
+          "explanation": "host专家通知低位采用align(num_recv_tokens,A)，用于分配含padding输出；arrival仍为W。",
+          "reads": [
+            "kNumRanks",
+            "num_recv_tokens",
+            "kExpertAlignment"
+          ],
+          "writes": []
+        },
+        {
+          "line": 481,
+          "kind": "brace",
+          "explanation": "结束由“if constexpr (kDoCPUSync) {”开启的作用域；到此接收专家全域计数并通知host对应状态更新完成，此括号不增加额外同步。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 482,
+          "kind": "statement",
+          "explanation": "GM num_unaligned_recv_tokens_per_expert保存原始专家count，区别于host对齐分配容量。",
+          "reads": [
+            "thread_idx",
+            "num_recv_tokens"
+          ],
+          "writes": [
+            "num_unaligned_recv_tokens_per_expert"
+          ]
+        },
+        {
+          "line": 483,
+          "kind": "statement",
+          "explanation": "在接收专家全域计数并通知host中更新/计算“ub_layout->expert_histogram[thread_idx] = num_recv_tokens;”。 expert_histogram：专家命中计数，不按Rank去重；thread_idx：SIMT thread坐标；作为专家/Rank桶并行索引；num_recv_tokens：所有来源Rank的当前本地专家原始接收数。",
+          "reads": [
+            "thread_idx",
+            "num_recv_tokens"
+          ],
+          "writes": [
+            "ub_layout",
+            "expert_histogram"
+          ]
+        },
+        {
+          "line": 484,
+          "kind": "branch",
+          "explanation": "接收专家全域计数并通知host的分支条件为“if (cumulative_local_expert_recv_stats != nullptr)”；host分配对齐输出，epilogue仍需原始count来识别padding范围。",
+          "reads": [
+            "cumulative_local_expert_recv_stats"
+          ],
+          "writes": []
+        },
+        {
+          "line": 485,
+          "kind": "call",
+          "explanation": "原子加入计数或为调用thread分配唯一旧计数序号；调用本行“asc_atomic_add(cumulative_local_expert_recv_stats + thread_idx, num_recv_tokens);”。 thread_idx：SIMT thread坐标；作为专家/Rank桶并行索引；num_recv_tokens：所有来源Rank的当前本地专家原始接收数。",
+          "reads": [
+            "cumulative_local_expert_recv_stats",
+            "thread_idx",
+            "num_recv_tokens"
+          ],
+          "writes": [
+            "cumulative_local_expert_recv_stats"
+          ]
+        },
+        {
+          "line": 486,
+          "kind": "blank",
+          "explanation": "在接收专家全域计数并通知host中，分隔“asc_atomic_add(cumulative_local_expert_recv_stats + thread_idx, num_recv_tokens);”与随后“// Clean for later usages”两步；此处没有数据写入。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 487,
+          "kind": "comment",
+          "explanation": "注释说明接收专家全域计数并通知host的实现意图（Clean for later usages）；AIV0取得原始num_recv_tokens；kDoCPUSync写对齐后的host count；写GM未对齐计数、UB histogram与可选累计统计，再清远端桶。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 488,
+          "kind": "statement",
+          "explanation": "把已消费的本Rankremote expert桶写0，为下次dispatch重置到达状态。",
+          "reads": [
+            "thread_idx"
+          ],
+          "writes": [
+            "workspace_layout"
+          ]
+        },
+        {
+          "line": 489,
+          "kind": "brace",
+          "explanation": "结束由“if (vec_core_idx == 0 and thread_idx < kNumExpertsPerRank) {”开启的作用域；到此接收专家全域计数并通知host对应状态更新完成，此括号不增加额外同步。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 490,
+          "kind": "blank",
+          "explanation": "在接收专家全域计数并通知host中，分隔“}”与随后“// Rank reduction: wait for all vector cores, send to remote, wait for all ranks and clean reduction workspace”两步；此处没有数据写入。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 491,
+          "kind": "comment",
+          "explanation": "注释说明接收来源Rank计数的实现意图（Rank reduction: wait for all vector cores, send to remote, wait for all ranks and clean reduction workspace）；AIV1 wait_ready要求V状态，保存到UB rank_psum并清GM通知区；syncthreads后warp0读取。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 492,
+          "kind": "statement",
+          "explanation": "在编译期限制此实例的容量、索引或硬件协议假设；调用本行“EP_STATIC_ASSERT(kNumRanks <= kNumThreads);”。 AIV1 wait_ready要求V状态，保存到UB rank_psum并清GM通知区；syncthreads后warp0读取。",
+          "reads": [
+            "kNumRanks"
+          ],
+          "writes": []
+        },
+        {
+          "line": 493,
+          "kind": "statement",
+          "explanation": "在编译期限制此实例的容量、索引或硬件协议假设；调用本行“EP_STATIC_ASSERT(kNumVecCores > 1);”。 AIV1 wait_ready要求V状态，保存到UB rank_psum并清GM通知区；syncthreads后warp0读取。",
+          "reads": [
+            "kNumVecCores"
+          ],
+          "writes": []
+        },
+        {
+          "line": 494,
+          "kind": "branch",
+          "explanation": "接收来源Rank计数的分支条件为“if (vec_core_idx == 1 and thread_idx < kNumRanks)”；arrival=V表示该源已汇总所有AIV，不代表W个源在同一桶相加。",
+          "reads": [
+            "vec_core_idx",
+            "thread_idx",
+            "kNumRanks"
+          ],
+          "writes": []
+        },
+        {
+          "line": 495,
+          "kind": "comment",
+          "explanation": "注释说明接收来源Rank计数的实现意图（Wait remote arrival）；AIV1 wait_ready要求V状态，保存到UB rank_psum并清GM通知区；syncthreads后warp0读取。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 496,
+          "kind": "statement",
+          "explanation": "取reduction低24位数值，不把高8位arrival计入token数量；调用本行“ub_layout->rank_psum[thread_idx] = reduction::get_reduction_value(”。 rank_psum：发送阶段是发往peer的总数，接收阶段是各来源Rank的总数；thread_idx：SIMT thread坐标；作为专家/Rank桶并行索引。",
+          "reads": [
+            "thread_idx"
+          ],
+          "writes": [
+            "ub_layout",
+            "rank_psum"
+          ]
+        },
+        {
+          "line": 497,
+          "kind": "statement",
+          "explanation": "轮询GM reduction到指定arrival数量，可选超时；返回高位状态与低位数值；调用本行“reduction::simt::wait_ready<kNumTimeoutCycles>(”。 AIV1 wait_ready要求V状态，保存到UB rank_psum并清GM通知区；syncthreads后warp0读取。",
+          "reads": [
+            "kNumTimeoutCycles"
+          ],
+          "writes": []
+        },
+        {
+          "line": 498,
+          "kind": "statement",
+          "explanation": "等待本Rank来源thread_idx的remote rank通知达到V状态，并提取该来源的去重token总数。",
+          "reads": [
+            "workspace_layout",
+            "thread_idx",
+            "kNumVecCores"
+          ],
+          "writes": []
+        },
+        {
+          "line": 499,
+          "kind": "blank",
+          "explanation": "在接收来源Rank计数中，分隔“workspace_layout.get_remote_rank_histogram_ptr(thread_idx), kNumVecCores));”与随后“// Clean workspace for next usages”两步；此处没有数据写入。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 500,
+          "kind": "comment",
+          "explanation": "注释说明接收来源Rank计数的实现意图（Clean workspace for next usages）；AIV1 wait_ready要求V状态，保存到UB rank_psum并清GM通知区；syncthreads后warp0读取。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 501,
+          "kind": "statement",
+          "explanation": "把已消费的remote_rank_histogram[source]清0，防止下一次误读旧source通知。",
+          "reads": [
+            "thread_idx"
+          ],
+          "writes": [
+            "workspace_layout"
+          ]
+        },
+        {
+          "line": 502,
+          "kind": "brace",
+          "explanation": "结束由“if (vec_core_idx == 1 and thread_idx < kNumRanks) {”开启的作用域；到此接收来源Rank计数对应状态更新完成，此括号不增加额外同步。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 503,
+          "kind": "call",
+          "explanation": "等待当前SIMT worker所有thread，保证前述UB状态已在worker内汇合；调用本行“asc_syncthreads();”。 AIV1 wait_ready要求V状态，保存到UB rank_psum并清GM通知区；syncthreads后warp0读取。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 504,
+          "kind": "blank",
+          "explanation": "在接收来源Rank计数中，分隔“asc_syncthreads();”与随后“// Create expert psum layout”两步；此处没有数据写入。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 505,
+          "kind": "comment",
+          "explanation": "注释说明构造专家有效终点的实现意图（Create expert psum layout）；warp扫描align(count,A)，exclusive_warp_psum与前wave累计给专家起点；psum_num_recv_tokens_per_expert写此前对齐容量+当前原始count。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 506,
+          "kind": "branch",
+          "explanation": "构造专家有效终点的分支条件为“if (vec_core_idx == 0 and thread_idx < warpSize)”；相邻专家起点需再次align前一终点；简单原始cumsum或全部aligned cumsum都不能表达这个接口。",
+          "reads": [
+            "vec_core_idx",
+            "thread_idx"
+          ],
+          "writes": []
+        },
+        {
+          "line": 507,
+          "kind": "declaration",
+          "explanation": "在构造专家有效终点中更新/计算“int inclusive_psum = 0;”。 inclusive_psum：此前warp wave的累计容量或Rank计数。",
+          "reads": [],
+          "writes": [
+            "inclusive_psum"
+          ]
+        },
+        {
+          "line": 508,
+          "kind": "preprocessor",
+          "explanation": "预处理/编译指示#pragma unroll作用于构造专家有效终点；循环界限由模板已知，unroll要求编译器展开下一段。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 509,
+          "kind": "loop",
+          "explanation": "构造专家有效终点的迭代条件为“for (int i = 0; i < math::ceil_div(kNumExpertsPerRank, warpSize); ++ i)”；相邻专家起点需再次align前一终点；简单原始cumsum或全部aligned cumsum都不能表达这个接口。",
+          "reads": [
+            "i"
+          ],
+          "writes": [
+            "i"
+          ]
+        },
+        {
+          "line": 510,
+          "kind": "declaration",
+          "explanation": "在构造专家有效终点中更新/计算“const auto idx = i * warpSize + thread_idx;”。 idx：当前warp wave中的专家或Rank扁平编号；thread_idx：SIMT thread坐标；作为专家/Rank桶并行索引。",
+          "reads": [
+            "thread_idx"
+          ],
+          "writes": [
+            "idx"
+          ]
+        },
+        {
+          "line": 511,
+          "kind": "declaration",
+          "explanation": "在构造专家有效终点中更新/计算“const auto value = idx < kNumExpertsPerRank ? ub_layout->expert_histogram[idx] : 0;”。 value：当前桶原始count，越界lane用0；idx：当前warp wave中的专家或Rank扁平编号；expert_histogram：专家命中计数，不按Rank去重。",
+          "reads": [
+            "idx",
+            "ub_layout",
+            "expert_histogram"
+          ],
+          "writes": [
+            "value"
+          ]
+        },
+        {
+          "line": 512,
+          "kind": "declaration",
+          "explanation": "在构造专家有效终点中更新/计算“const auto aligned = math::align(value, kExpertAlignment);”。 aligned：当前专家count向kExpertAlignment上取整的预留容量；value：当前桶原始count，越界lane用0。",
+          "reads": [
+            "value",
+            "kExpertAlignment"
+          ],
+          "writes": [
+            "aligned"
+          ]
+        },
+        {
+          "line": 513,
+          "kind": "declaration",
+          "explanation": "在warp内扫描得到包含自身的累计值；调用本行“const auto inclusive_warp_psum = simt::warp_inclusive_sum(aligned, thread_idx);”。 inclusive_warp_psum：当前warp从lane0至本lane的包含前缀；aligned：当前专家count向kExpertAlignment上取整的预留容量；thread_idx：SIMT thread坐标；作为专家/Rank桶并行索引。",
+          "reads": [
+            "aligned",
+            "thread_idx"
+          ],
+          "writes": [
+            "inclusive_warp_psum"
+          ]
+        },
+        {
+          "line": 514,
+          "kind": "declaration",
+          "explanation": "在构造专家有效终点中更新/计算“const auto exclusive_warp_psum = inclusive_warp_psum - aligned;”。 exclusive_warp_psum：包含前缀减自身aligned，得到当前专家之前的容量；inclusive_warp_psum：当前warp从lane0至本lane的包含前缀；aligned：当前专家count向kExpertAlignment上取整的预留容量。",
+          "reads": [
+            "inclusive_warp_psum",
+            "aligned"
+          ],
+          "writes": [
+            "exclusive_warp_psum"
+          ]
+        },
+        {
+          "line": 515,
+          "kind": "blank",
+          "explanation": "在构造专家有效终点中，分隔“const auto exclusive_warp_psum = inclusive_warp_psum - aligned;”与随后“// Store into global memory”两步；此处没有数据写入。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 516,
+          "kind": "comment",
+          "explanation": "注释说明构造专家有效终点的实现意图（Store into global memory）；warp扫描align(count,A)，exclusive_warp_psum与前wave累计给专家起点；psum_num_recv_tokens_per_expert写此前对齐容量+当前原始count。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 517,
+          "kind": "comment",
+          "explanation": "注释说明构造专家有效终点的实现意图（NOTES: elements in psum are aligned, but the current value is not aligned）；warp扫描align(count,A)，exclusive_warp_psum与前wave累计给专家起点；psum_num_recv_tokens_per_expert写此前对齐容量+当前原始count。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 518,
+          "kind": "branch",
+          "explanation": "只对idx<E/W的真实专家写GM，最后wave多余lane只参与零值扫描。",
+          "reads": [
+            "idx"
+          ],
+          "writes": []
+        },
+        {
+          "line": 519,
+          "kind": "statement",
+          "explanation": "专家有效终点=此前wave对齐总量+本wave此前专家对齐总量+当前原始value；不含当前专家padding。",
+          "reads": [
+            "idx",
+            "inclusive_psum",
+            "exclusive_warp_psum",
+            "value"
+          ],
+          "writes": [
+            "psum_num_recv_tokens_per_expert"
+          ]
+        },
+        {
+          "line": 520,
+          "kind": "blank",
+          "explanation": "在构造专家有效终点中，分隔“psum_num_recv_tokens_per_expert[idx] = inclusive_psum + exclusive_warp_psum + value;”与随后“// Maintain in-loop psum”两步；此处没有数据写入。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 521,
+          "kind": "comment",
+          "explanation": "注释说明构造专家有效终点的实现意图（Maintain in-loop psum）；warp扫描align(count,A)，exclusive_warp_psum与前wave累计给专家起点；psum_num_recv_tokens_per_expert写此前对齐容量+当前原始count。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 522,
+          "kind": "statement",
+          "explanation": "将本wave所有专家的对齐容量加到inclusive_psum，下一wave专家起点继承此前align(count,A)总量。",
+          "reads": [
+            "inclusive_psum",
+            "inclusive_warp_psum"
+          ],
+          "writes": [
+            "inclusive_psum"
+          ]
+        },
+        {
+          "line": 523,
+          "kind": "brace",
+          "explanation": "结束由“for (int i = 0; i < math::ceil_div(kNumExpertsPerRank, warpSize); ++ i) {”开启的作用域；到此构造专家有效终点对应状态更新完成，此括号不增加额外同步。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 524,
+          "kind": "brace",
+          "explanation": "结束由“if (vec_core_idx == 0 and thread_idx < warpSize) {”开启的作用域；到此构造专家有效终点对应状态更新完成，此括号不增加额外同步。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 525,
+          "kind": "blank",
+          "explanation": "在构造专家有效终点中，分隔“}”与随后“// Create rank psum layout”两步；此处没有数据写入。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 526,
+          "kind": "comment",
+          "explanation": "注释说明构造来源Rank累计接收流的实现意图（Create rank psum layout）；AIV1 warp0计算inclusive cumsum写psum_num_recv_tokens_per_rank；kDoCPUSync逐Rank通知host原始count。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 527,
+          "kind": "branch",
+          "explanation": "构造来源Rank累计接收流的分支条件为“if (vec_core_idx == 1 and thread_idx < warpSize)”；Rank流没有expert alignment padding，末项就是去重recv token总数。",
+          "reads": [
+            "vec_core_idx",
+            "thread_idx"
+          ],
+          "writes": []
+        },
+        {
+          "line": 528,
+          "kind": "declaration",
+          "explanation": "在构造来源Rank累计接收流中更新/计算“int inclusive_psum = 0;”。 inclusive_psum：此前warp wave的累计容量或Rank计数。",
+          "reads": [],
+          "writes": [
+            "inclusive_psum"
+          ]
+        },
+        {
+          "line": 529,
+          "kind": "preprocessor",
+          "explanation": "预处理/编译指示#pragma unroll作用于构造来源Rank累计接收流；循环界限由模板已知，unroll要求编译器展开下一段。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 530,
+          "kind": "loop",
+          "explanation": "构造来源Rank累计接收流的迭代条件为“for (int i = 0; i < math::ceil_div(kNumRanks, warpSize); ++ i)”；Rank流没有expert alignment padding，末项就是去重recv token总数。",
+          "reads": [
+            "kNumRanks",
+            "i"
+          ],
+          "writes": [
+            "i"
+          ]
+        },
+        {
+          "line": 531,
+          "kind": "declaration",
+          "explanation": "在构造来源Rank累计接收流中更新/计算“const auto idx = i * warpSize + lane_idx;”。 idx：当前warp wave中的专家或Rank扁平编号；lane_idx：warp内lane；执行shuffle、扫描和WQEBB编码。",
+          "reads": [
+            "lane_idx"
+          ],
+          "writes": [
+            "idx"
+          ]
+        },
+        {
+          "line": 532,
+          "kind": "declaration",
+          "explanation": "在构造来源Rank累计接收流中更新/计算“const auto value = idx < kNumRanks ? ub_layout->rank_psum[idx] : 0;”。 value：当前桶原始count，越界lane用0；idx：当前warp wave中的专家或Rank扁平编号；rank_psum：发送阶段是发往peer的总数，接收阶段是各来源Rank的总数。",
+          "reads": [
+            "idx",
+            "kNumRanks",
+            "ub_layout",
+            "rank_psum"
+          ],
+          "writes": [
+            "value"
+          ]
+        },
+        {
+          "line": 533,
+          "kind": "declaration",
+          "explanation": "在warp内扫描得到包含自身的累计值；调用本行“const auto inclusive_warp_psum = simt::warp_inclusive_sum(value, lane_idx);”。 inclusive_warp_psum：当前warp从lane0至本lane的包含前缀；value：当前桶原始count，越界lane用0；lane_idx：warp内lane；执行shuffle、扫描和WQEBB编码。",
+          "reads": [
+            "value",
+            "lane_idx"
+          ],
+          "writes": [
+            "inclusive_warp_psum"
+          ]
+        },
+        {
+          "line": 534,
+          "kind": "declaration",
+          "explanation": "在构造来源Rank累计接收流中更新/计算“const auto psum = inclusive_psum + inclusive_warp_psum;”。 psum：前wave累计加本wave包含前缀，给出当前来源Rank接收流终点；inclusive_psum：此前warp wave的累计容量或Rank计数；inclusive_warp_psum：当前warp从lane0至本lane的包含前缀。",
+          "reads": [
+            "inclusive_psum",
+            "inclusive_warp_psum"
+          ],
+          "writes": [
+            "psum"
+          ]
+        },
+        {
+          "line": 535,
+          "kind": "blank",
+          "explanation": "在构造来源Rank累计接收流中，分隔“const auto psum = inclusive_psum + inclusive_warp_psum;”与随后“// Write global memory”两步；此处没有数据写入。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 536,
+          "kind": "comment",
+          "explanation": "注释说明构造来源Rank累计接收流的实现意图（Write global memory）；AIV1 warp0计算inclusive cumsum写psum_num_recv_tokens_per_rank；kDoCPUSync逐Rank通知host原始count。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 537,
+          "kind": "branch",
+          "explanation": "只对idx<W的真实来源Rank写psum与可选host count，屏蔽最后wave超出通信域的lane。",
+          "reads": [
+            "idx",
+            "kNumRanks"
+          ],
+          "writes": []
+        },
+        {
+          "line": 538,
+          "kind": "statement",
+          "explanation": "把各来源Rank去重count的普通inclusive累计写GM，最后一项是接收流总token数，无专家对齐padding。",
+          "reads": [
+            "idx",
+            "psum"
+          ],
+          "writes": [
+            "psum_num_recv_tokens_per_rank"
+          ]
+        },
+        {
+          "line": 539,
+          "kind": "branch",
+          "explanation": "构造来源Rank累计接收流的分支条件为“if constexpr (kDoCPUSync)”；Rank流没有expert alignment padding，末项就是去重recv token总数。",
+          "reads": [
+            "kDoCPUSync"
+          ],
+          "writes": []
+        },
+        {
+          "line": 540,
+          "kind": "statement",
+          "explanation": "向mapped host workspace当前来源Rank字段写下行arrival/count通知；此处分支仅kDoCPUSync启用。",
+          "reads": [
+            "idx"
+          ],
+          "writes": [
+            "host_workspace_layout"
+          ]
+        },
+        {
+          "line": 541,
+          "kind": "statement",
+          "explanation": "host按来源Rank收到原始去重token数量value，arrival编码W；host据此同步/分配，具体host读取在caller。",
+          "reads": [
+            "kNumRanks",
+            "value"
+          ],
+          "writes": []
+        },
+        {
+          "line": 542,
+          "kind": "brace",
+          "explanation": "结束由“if constexpr (kDoCPUSync) {”开启的作用域；到此构造来源Rank累计接收流对应状态更新完成，此括号不增加额外同步。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 543,
+          "kind": "brace",
+          "explanation": "结束由“if (idx < kNumRanks) {”开启的作用域；到此构造来源Rank累计接收流对应状态更新完成，此括号不增加额外同步。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 544,
+          "kind": "blank",
+          "explanation": "在构造来源Rank累计接收流中，分隔“}”与随后“// Maintain in-loop psum”两步；此处没有数据写入。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 545,
+          "kind": "comment",
+          "explanation": "注释说明构造来源Rank累计接收流的实现意图（Maintain in-loop psum）；AIV1 warp0计算inclusive cumsum写psum_num_recv_tokens_per_rank；kDoCPUSync逐Rank通知host原始count。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 546,
+          "kind": "statement",
+          "explanation": "将本wave所有来源Rank原始count加到inclusive_psum，下一waveRank累计继续普通去重接收流前缀。",
+          "reads": [
+            "inclusive_psum",
+            "inclusive_warp_psum"
+          ],
+          "writes": [
+            "inclusive_psum"
+          ]
+        },
+        {
+          "line": 547,
+          "kind": "brace",
+          "explanation": "结束由“for (int i = 0; i < math::ceil_div(kNumRanks, warpSize); ++ i) {”开启的作用域；到此构造来源Rank累计接收流对应状态更新完成，此括号不增加额外同步。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 548,
+          "kind": "brace",
+          "explanation": "结束由“if (vec_core_idx == 1 and thread_idx < warpSize) {”开启的作用域；到此构造来源Rank累计接收流对应状态更新完成，此括号不增加额外同步。",
+          "reads": [],
+          "writes": []
+        },
+        {
+          "line": 549,
+          "kind": "brace",
+          "explanation": "结束由“const int num_tokens, const int vec_core_idx, const int rank_idx) {”开启的作用域；到此构造来源Rank累计接收流对应状态更新完成，此括号不增加额外同步。",
+          "reads": [],
+          "writes": []
+        }
+      ]
+    }
+  ]
+}

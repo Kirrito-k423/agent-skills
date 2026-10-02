@@ -1,0 +1,17 @@
+{
+  "status": "REPRODUCED",
+  "viewport": [
+    1280,
+    720
+  ],
+  "header": "R=4 · E=8 · K=2 · T=4/rank · M=4 · H=256 · A=4 · fresh · BF16，无SF · 16 AIV/rank",
+  "termTargets": 0,
+  "numericTargets": 8,
+  "missingLabels": [
+    "M",
+    "T",
+    "SF",
+    "A"
+  ],
+  "method": "实际加载上一版numeric release快照；参数名字本身无术语入口，只有数字有解释"
+}

@@ -1,0 +1,299 @@
+{
+  "revision": "3b25377d04b24fc6154698ded78a2bcb2c59afff",
+  "deep_jit_revision": "65f513952b8771408a19202f65e36398522db6db",
+  "files": [
+    {
+      "path": "DeepEP-Ascend/deep_ep/include/deep_ep/impls/ep/dispatch.hpp",
+      "relative_path": "deep_ep/include/deep_ep/impls/ep/dispatch.hpp",
+      "line_count": 867,
+      "sha256": "25244c66d5937e9e7521400792c2e0ddc974512971f582e95d19c4828c31b678",
+      "syntax": [
+        {
+          "name": "simt_persistent_worker",
+          "start": 77,
+          "end": 549,
+          "kind": "definition"
+        },
+        {
+          "name": "dispatch_impl",
+          "start": 551,
+          "end": 865,
+          "kind": "definition"
+        },
+        {
+          "name": "preload_metadata",
+          "start": 688,
+          "end": 753,
+          "kind": "lambda"
+        }
+      ],
+      "text": [
+        {
+          "name": "simt_persistent_worker",
+          "start": 77,
+          "end": 549,
+          "kind": "definition"
+        },
+        {
+          "name": "dispatch_impl",
+          "start": 551,
+          "end": 865,
+          "kind": "definition"
+        },
+        {
+          "name": "preload_metadata",
+          "start": 688,
+          "end": 753,
+          "kind": "lambda"
+        }
+      ],
+      "parser_errors": [
+        [
+          62,
+          62
+        ],
+        [
+          62,
+          62
+        ],
+        [
+          62,
+          62
+        ]
+      ],
+      "functions": [
+        {
+          "name": "simt_persistent_worker",
+          "start": 77,
+          "end": 549,
+          "kind": "definition"
+        },
+        {
+          "name": "dispatch_impl",
+          "start": 551,
+          "end": 865,
+          "kind": "definition"
+        },
+        {
+          "name": "preload_metadata",
+          "start": 688,
+          "end": 753,
+          "kind": "lambda"
+        }
+      ],
+      "status": "FROZEN"
+    },
+    {
+      "path": "DeepEP-Ascend/deep_ep/include/deep_ep/impls/ep/dispatch_copy_epilogue.hpp",
+      "relative_path": "deep_ep/include/deep_ep/impls/ep/dispatch_copy_epilogue.hpp",
+      "line_count": 623,
+      "sha256": "3666da791943b16986c7a0258c52cc022361c1a07d364098e0713036bd412a25",
+      "syntax": [
+        {
+          "name": "fill_ubuf",
+          "start": 21,
+          "end": 30,
+          "kind": "definition"
+        },
+        {
+          "name": "histogram_accumulate_u32",
+          "start": 37,
+          "end": 101,
+          "kind": "definition"
+        },
+        {
+          "name": "initialize_dst_slot_idx",
+          "start": 107,
+          "end": 128,
+          "kind": "definition"
+        },
+        {
+          "name": "PSumIterator",
+          "start": 139,
+          "end": 148,
+          "kind": "definition"
+        },
+        {
+          "name": "advance",
+          "start": 150,
+          "end": 152,
+          "kind": "definition"
+        },
+        {
+          "name": "advance_to",
+          "start": 154,
+          "end": 161,
+          "kind": "definition"
+        },
+        {
+          "name": "get_local_idx",
+          "start": 163,
+          "end": 165,
+          "kind": "definition"
+        },
+        {
+          "name": "get_contiguous_count",
+          "start": 167,
+          "end": 169,
+          "kind": "definition"
+        },
+        {
+          "name": "finished",
+          "start": 171,
+          "end": 173,
+          "kind": "definition"
+        },
+        {
+          "name": "dispatch_copy_epilogue_impl",
+          "start": 176,
+          "end": 621,
+          "kind": "definition"
+        },
+        {
+          "name": "issue_load",
+          "start": 291,
+          "end": 324,
+          "kind": "lambda"
+        }
+      ],
+      "text": [
+        {
+          "name": "fill_ubuf",
+          "start": 21,
+          "end": 30,
+          "kind": "definition"
+        },
+        {
+          "name": "histogram_accumulate_u32",
+          "start": 37,
+          "end": 101,
+          "kind": "definition"
+        },
+        {
+          "name": "initialize_dst_slot_idx",
+          "start": 107,
+          "end": 128,
+          "kind": "definition"
+        },
+        {
+          "name": "PSumIterator",
+          "start": 139,
+          "end": 148,
+          "kind": "definition"
+        },
+        {
+          "name": "advance",
+          "start": 150,
+          "end": 152,
+          "kind": "definition"
+        },
+        {
+          "name": "advance_to",
+          "start": 154,
+          "end": 161,
+          "kind": "definition"
+        },
+        {
+          "name": "get_local_idx",
+          "start": 163,
+          "end": 165,
+          "kind": "definition"
+        },
+        {
+          "name": "get_contiguous_count",
+          "start": 167,
+          "end": 169,
+          "kind": "definition"
+        },
+        {
+          "name": "finished",
+          "start": 171,
+          "end": 173,
+          "kind": "definition"
+        },
+        {
+          "name": "dispatch_copy_epilogue_impl",
+          "start": 176,
+          "end": 621,
+          "kind": "definition"
+        },
+        {
+          "name": "issue_load",
+          "start": 291,
+          "end": 324,
+          "kind": "lambda"
+        }
+      ],
+      "parser_errors": [],
+      "functions": [
+        {
+          "name": "fill_ubuf",
+          "start": 21,
+          "end": 30,
+          "kind": "definition"
+        },
+        {
+          "name": "histogram_accumulate_u32",
+          "start": 37,
+          "end": 101,
+          "kind": "definition"
+        },
+        {
+          "name": "initialize_dst_slot_idx",
+          "start": 107,
+          "end": 128,
+          "kind": "definition"
+        },
+        {
+          "name": "PSumIterator",
+          "start": 139,
+          "end": 148,
+          "kind": "definition"
+        },
+        {
+          "name": "advance",
+          "start": 150,
+          "end": 152,
+          "kind": "definition"
+        },
+        {
+          "name": "advance_to",
+          "start": 154,
+          "end": 161,
+          "kind": "definition"
+        },
+        {
+          "name": "get_local_idx",
+          "start": 163,
+          "end": 165,
+          "kind": "definition"
+        },
+        {
+          "name": "get_contiguous_count",
+          "start": 167,
+          "end": 169,
+          "kind": "definition"
+        },
+        {
+          "name": "finished",
+          "start": 171,
+          "end": 173,
+          "kind": "definition"
+        },
+        {
+          "name": "dispatch_copy_epilogue_impl",
+          "start": 176,
+          "end": 621,
+          "kind": "definition"
+        },
+        {
+          "name": "issue_load",
+          "start": 291,
+          "end": 324,
+          "kind": "lambda"
+        }
+      ],
+      "status": "FROZEN"
+    }
+  ]
+}

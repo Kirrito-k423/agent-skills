@@ -1,0 +1,46 @@
+{
+  "reviewer": "independent-review",
+  "status": "PASS",
+  "queries": 14201,
+  "mutationRejected": 1120,
+  "cases": [
+    {
+      "preset": "mixed",
+      "queries": 1670
+    },
+    {
+      "preset": "concentrated",
+      "queries": 1615
+    },
+    {
+      "preset": "invalid",
+      "queries": 1607
+    },
+    {
+      "preset": "zero",
+      "queries": 1670
+    },
+    {
+      "preset": "fp8",
+      "queries": 1850
+    },
+    {
+      "preset": "cached",
+      "queries": 1656
+    },
+    {
+      "preset": "noWeights",
+      "queries": 1534
+    },
+    {
+      "preset": "uninitialized",
+      "queries": 1670
+    },
+    {
+      "preset": "empty",
+      "queries": 929
+    }
+  ],
+  "gaps": [],
+  "provenance_sha256": "6ac9d0f9ad90d2666d7d3d2ee639c570292ba0b9429a4b337d5d23e4f55befa8"
+}

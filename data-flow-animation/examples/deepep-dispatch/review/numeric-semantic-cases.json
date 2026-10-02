@@ -1,0 +1,552 @@
+{
+  "status": "PASS",
+  "reviewer": "independent-review",
+  "provenance_sha256": "6ac9d0f9ad90d2666d7d3d2ee639c570292ba0b9429a4b337d5d23e4f55befa8",
+  "cases": [
+    {
+      "name": "topk_lane0_sentinel",
+      "query": {
+        "objectId": "R0.topk_idx[3]",
+        "elementPath": [
+          0
+        ],
+        "step": 0,
+        "phase": "observe"
+      },
+      "result": -1,
+      "producerStep": -1,
+      "operation": "人为路由选择",
+      "origin": "教学者选定的非均匀路由输入",
+      "calculation": [
+        "topk_idx[3][0]=-1：该top-k lane无专家选择；过滤条件 expert_id≥0 不成立，不进入floor/原子计数。不是区间端点，也不是有效专家0。"
+      ],
+      "sourceRef": {
+        "commit": "3b25377d04b24fc6154698ded78a2bcb2c59afff",
+        "file": "animation/model.mjs",
+        "line": 5,
+        "fn": "buildModel（教学者选择输入）",
+        "url": "model.mjs",
+        "kind": "teaching-input"
+      }
+    },
+    {
+      "name": "topk_lane1_expert0",
+      "query": {
+        "objectId": "R0.topk_idx[3]",
+        "elementPath": [
+          1
+        ],
+        "step": 0,
+        "phase": "observe"
+      },
+      "result": 0,
+      "producerStep": -1,
+      "operation": "人为路由选择",
+      "origin": "教学者选定的非均匀路由输入",
+      "calculation": [
+        "topk_idx[3][1]=0：合法专家[0,8)中的有效expert。floor(0÷2)=0 是目的rank，0 mod 2=0 是local expert。输入选择用于展示一个有效专家与一个无选择lane。"
+      ],
+      "sourceRef": {
+        "commit": "3b25377d04b24fc6154698ded78a2bcb2c59afff",
+        "file": "animation/model.mjs",
+        "line": 5,
+        "fn": "buildModel（教学者选择输入）",
+        "url": "model.mjs",
+        "kind": "teaching-input"
+      }
+    },
+    {
+      "name": "rank_sum_component_0",
+      "query": {
+        "objectId": "R0.rank_histogram_sum_view",
+        "elementPath": [
+          0
+        ],
+        "step": 5,
+        "phase": "observe"
+      },
+      "result": 2,
+      "producerStep": 5,
+      "operation": "跨核去重计数求和",
+      "origin": "跨核计数教学聚合；不是独立真实GM数组",
+      "calculation": [
+        "每 Rank 专家数 E÷R = 8÷4 = 2。目的 Rank = floor(expert_id÷2)。",
+        "token 0: topk=[0,1]；过滤 -1 → [0,1]；floor(0÷2)=0，floor(1÷2)=0；目标去重 → {R0}；对 R0 贡献 1。",
+        "token 1: topk=[2,3]；过滤 -1 → [2,3]；floor(2÷2)=1，floor(3÷2)=1；目标去重 → {R1}；对 R0 贡献 0。",
+        "token 2: topk=[4,6]；过滤 -1 → [4,6]；floor(4÷2)=2，floor(6÷2)=3；目标去重 → {R2,R3}；对 R0 贡献 0。",
+        "token 3: topk=[-1,0]；过滤 -1 → [0]；floor(0÷2)=0；目标去重 → {R0}；对 R0 贡献 1。",
+        "R0 计数 = 0 + 1 + 0 + 0 + 1 = 2。",
+        "sum_view把各AIV本地计数聚合展示；真实rank_histogram在prefix后覆盖为每核排他前缀。"
+      ],
+      "sourceRef": {
+        "commit": "3b25377d04b24fc6154698ded78a2bcb2c59afff",
+        "file": "deep_ep/include/deep_ep/impls/ep/dispatch.hpp",
+        "line": 242,
+        "fn": "simt_persistent_worker",
+        "url": "source.html?file=deep_ep%2Finclude%2Fdeep_ep%2Fimpls%2Fep%2Fdispatch.hpp&line=242"
+      }
+    },
+    {
+      "name": "rank_sum_component_1",
+      "query": {
+        "objectId": "R0.rank_histogram_sum_view",
+        "elementPath": [
+          1
+        ],
+        "step": 5,
+        "phase": "observe"
+      },
+      "result": 1,
+      "producerStep": 5,
+      "operation": "跨核去重计数求和",
+      "origin": "跨核计数教学聚合；不是独立真实GM数组",
+      "calculation": [
+        "每 Rank 专家数 E÷R = 8÷4 = 2。目的 Rank = floor(expert_id÷2)。",
+        "token 0: topk=[0,1]；过滤 -1 → [0,1]；floor(0÷2)=0，floor(1÷2)=0；目标去重 → {R0}；对 R1 贡献 0。",
+        "token 1: topk=[2,3]；过滤 -1 → [2,3]；floor(2÷2)=1，floor(3÷2)=1；目标去重 → {R1}；对 R1 贡献 1。",
+        "token 2: topk=[4,6]；过滤 -1 → [4,6]；floor(4÷2)=2，floor(6÷2)=3；目标去重 → {R2,R3}；对 R1 贡献 0。",
+        "token 3: topk=[-1,0]；过滤 -1 → [0]；floor(0÷2)=0；目标去重 → {R0}；对 R1 贡献 0。",
+        "R1 计数 = 0 + 0 + 1 + 0 + 0 = 1。",
+        "sum_view把各AIV本地计数聚合展示；真实rank_histogram在prefix后覆盖为每核排他前缀。"
+      ],
+      "sourceRef": {
+        "commit": "3b25377d04b24fc6154698ded78a2bcb2c59afff",
+        "file": "deep_ep/include/deep_ep/impls/ep/dispatch.hpp",
+        "line": 242,
+        "fn": "simt_persistent_worker",
+        "url": "source.html?file=deep_ep%2Finclude%2Fdeep_ep%2Fimpls%2Fep%2Fdispatch.hpp&line=242"
+      }
+    },
+    {
+      "name": "rank_sum_component_2",
+      "query": {
+        "objectId": "R0.rank_histogram_sum_view",
+        "elementPath": [
+          2
+        ],
+        "step": 5,
+        "phase": "observe"
+      },
+      "result": 1,
+      "producerStep": 5,
+      "operation": "跨核去重计数求和",
+      "origin": "跨核计数教学聚合；不是独立真实GM数组",
+      "calculation": [
+        "每 Rank 专家数 E÷R = 8÷4 = 2。目的 Rank = floor(expert_id÷2)。",
+        "token 0: topk=[0,1]；过滤 -1 → [0,1]；floor(0÷2)=0，floor(1÷2)=0；目标去重 → {R0}；对 R2 贡献 0。",
+        "token 1: topk=[2,3]；过滤 -1 → [2,3]；floor(2÷2)=1，floor(3÷2)=1；目标去重 → {R1}；对 R2 贡献 0。",
+        "token 2: topk=[4,6]；过滤 -1 → [4,6]；floor(4÷2)=2，floor(6÷2)=3；目标去重 → {R2,R3}；对 R2 贡献 1。",
+        "token 3: topk=[-1,0]；过滤 -1 → [0]；floor(0÷2)=0；目标去重 → {R0}；对 R2 贡献 0。",
+        "R2 计数 = 0 + 0 + 0 + 1 + 0 = 1。",
+        "sum_view把各AIV本地计数聚合展示；真实rank_histogram在prefix后覆盖为每核排他前缀。"
+      ],
+      "sourceRef": {
+        "commit": "3b25377d04b24fc6154698ded78a2bcb2c59afff",
+        "file": "deep_ep/include/deep_ep/impls/ep/dispatch.hpp",
+        "line": 242,
+        "fn": "simt_persistent_worker",
+        "url": "source.html?file=deep_ep%2Finclude%2Fdeep_ep%2Fimpls%2Fep%2Fdispatch.hpp&line=242"
+      }
+    },
+    {
+      "name": "rank_sum_component_3",
+      "query": {
+        "objectId": "R0.rank_histogram_sum_view",
+        "elementPath": [
+          3
+        ],
+        "step": 5,
+        "phase": "observe"
+      },
+      "result": 1,
+      "producerStep": 5,
+      "operation": "跨核去重计数求和",
+      "origin": "跨核计数教学聚合；不是独立真实GM数组",
+      "calculation": [
+        "每 Rank 专家数 E÷R = 8÷4 = 2。目的 Rank = floor(expert_id÷2)。",
+        "token 0: topk=[0,1]；过滤 -1 → [0,1]；floor(0÷2)=0，floor(1÷2)=0；目标去重 → {R0}；对 R3 贡献 0。",
+        "token 1: topk=[2,3]；过滤 -1 → [2,3]；floor(2÷2)=1，floor(3÷2)=1；目标去重 → {R1}；对 R3 贡献 0。",
+        "token 2: topk=[4,6]；过滤 -1 → [4,6]；floor(4÷2)=2，floor(6÷2)=3；目标去重 → {R2,R3}；对 R3 贡献 1。",
+        "token 3: topk=[-1,0]；过滤 -1 → [0]；floor(0÷2)=0；目标去重 → {R0}；对 R3 贡献 0。",
+        "R3 计数 = 0 + 0 + 0 + 1 + 0 = 1。",
+        "sum_view把各AIV本地计数聚合展示；真实rank_histogram在prefix后覆盖为每核排他前缀。"
+      ],
+      "sourceRef": {
+        "commit": "3b25377d04b24fc6154698ded78a2bcb2c59afff",
+        "file": "deep_ep/include/deep_ep/impls/ep/dispatch.hpp",
+        "line": 242,
+        "fn": "simt_persistent_worker",
+        "url": "source.html?file=deep_ep%2Finclude%2Fdeep_ep%2Fimpls%2Fep%2Fdispatch.hpp&line=242"
+      }
+    },
+    {
+      "name": "cached_prefix_prior_fresh",
+      "query": {
+        "objectId": "R0.psum_num_recv_tokens_per_rank",
+        "elementPath": [
+          1
+        ],
+        "step": 18,
+        "phase": "observe"
+      },
+      "result": 3,
+      "producerStep": -1,
+      "operation": "缓存继承；复用上次fresh布局",
+      "origin": "前一次 fresh 调用的 handle 缓存继承；路由/容量/核数保持不变",
+      "calculation": [
+        "以下推导是上次fresh生产该缓存的依据，本轮不重新执行路由/count/slot计算。",
+        "来源R0 → 目的R0，上次fresh逐token贡献：",
+        "每 Rank 专家数 E÷R = 8÷4 = 2。目的 Rank = floor(expert_id÷2)。",
+        "token 0: topk=[0,1]；过滤 -1 → [0,1]；floor(0÷2)=0，floor(1÷2)=0；目标去重 → {R0}；对 R0 贡献 1。",
+        "token 1: topk=[2,3]；过滤 -1 → [2,3]；floor(2÷2)=1，floor(3÷2)=1；目标去重 → {R1}；对 R0 贡献 0。",
+        "token 2: topk=[4,6]；过滤 -1 → [4,6]；floor(4÷2)=2，floor(6÷2)=3；目标去重 → {R2,R3}；对 R0 贡献 0。",
+        "token 3: topk=[-1,0]；过滤 -1 → [0]；floor(0÷2)=0；目标去重 → {R0}；对 R0 贡献 1。",
+        "R0 计数 = 0 + 1 + 0 + 0 + 1 = 2。",
+        "来源R1 → 目的R0，上次fresh逐token贡献：",
+        "每 Rank 专家数 E÷R = 8÷4 = 2。目的 Rank = floor(expert_id÷2)。",
+        "token 0: topk=[0,2]；过滤 -1 → [0,2]；floor(0÷2)=0，floor(2÷2)=1；目标去重 → {R0,R1}；对 R0 贡献 1。",
+        "token 1: topk=[2,3]；过滤 -1 → [2,3]；floor(2÷2)=1，floor(3÷2)=1；目标去重 → {R1}；对 R0 贡献 0。",
+        "token 2: topk=[6,7]；过滤 -1 → [6,7]；floor(6÷2)=3，floor(7÷2)=3；目标去重 → {R3}；对 R0 贡献 0。",
+        "token 3: topk=[2,-1]；过滤 -1 → [2]；floor(2÷2)=1；目标去重 → {R1}；对 R0 贡献 0。",
+        "R0 计数 = 0 + 1 + 0 + 0 + 0 = 1。",
+        "2 + 1 = 3。包含来源rank 1 自己；来源分区物理容量仍各有M=4槽。"
+      ],
+      "sourceRef": {
+        "commit": "3b25377d04b24fc6154698ded78a2bcb2c59afff",
+        "file": "csrc/buffers/ep.hpp",
+        "line": 205,
+        "fn": "EPBuffer::dispatch",
+        "url": "source.html?file=csrc%2Fbuffers%2Fep.hpp&line=205"
+      }
+    },
+    {
+      "name": "no_hit_ub_bucket_keeps_initial",
+      "query": {
+        "objectId": "R0.ub_rank_histogram[0]",
+        "elementPath": [
+          1
+        ],
+        "step": 1,
+        "phase": "write-after"
+      },
+      "result": 0,
+      "producerStep": -1,
+      "operation": "保留初始化；本步未对该元素写入",
+      "origin": "源码初始化 / workspace初始清零",
+      "calculation": [
+        "初始值 0：计数器尚未计入任何token。没有加法贡献事件。",
+        "该UB bucket本步无匹配贡献，没有原子写操作；沿用初始化0，模型整数组统计记录不代表真实同值写0。"
+      ],
+      "sourceRef": {
+        "commit": "3b25377d04b24fc6154698ded78a2bcb2c59afff",
+        "file": "deep_ep/include/deep_ep/impls/ep/dispatch.hpp",
+        "line": 123,
+        "fn": "simt_persistent_worker",
+        "url": "source.html?file=deep_ep%2Finclude%2Fdeep_ep%2Fimpls%2Fep%2Fdispatch.hpp&line=123"
+      }
+    },
+    {
+      "name": "no_local_slot_keeps_initial",
+      "query": {
+        "objectId": "R0.local_copy_dst_slot_idx[1]",
+        "elementPath": [],
+        "step": 6,
+        "phase": "write-after"
+      },
+      "result": -1,
+      "producerStep": -1,
+      "operation": "保留初始化；本步未对该元素写入",
+      "origin": "源码初始化 / workspace初始清零",
+      "calculation": [
+        "local_copy_dst_slot_idx 初始 -1 表示尚无本机复制目标槽，不是无expert。",
+        "本token没有本地目的rank，slots/restore不进入local赋值分支；保留初始化-1，模型聚合记录不代表又写了一次-1。"
+      ],
+      "sourceRef": {
+        "commit": "3b25377d04b24fc6154698ded78a2bcb2c59afff",
+        "file": "deep_ep/include/deep_ep/impls/ep/dispatch.hpp",
+        "line": 126,
+        "fn": "simt_persistent_worker",
+        "url": "source.html?file=deep_ep%2Finclude%2Fdeep_ep%2Fimpls%2Fep%2Fdispatch.hpp&line=126"
+      }
+    },
+    {
+      "name": "explicit_gm_sentinel_write",
+      "query": {
+        "objectId": "R0.dst_buffer_slot_idx[0]",
+        "elementPath": [
+          1
+        ],
+        "step": 6,
+        "phase": "write-after"
+      },
+      "result": -1,
+      "producerStep": 6,
+      "operation": "哨兵分支，不分配新条目",
+      "origin": "本轮源码生产事件",
+      "calculation": [
+        "topk lane 1 的目的R0与前面lane相同，rank去重后此lane=-1；已保留另一lane副本。"
+      ],
+      "sourceRef": {
+        "commit": "3b25377d04b24fc6154698ded78a2bcb2c59afff",
+        "file": "deep_ep/include/deep_ep/impls/ep/dispatch.hpp",
+        "line": 281,
+        "fn": "simt_persistent_worker",
+        "url": "source.html?file=deep_ep%2Finclude%2Fdeep_ep%2Fimpls%2Fep%2Fdispatch.hpp&line=281"
+      }
+    },
+    {
+      "name": "same_zero_payload_copy",
+      "query": {
+        "objectId": "R0.recv_x[0]",
+        "elementPath": [
+          0
+        ],
+        "step": 18,
+        "phase": "write-after"
+      },
+      "result": 0,
+      "producerStep": 18,
+      "operation": "按local expert展开，原样复制",
+      "origin": "本轮源码生产事件",
+      "calculation": [
+        "接收rank去重token来自R0/token0，local expert 0匹配top-k lane 0，输出槽=0。",
+        "从 R0.recv_buffer[0,0] 的hidden[0]=0 原样写到 R0.recv_x[0][0]。",
+        "hidden不乘权重；SF只复制位模式；相同值/有效0也是一次实际写入。"
+      ],
+      "sourceRef": {
+        "commit": "3b25377d04b24fc6154698ded78a2bcb2c59afff",
+        "file": "deep_ep/include/deep_ep/impls/ep/dispatch_copy_epilogue.hpp",
+        "line": 492,
+        "fn": "dispatch_copy_epilogue_impl",
+        "url": "source.html?file=deep_ep%2Finclude%2Fdeep_ep%2Fimpls%2Fep%2Fdispatch_copy_epilogue.hpp&line=492"
+      }
+    },
+    {
+      "name": "clear_signal_zero",
+      "query": {
+        "objectId": "R0.local_rank_histogram[0]",
+        "elementPath": [],
+        "step": 6,
+        "phase": "write-after"
+      },
+      "result": 0,
+      "producerStep": 6,
+      "operation": "清信号",
+      "origin": "本轮源码生产事件",
+      "calculation": [
+        "读取arrival2前缀后把整个GM信号写0；0表示为下次调用清理，不代表旧前缀/载荷被清零。"
+      ],
+      "sourceRef": {
+        "commit": "3b25377d04b24fc6154698ded78a2bcb2c59afff",
+        "file": "deep_ep/include/deep_ep/impls/ep/dispatch.hpp",
+        "line": 253,
+        "fn": "simt_persistent_worker",
+        "url": "source.html?file=deep_ep%2Finclude%2Fdeep_ep%2Fimpls%2Fep%2Fdispatch.hpp&line=253"
+      }
+    },
+    {
+      "name": "padding_explicit_zero",
+      "query": {
+        "objectId": "R0.recv_x[6]",
+        "elementPath": [
+          0
+        ],
+        "step": 24,
+        "phase": "write-after"
+      },
+      "result": 0,
+      "producerStep": 24,
+      "operation": "显式padding清零",
+      "origin": "本轮源码生产事件",
+      "calculation": [
+        "槽6是expert对齐padding，没有来源token或src_metadata。",
+        "do_zero_padding=True，零缓冲或WriteGmByPassDCache将此元素写0。不是路由贡献，不由有效token算出。"
+      ],
+      "sourceRef": {
+        "commit": "3b25377d04b24fc6154698ded78a2bcb2c59afff",
+        "file": "deep_ep/include/deep_ep/impls/ep/dispatch_copy_epilogue.hpp",
+        "line": 567,
+        "fn": "dispatch_copy_epilogue_impl",
+        "url": "source.html?file=deep_ep%2Finclude%2Fdeep_ep%2Fimpls%2Fep%2Fdispatch_copy_epilogue.hpp&line=567"
+      }
+    },
+    {
+      "name": "padding_unknown",
+      "query": {
+        "objectId": "R0.recv_x[6]",
+        "elementPath": [],
+        "step": 25,
+        "phase": "observe"
+      },
+      "result": "未写入",
+      "producerStep": -1,
+      "operation": "不执行数值算术",
+      "origin": "torch::empty 或尚未发布的容量槽；没有本轮有效值",
+      "calculation": [
+        "R0.recv_x[6][] = 未写入。它不是数字0，不能作为有效载荷/计数读取。"
+      ],
+      "sourceRef": {
+        "commit": "3b25377d04b24fc6154698ded78a2bcb2c59afff",
+        "file": "csrc/buffers/ep.hpp",
+        "line": 323,
+        "fn": "EPBuffer::dispatch",
+        "url": "source.html?file=csrc%2Fbuffers%2Fep.hpp&line=323"
+      }
+    },
+    {
+      "name": "signal_retained_by_issue",
+      "query": {
+        "objectId": "R0.signals",
+        "elementPath": [
+          "metadata_ready"
+        ],
+        "step": 15,
+        "phase": "observe"
+      },
+      "result": 1,
+      "producerStep": 11,
+      "operation": "保留字段；非本步写操作",
+      "origin": "本轮源码生产事件",
+      "calculation": [
+        "metadata_ready=1：MTE3 metadata flush完成后MTE2→S汇合，发布可供SIMT读取。",
+        "本帧只替换聚合对象其他字段；此字段沿用真正生产步骤，不伪称同值写入。"
+      ],
+      "sourceRef": {
+        "commit": "3b25377d04b24fc6154698ded78a2bcb2c59afff",
+        "file": "deep_ep/include/deep_ep/impls/ep/dispatch.hpp",
+        "line": 801,
+        "fn": "dispatch_impl",
+        "url": "source.html?file=deep_ep%2Finclude%2Fdeep_ep%2Fimpls%2Fep%2Fdispatch.hpp&line=801"
+      }
+    },
+    {
+      "name": "sf_pack_bits",
+      "query": {
+        "objectId": "R0.sf[0]",
+        "elementPath": [
+          0
+        ],
+        "step": 0,
+        "phase": "observe"
+      },
+      "result": 15360,
+      "producerStep": -1,
+      "operation": "人为位模式输入",
+      "origin": "人为选择的SF pack原始位模式",
+      "calculation": [
+        "SF[0]=0x3c00+0；0x3c00=3×4096+12×256=15360；15360+0=15360（0x3c00）。仅按sf_pack_t=int16搬运，未解码scale。"
+      ],
+      "sourceRef": {
+        "commit": "3b25377d04b24fc6154698ded78a2bcb2c59afff",
+        "file": "animation/model.mjs",
+        "line": 15,
+        "fn": "buildModel（教学者选择输入）",
+        "url": "model.mjs",
+        "kind": "teaching-input"
+      }
+    },
+    {
+      "name": "empty_count_zero",
+      "query": {
+        "objectId": "R0.rank_histogram_sum_view",
+        "elementPath": [
+          0
+        ],
+        "step": 2,
+        "phase": "observe"
+      },
+      "result": 0,
+      "producerStep": 2,
+      "operation": "跨核去重计数求和",
+      "origin": "跨核计数教学聚合；不是独立真实GM数组",
+      "calculation": [
+        "本轮T=0，所以来源R0有效token集合为空∅；没有有效expert映射或去重贡献，空集合求和=0。所有16 AIV仍以count0发布arrival1，不能省略同步。",
+        "每 Rank 专家数 E÷R = 8÷4 = 2。目的 Rank = floor(expert_id÷2)。",
+        "R0 计数 = 0 = 0。",
+        "sum_view把各AIV本地计数聚合展示；真实rank_histogram在prefix后覆盖为每核排他前缀。"
+      ],
+      "sourceRef": {
+        "commit": "3b25377d04b24fc6154698ded78a2bcb2c59afff",
+        "file": "deep_ep/include/deep_ep/impls/ep/dispatch.hpp",
+        "line": 242,
+        "fn": "simt_persistent_worker",
+        "url": "source.html?file=deep_ep%2Finclude%2Fdeep_ep%2Fimpls%2Fep%2Fdispatch.hpp&line=242"
+      }
+    },
+    {
+      "name": "fresh_no_sf",
+      "query": {
+        "objectId": "R0.metadata_send_buffer[0]",
+        "elementPath": [
+          "sf"
+        ],
+        "step": 7,
+        "phase": "observe"
+      },
+      "result": "无SF分支",
+      "producerStep": 7,
+      "operation": "不执行数值算术",
+      "origin": "可选/缓存分支未传输此字段",
+      "calculation": [
+        "R0.metadata_send_buffer[0][\"sf\"] = 无SF分支。它不是数字0，不能作为有效载荷/计数读取。"
+      ],
+      "sourceRef": {
+        "commit": "3b25377d04b24fc6154698ded78a2bcb2c59afff",
+        "file": "deep_ep/include/deep_ep/impls/ep/dispatch.hpp",
+        "line": 697,
+        "fn": "dispatch_impl",
+        "url": "source.html?file=deep_ep%2Finclude%2Fdeep_ep%2Fimpls%2Fep%2Fdispatch.hpp&line=697"
+      }
+    },
+    {
+      "name": "no_weights",
+      "query": {
+        "objectId": "R0.metadata_send_buffer[0]",
+        "elementPath": [
+          "weights"
+        ],
+        "step": 7,
+        "phase": "observe"
+      },
+      "result": "未提供；预留区域未定义",
+      "producerStep": 7,
+      "operation": "不执行数值算术",
+      "origin": "可选/缓存分支未传输此字段",
+      "calculation": [
+        "R0.metadata_send_buffer[0][\"weights\"] = 未提供；预留区域未定义。它不是数字0，不能作为有效载荷/计数读取。"
+      ],
+      "sourceRef": {
+        "commit": "3b25377d04b24fc6154698ded78a2bcb2c59afff",
+        "file": "deep_ep/include/deep_ep/impls/ep/dispatch.hpp",
+        "line": 740,
+        "fn": "dispatch_impl",
+        "url": "source.html?file=deep_ep%2Finclude%2Fdeep_ep%2Fimpls%2Fep%2Fdispatch.hpp&line=740"
+      }
+    },
+    {
+      "name": "cached_omitted_topk",
+      "query": {
+        "objectId": "R0.metadata_send_buffer[0]",
+        "elementPath": [
+          "topk"
+        ],
+        "step": 2,
+        "phase": "observe"
+      },
+      "result": "cached不发送",
+      "producerStep": 2,
+      "operation": "不执行数值算术",
+      "origin": "可选/缓存分支未传输此字段",
+      "calculation": [
+        "R0.metadata_send_buffer[0][\"topk\"] = cached不发送。它不是数字0，不能作为有效载荷/计数读取。"
+      ],
+      "sourceRef": {
+        "commit": "3b25377d04b24fc6154698ded78a2bcb2c59afff",
+        "file": "deep_ep/include/deep_ep/impls/ep/dispatch.hpp",
+        "line": 727,
+        "fn": "dispatch_impl",
+        "url": "source.html?file=deep_ep%2Finclude%2Fdeep_ep%2Fimpls%2Fep%2Fdispatch.hpp&line=727"
+      }
+    }
+  ]
+}

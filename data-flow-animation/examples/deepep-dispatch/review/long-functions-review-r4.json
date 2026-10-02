@@ -1,0 +1,143 @@
+[
+  {
+    "function_id": "dispatch-simt-77",
+    "revision": 4,
+    "draft_author": "walkthrough-agent",
+    "reviewer": "independent-review",
+    "source_sha256": "25244c66d5937e9e7521400792c2e0ddc974512971f582e95d19c4828c31b678",
+    "draft_sha256": "a19d7d3f9d5f8fdc14c7e3b8cb55696ffdd4deaec2d8d0702c3d318614073e70",
+    "function_content_sha256": "097e81b6b9fea41f68d211aa2af66fd7f49ea44945e0266cdb4db4b47218033d",
+    "line_range": [
+      77,
+      549
+    ],
+    "gaps": [],
+    "overlaps": [],
+    "unresolved": [],
+    "verdict": "PASS",
+    "status": "PASS",
+    "required_changes": [],
+    "verified": [
+      "lane组同token Rank去重但expert频数不去重；原子槽顺序与输入顺序分开",
+      "同warp两段AIV排他前缀、arrival状态复用/清零与local_copy_ready发布",
+      "逻辑SGE cached恢复、4WQEBB固定槽/NOP/owner位/最后WRITE完成标志",
+      "metadata_ready后local GM copy；raw expert计数、host aligned通知与两类psum不同",
+      "完整定义逐行含signature/comment/brace/blank复核；无fallback或错误跨域变量解释",
+      "caller/callee真实调用点、IO/成员/GM/UB/remote状态变化核对",
+      "allocator/owner/capacity/alignment/lifetime/cache边界详见独立PASS memory-review-r3"
+    ]
+  },
+  {
+    "function_id": "dispatch-impl-551",
+    "revision": 4,
+    "draft_author": "walkthrough-agent",
+    "reviewer": "independent-review",
+    "source_sha256": "25244c66d5937e9e7521400792c2e0ddc974512971f582e95d19c4828c31b678",
+    "draft_sha256": "cd36744532301a95e85cfe35270ee71786589879586ec917135db383b9885700",
+    "function_content_sha256": "2dca5d9b898a6f68366f5f90b746305af40e1b6289aac54a6b444165019a8bc4",
+    "line_range": [
+      551,
+      865
+    ],
+    "gaps": [],
+    "overlaps": [],
+    "unresolved": [],
+    "verdict": "PASS",
+    "status": "PASS",
+    "required_changes": [],
+    "verified": [
+      "模板计数/容量门禁与UB预算，首屏障和可选尾drain区别",
+      "异步SIMT启动；metadata SF连续/NDDMA、fresh TopK/src、可选weight打包",
+      "MTE2/S/MTE3阶段事件、metadata_ready与local_copy_ready独立依赖",
+      "local hidden仅经UB，remote hidden直接x；advance_sq仅UB，ring才GM head+DSB+doorbell",
+      "完整定义逐行含signature/comment/brace/blank复核；无fallback或错误跨域变量解释",
+      "caller/callee真实调用点、IO/成员/GM/UB/remote状态变化核对",
+      "allocator/owner/capacity/alignment/lifetime/cache边界详见独立PASS memory-review-r3"
+    ]
+  },
+  {
+    "function_id": "dispatch-preload-688",
+    "revision": 4,
+    "draft_author": "walkthrough-agent",
+    "reviewer": "independent-review",
+    "source_sha256": "25244c66d5937e9e7521400792c2e0ddc974512971f582e95d19c4828c31b678",
+    "draft_sha256": "cd36744532301a95e85cfe35270ee71786589879586ec917135db383b9885700",
+    "function_content_sha256": "e98fdf26656e4bf01d81b5c0048acf7da3177e8210fd80e1fbaad62b298af8bc",
+    "line_range": [
+      688,
+      753
+    ],
+    "gaps": [],
+    "overlaps": [],
+    "unresolved": [],
+    "verdict": "PASS",
+    "status": "PASS",
+    "required_changes": [],
+    "verified": [
+      "token/stage双坐标与尾AIV夹取",
+      "SF stride1与二维NDDMA的element stride；fresh Top-K与可选weight输入范围",
+      "MTE3释放后复用UB，MTE2→S发布；TokenLayout视图不是(K+2)回程metadata",
+      "完整定义逐行含signature/comment/brace/blank复核；无fallback或错误跨域变量解释",
+      "caller/callee真实调用点、IO/成员/GM/UB/remote状态变化核对",
+      "allocator/owner/capacity/alignment/lifetime/cache边界详见独立PASS memory-review-r3"
+    ]
+  },
+  {
+    "function_id": "epi-impl-176",
+    "revision": 4,
+    "draft_author": "walkthrough-agent",
+    "reviewer": "independent-review",
+    "source_sha256": "3666da791943b16986c7a0258c52cc022361c1a07d364098e0713036bd412a25",
+    "draft_sha256": "e19a68c8017908283595138d9972f3a1701890fd1ff99deba8f540e9c6825ceb",
+    "function_content_sha256": "ebee62b34ee816371608dfc1c66eda0273f38fe0d9f201d149abf4ec742a8b47",
+    "line_range": [
+      176,
+      621
+    ],
+    "gaps": [],
+    "overlaps": [],
+    "unresolved": [],
+    "verdict": "PASS",
+    "status": "PASS",
+    "required_changes": [],
+    "verified": [
+      "入口drain/barrier与host配置；接收流按来源Rank切片",
+      "histogram与token staging分阶段复用，常驻expert两数组、metadata两stage、zero预算",
+      "clear barrier→atomic MTE3广播→cumsum barrier→GM prefix回读→SIMD aligned start",
+      "fresh分配专家绝对输出行，cached读取已保存slot；最后本地j master",
+      "hidden/SF MTE3与weight Scalar写，K+2回程metadata保存，stage事件回收",
+      "padding均分最多4part、重复zero源、SF整块与tail、状态恢复、关闭补零保持未定义",
+      "完整定义逐行含signature/comment/brace/blank复核；无fallback或错误跨域变量解释",
+      "caller/callee真实调用点、IO/成员/GM/UB/remote状态变化核对",
+      "allocator/owner/capacity/alignment/lifetime/cache边界详见独立PASS memory-review-r3"
+    ]
+  },
+  {
+    "function_id": "epi-issue-load-291",
+    "revision": 4,
+    "draft_author": "walkthrough-agent",
+    "reviewer": "independent-review",
+    "source_sha256": "3666da791943b16986c7a0258c52cc022361c1a07d364098e0713036bd412a25",
+    "draft_sha256": "e19a68c8017908283595138d9972f3a1701890fd1ff99deba8f540e9c6825ceb",
+    "function_content_sha256": "22bf76e7d208d3e4cea245ee0a503ad310ed036eec353b4c4a51dcf898c392d0",
+    "line_range": [
+      291,
+      324
+    ],
+    "gaps": [],
+    "overlaps": [],
+    "unresolved": [],
+    "verdict": "PASS",
+    "status": "PASS",
+    "required_changes": [],
+    "verified": [
+      "PSumIterator只向前跳过空Rank、三边界批长",
+      "GM固定Rank容量切片与紧凑接收流坐标换算",
+      "初始预取/refill分支、MTE3→MTE2回收与MTE2→S发布",
+      "stage真实长度/全局base记录及issue_iter推进",
+      "完整定义逐行含signature/comment/brace/blank复核；无fallback或错误跨域变量解释",
+      "caller/callee真实调用点、IO/成员/GM/UB/remote状态变化核对",
+      "allocator/owner/capacity/alignment/lifetime/cache边界详见独立PASS memory-review-r3"
+    ]
+  }
+]

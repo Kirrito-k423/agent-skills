@@ -1,0 +1,265 @@
+[
+  {
+    "function_id": "epi-fill-21",
+    "revision": 1,
+    "draft_author": "walkthrough-agent",
+    "reviewer": "independent-review",
+    "source_sha256": "3666da791943b16986c7a0258c52cc022361c1a07d364098e0713036bd412a25",
+    "line_range": [
+      21,
+      30
+    ],
+    "gaps": [],
+    "overlaps": [],
+    "unresolved": [],
+    "verdict": "REWORK",
+    "required_changes": [
+      {
+        "line": 21,
+        "issue": "line_notes全部reads/writes空，关键输入、UB写和状态变化未登记",
+        "change": "逐行补实际源码标识符；空行/括号/注释保留空数组；不是仅填统一模板"
+      },
+      {
+        "line": 24,
+        "issue": "segments.calls为空遗漏SIMD API",
+        "change": "记录asc_duplicate_scalar(24)、asc_storealign与asc_update_mask_b32(28)，逐一核对外部API"
+      }
+    ]
+  },
+  {
+    "function_id": "epi-histogram-37",
+    "revision": 1,
+    "draft_author": "walkthrough-agent",
+    "reviewer": "independent-review",
+    "source_sha256": "3666da791943b16986c7a0258c52cc022361c1a07d364098e0713036bd412a25",
+    "line_range": [
+      37,
+      101
+    ],
+    "gaps": [],
+    "overlaps": [],
+    "unresolved": [],
+    "verdict": "REWORK",
+    "required_changes": [
+      {
+        "line": 37,
+        "issue": "line_notes全部reads/writes空，关键输入、UB写和状态变化未登记",
+        "change": "逐行补实际源码标识符；空行/括号/注释保留空数组；不是仅填统一模板"
+      },
+      {
+        "line": 78,
+        "issue": "桶区间被误当实际本Rank专家区间；segment55-86 why声称远端专家均被筛掉",
+        "change": "改为offset-relative [0,kNumBins)；真实E/R可小于bin数，其他rank ID可进入未使用填充桶，只有前E/R计数消费；同步修订summary、78/81/101及segments"
+      },
+      {
+        "line": 59,
+        "issue": "segments.calls遗漏全部实际SIMD数据重排/统计/累加API",
+        "change": "各语义块补真实调用及行号；解释输入ID范围前提及caller阶段<=65535限制，不能宣称任意int64正确"
+      }
+    ]
+  },
+  {
+    "function_id": "epi-init-slot-107",
+    "revision": 1,
+    "draft_author": "walkthrough-agent",
+    "reviewer": "independent-review",
+    "source_sha256": "3666da791943b16986c7a0258c52cc022361c1a07d364098e0713036bd412a25",
+    "line_range": [
+      107,
+      128
+    ],
+    "gaps": [],
+    "overlaps": [],
+    "unresolved": [],
+    "verdict": "REWORK",
+    "required_changes": [
+      {
+        "line": 107,
+        "issue": "line_notes全部reads/writes空，关键输入、UB写和状态变化未登记",
+        "change": "逐行补实际源码标识符；空行/括号/注释保留空数组；不是仅填统一模板"
+      },
+      {
+        "line": 125,
+        "issue": "本核前序专家计数措辞混淆核前缀和专家前缀，且API calls遗漏",
+        "change": "明确为此前AIV的同一个专家计数；专家基址为上一专家有效终点向上对齐；补asc load/add/and/store等calls"
+      }
+    ]
+  },
+  {
+    "function_id": "epi-iter-139",
+    "revision": 1,
+    "draft_author": "walkthrough-agent",
+    "reviewer": "independent-review",
+    "source_sha256": "3666da791943b16986c7a0258c52cc022361c1a07d364098e0713036bd412a25",
+    "line_range": [
+      139,
+      148
+    ],
+    "gaps": [],
+    "overlaps": [],
+    "unresolved": [],
+    "verdict": "REWORK",
+    "required_changes": [
+      {
+        "line": 139,
+        "issue": "line_notes全部reads/writes空，关键输入、UB写和状态变化未登记",
+        "change": "逐行补实际源码标识符；空行/括号/注释保留空数组；不是仅填统一模板"
+      },
+      {
+        "line": 139,
+        "issue": "segment input/output/mechanism模板化且返回函数被写成状态维护",
+        "change": "分别写真实成员含义、公式、返回值与改变成员；只读getter side_effects=[]，output_state写返回式"
+      },
+      {
+        "line": 147,
+        "issue": "遗漏advance_to内部边，outputs未覆盖初始化成员",
+        "change": "calls指向epi-iter-154；写明psum/token_idx/token_end_idx和rank成员初始化"
+      }
+    ]
+  },
+  {
+    "function_id": "epi-iter-150",
+    "revision": 1,
+    "draft_author": "walkthrough-agent",
+    "reviewer": "independent-review",
+    "source_sha256": "3666da791943b16986c7a0258c52cc022361c1a07d364098e0713036bd412a25",
+    "line_range": [
+      150,
+      152
+    ],
+    "gaps": [],
+    "overlaps": [],
+    "unresolved": [],
+    "verdict": "REWORK",
+    "required_changes": [
+      {
+        "line": 150,
+        "issue": "line_notes全部reads/writes空，关键输入、UB写和状态变化未登记",
+        "change": "逐行补实际源码标识符；空行/括号/注释保留空数组；不是仅填统一模板"
+      },
+      {
+        "line": 150,
+        "issue": "segment input/output/mechanism模板化且返回函数被写成状态维护",
+        "change": "分别写真实成员含义、公式、返回值与改变成员；只读getter side_effects=[]，output_state写返回式"
+      },
+      {
+        "line": 151,
+        "issue": "遗漏advance_to内部边及rank_start_idx/rank_end_idx副作用",
+        "change": "calls指向epi-iter-154；inputs含psum/rank当前状态，outputs覆盖边界成员"
+      }
+    ]
+  },
+  {
+    "function_id": "epi-iter-154",
+    "revision": 1,
+    "draft_author": "walkthrough-agent",
+    "reviewer": "independent-review",
+    "source_sha256": "3666da791943b16986c7a0258c52cc022361c1a07d364098e0713036bd412a25",
+    "line_range": [
+      154,
+      161
+    ],
+    "gaps": [],
+    "overlaps": [],
+    "unresolved": [],
+    "verdict": "REWORK",
+    "required_changes": [
+      {
+        "line": 154,
+        "issue": "line_notes全部reads/writes空，关键输入、UB写和状态变化未登记",
+        "change": "逐行补实际源码标识符；空行/括号/注释保留空数组；不是仅填统一模板"
+      },
+      {
+        "line": 154,
+        "issue": "segment input/output/mechanism模板化且返回函数被写成状态维护",
+        "change": "分别写真实成员含义、公式、返回值与改变成员；只读getter side_effects=[]，output_state写返回式"
+      },
+      {
+        "line": 154,
+        "issue": "当前绝对定位说明未交代只能向前，且inputs遗漏rank当前状态",
+        "change": "明确调用约束单调不减；不支持后退重新定位；列rank_idx/rank_end_idx读取"
+      }
+    ]
+  },
+  {
+    "function_id": "epi-iter-163",
+    "revision": 1,
+    "draft_author": "walkthrough-agent",
+    "reviewer": "independent-review",
+    "source_sha256": "3666da791943b16986c7a0258c52cc022361c1a07d364098e0713036bd412a25",
+    "line_range": [
+      163,
+      165
+    ],
+    "gaps": [],
+    "overlaps": [],
+    "unresolved": [],
+    "verdict": "REWORK",
+    "required_changes": [
+      {
+        "line": 163,
+        "issue": "line_notes全部reads/writes空，关键输入、UB写和状态变化未登记",
+        "change": "逐行补实际源码标识符；空行/括号/注释保留空数组；不是仅填统一模板"
+      },
+      {
+        "line": 163,
+        "issue": "segment input/output/mechanism模板化且返回函数被写成状态维护",
+        "change": "分别写真实成员含义、公式、返回值与改变成员；只读getter side_effects=[]，output_state写返回式"
+      }
+    ]
+  },
+  {
+    "function_id": "epi-iter-167",
+    "revision": 1,
+    "draft_author": "walkthrough-agent",
+    "reviewer": "independent-review",
+    "source_sha256": "3666da791943b16986c7a0258c52cc022361c1a07d364098e0713036bd412a25",
+    "line_range": [
+      167,
+      169
+    ],
+    "gaps": [],
+    "overlaps": [],
+    "unresolved": [],
+    "verdict": "REWORK",
+    "required_changes": [
+      {
+        "line": 167,
+        "issue": "line_notes全部reads/writes空，关键输入、UB写和状态变化未登记",
+        "change": "逐行补实际源码标识符；空行/括号/注释保留空数组；不是仅填统一模板"
+      },
+      {
+        "line": 167,
+        "issue": "segment input/output/mechanism模板化且返回函数被写成状态维护",
+        "change": "分别写真实成员含义、公式、返回值与改变成员；只读getter side_effects=[]，output_state写返回式"
+      }
+    ]
+  },
+  {
+    "function_id": "epi-iter-171",
+    "revision": 1,
+    "draft_author": "walkthrough-agent",
+    "reviewer": "independent-review",
+    "source_sha256": "3666da791943b16986c7a0258c52cc022361c1a07d364098e0713036bd412a25",
+    "line_range": [
+      171,
+      173
+    ],
+    "gaps": [],
+    "overlaps": [],
+    "unresolved": [],
+    "verdict": "REWORK",
+    "required_changes": [
+      {
+        "line": 171,
+        "issue": "line_notes全部reads/writes空，关键输入、UB写和状态变化未登记",
+        "change": "逐行补实际源码标识符；空行/括号/注释保留空数组；不是仅填统一模板"
+      },
+      {
+        "line": 171,
+        "issue": "segment input/output/mechanism模板化且返回函数被写成状态维护",
+        "change": "分别写真实成员含义、公式、返回值与改变成员；只读getter side_effects=[]，output_state写返回式"
+      }
+    ]
+  }
+]

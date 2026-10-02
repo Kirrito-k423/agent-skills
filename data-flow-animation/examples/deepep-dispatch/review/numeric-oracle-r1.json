@@ -1,0 +1,1373 @@
+{
+  "status": "REWORK",
+  "reviewer": "independent-review",
+  "scope": "phase snapshot/producer upper bound/available computed/operand backreference; semantic audit separate",
+  "model_sha256": "567fc1e82f4c91dd09c481a05d7eee2b6ea850e6f155a541c1a3f1c95b633197",
+  "provenance_sha256": "7a22b71ef8c3da4404f8cb9859f6c2a3a4faa183017be0ad49c215de86c67ec1",
+  "stats": {
+    "queries": 629468,
+    "computed": 22208,
+    "operands": 397806,
+    "missingComputed": 438244,
+    "ledgerOperands": 395448,
+    "unboundOperands": 2358,
+    "nonNumericOperands": 80
+  },
+  "cases": {
+    "mixed": {
+      "queries": 83221
+    },
+    "concentrated": {
+      "queries": 67288
+    },
+    "invalid": {
+      "queries": 72584
+    },
+    "zero": {
+      "queries": 83221
+    },
+    "fp8": {
+      "queries": 85932
+    },
+    "cached": {
+      "queries": 76742
+    },
+    "noWeights": {
+      "queries": 82736
+    },
+    "uninitialized": {
+      "queries": 71656
+    },
+    "empty": {
+      "queries": 6088
+    }
+  },
+  "issues": [
+    {
+      "kind": "unbound_operand",
+      "query": {
+        "preset": "mixed",
+        "objectId": "R0.psum_num_recv_tokens_per_expert",
+        "elementPath": [
+          0
+        ],
+        "step": 14,
+        "phase": "write-after"
+      },
+      "operand": {
+        "objectId": "expert 0 raw count",
+        "value": 6
+      },
+      "count": 32
+    },
+    {
+      "kind": "unbound_operand",
+      "query": {
+        "preset": "mixed",
+        "objectId": "R0.num_unaligned_recv_tokens_per_expert",
+        "elementPath": [
+          0
+        ],
+        "step": 14,
+        "phase": "write-after"
+      },
+      "operand": {
+        "objectId": "expert 0 raw count",
+        "value": 6
+      },
+      "count": 32
+    },
+    {
+      "kind": "unbound_operand",
+      "query": {
+        "preset": "mixed",
+        "objectId": "R1.psum_num_recv_tokens_per_expert",
+        "elementPath": [
+          0
+        ],
+        "step": 14,
+        "phase": "write-after"
+      },
+      "operand": {
+        "objectId": "expert 2 raw count",
+        "value": 6
+      },
+      "count": 32
+    },
+    {
+      "kind": "unbound_operand",
+      "query": {
+        "preset": "mixed",
+        "objectId": "R1.num_unaligned_recv_tokens_per_expert",
+        "elementPath": [
+          0
+        ],
+        "step": 14,
+        "phase": "write-after"
+      },
+      "operand": {
+        "objectId": "expert 2 raw count",
+        "value": 6
+      },
+      "count": 32
+    },
+    {
+      "kind": "unbound_operand",
+      "query": {
+        "preset": "mixed",
+        "objectId": "R2.psum_num_recv_tokens_per_expert",
+        "elementPath": [
+          0
+        ],
+        "step": 14,
+        "phase": "write-after"
+      },
+      "operand": {
+        "objectId": "expert 4 raw count",
+        "value": 4
+      },
+      "count": 32
+    },
+    {
+      "kind": "unbound_operand",
+      "query": {
+        "preset": "mixed",
+        "objectId": "R2.num_unaligned_recv_tokens_per_expert",
+        "elementPath": [
+          0
+        ],
+        "step": 14,
+        "phase": "write-after"
+      },
+      "operand": {
+        "objectId": "expert 4 raw count",
+        "value": 4
+      },
+      "count": 32
+    },
+    {
+      "kind": "unbound_operand",
+      "query": {
+        "preset": "mixed",
+        "objectId": "R3.psum_num_recv_tokens_per_expert",
+        "elementPath": [
+          0
+        ],
+        "step": 14,
+        "phase": "write-after"
+      },
+      "operand": {
+        "objectId": "expert 6 raw count",
+        "value": 5
+      },
+      "count": 32
+    },
+    {
+      "kind": "unbound_operand",
+      "query": {
+        "preset": "mixed",
+        "objectId": "R3.num_unaligned_recv_tokens_per_expert",
+        "elementPath": [
+          0
+        ],
+        "step": 14,
+        "phase": "write-after"
+      },
+      "operand": {
+        "objectId": "expert 6 raw count",
+        "value": 5
+      },
+      "count": 32
+    },
+    {
+      "kind": "unbound_operand",
+      "query": {
+        "preset": "mixed",
+        "objectId": "R0.psum_num_recv_tokens_per_expert",
+        "elementPath": [
+          0
+        ],
+        "step": 14,
+        "phase": "history"
+      },
+      "operand": {
+        "objectId": "expert 0 raw count",
+        "value": 6
+      },
+      "count": 32
+    },
+    {
+      "kind": "unbound_operand",
+      "query": {
+        "preset": "mixed",
+        "objectId": "R0.num_unaligned_recv_tokens_per_expert",
+        "elementPath": [
+          0
+        ],
+        "step": 14,
+        "phase": "history"
+      },
+      "operand": {
+        "objectId": "expert 0 raw count",
+        "value": 6
+      },
+      "count": 32
+    },
+    {
+      "kind": "unbound_operand",
+      "query": {
+        "preset": "mixed",
+        "objectId": "R1.psum_num_recv_tokens_per_expert",
+        "elementPath": [
+          0
+        ],
+        "step": 14,
+        "phase": "history"
+      },
+      "operand": {
+        "objectId": "expert 2 raw count",
+        "value": 6
+      },
+      "count": 32
+    },
+    {
+      "kind": "unbound_operand",
+      "query": {
+        "preset": "mixed",
+        "objectId": "R1.num_unaligned_recv_tokens_per_expert",
+        "elementPath": [
+          0
+        ],
+        "step": 14,
+        "phase": "history"
+      },
+      "operand": {
+        "objectId": "expert 2 raw count",
+        "value": 6
+      },
+      "count": 32
+    },
+    {
+      "kind": "unbound_operand",
+      "query": {
+        "preset": "mixed",
+        "objectId": "R2.psum_num_recv_tokens_per_expert",
+        "elementPath": [
+          0
+        ],
+        "step": 14,
+        "phase": "history"
+      },
+      "operand": {
+        "objectId": "expert 4 raw count",
+        "value": 4
+      },
+      "count": 32
+    },
+    {
+      "kind": "unbound_operand",
+      "query": {
+        "preset": "mixed",
+        "objectId": "R2.num_unaligned_recv_tokens_per_expert",
+        "elementPath": [
+          0
+        ],
+        "step": 14,
+        "phase": "history"
+      },
+      "operand": {
+        "objectId": "expert 4 raw count",
+        "value": 4
+      },
+      "count": 32
+    },
+    {
+      "kind": "unbound_operand",
+      "query": {
+        "preset": "mixed",
+        "objectId": "R3.psum_num_recv_tokens_per_expert",
+        "elementPath": [
+          0
+        ],
+        "step": 14,
+        "phase": "history"
+      },
+      "operand": {
+        "objectId": "expert 6 raw count",
+        "value": 5
+      },
+      "count": 32
+    },
+    {
+      "kind": "unbound_operand",
+      "query": {
+        "preset": "mixed",
+        "objectId": "R3.num_unaligned_recv_tokens_per_expert",
+        "elementPath": [
+          0
+        ],
+        "step": 14,
+        "phase": "history"
+      },
+      "operand": {
+        "objectId": "expert 6 raw count",
+        "value": 5
+      },
+      "count": 32
+    },
+    {
+      "kind": "unbound_operand",
+      "query": {
+        "preset": "mixed",
+        "objectId": "R0.psum_num_recv_tokens_per_expert",
+        "elementPath": [
+          0
+        ],
+        "step": 17,
+        "phase": "read-before"
+      },
+      "operand": {
+        "objectId": "expert 0 raw count",
+        "value": 6
+      },
+      "count": 32
+    },
+    {
+      "kind": "unbound_operand",
+      "query": {
+        "preset": "mixed",
+        "objectId": "R1.psum_num_recv_tokens_per_expert",
+        "elementPath": [
+          0
+        ],
+        "step": 17,
+        "phase": "read-before"
+      },
+      "operand": {
+        "objectId": "expert 2 raw count",
+        "value": 6
+      },
+      "count": 32
+    },
+    {
+      "kind": "unbound_operand",
+      "query": {
+        "preset": "mixed",
+        "objectId": "R2.psum_num_recv_tokens_per_expert",
+        "elementPath": [
+          0
+        ],
+        "step": 17,
+        "phase": "read-before"
+      },
+      "operand": {
+        "objectId": "expert 4 raw count",
+        "value": 4
+      },
+      "count": 32
+    },
+    {
+      "kind": "unbound_operand",
+      "query": {
+        "preset": "mixed",
+        "objectId": "R3.psum_num_recv_tokens_per_expert",
+        "elementPath": [
+          0
+        ],
+        "step": 17,
+        "phase": "read-before"
+      },
+      "operand": {
+        "objectId": "expert 6 raw count",
+        "value": 5
+      },
+      "count": 32
+    },
+    {
+      "kind": "unbound_operand",
+      "query": {
+        "preset": "mixed",
+        "objectId": "R0.recv_src_metadata[0]",
+        "elementPath": [
+          0
+        ],
+        "step": 18,
+        "phase": "write-after"
+      },
+      "operand": {
+        "objectId": "expert_start",
+        "value": 0
+      },
+      "count": 156
+    },
+    {
+      "kind": "unbound_operand",
+      "query": {
+        "preset": "mixed",
+        "objectId": "R1.recv_src_metadata[0]",
+        "elementPath": [
+          0
+        ],
+        "step": 18,
+        "phase": "write-after"
+      },
+      "operand": {
+        "objectId": "expert_start",
+        "value": 0
+      },
+      "count": 108
+    },
+    {
+      "kind": "unbound_operand",
+      "query": {
+        "preset": "mixed",
+        "objectId": "R2.recv_src_metadata[0]",
+        "elementPath": [
+          0
+        ],
+        "step": 18,
+        "phase": "write-after"
+      },
+      "operand": {
+        "objectId": "expert_start",
+        "value": 0
+      },
+      "count": 60
+    },
+    {
+      "kind": "unbound_operand",
+      "query": {
+        "preset": "mixed",
+        "objectId": "R3.recv_src_metadata[0]",
+        "elementPath": [
+          1
+        ],
+        "step": 18,
+        "phase": "write-after"
+      },
+      "operand": {
+        "objectId": "expert_start",
+        "value": 0
+      },
+      "count": 84
+    },
+    {
+      "kind": "unbound_operand",
+      "query": {
+        "preset": "mixed",
+        "objectId": "R0.recv_src_metadata[0]",
+        "elementPath": [
+          0
+        ],
+        "step": 18,
+        "phase": "history"
+      },
+      "operand": {
+        "objectId": "expert_start",
+        "value": 0
+      },
+      "count": 156
+    },
+    {
+      "kind": "unbound_operand",
+      "query": {
+        "preset": "mixed",
+        "objectId": "R1.recv_src_metadata[0]",
+        "elementPath": [
+          0
+        ],
+        "step": 18,
+        "phase": "history"
+      },
+      "operand": {
+        "objectId": "expert_start",
+        "value": 0
+      },
+      "count": 108
+    },
+    {
+      "kind": "unbound_operand",
+      "query": {
+        "preset": "mixed",
+        "objectId": "R2.recv_src_metadata[0]",
+        "elementPath": [
+          0
+        ],
+        "step": 18,
+        "phase": "history"
+      },
+      "operand": {
+        "objectId": "expert_start",
+        "value": 0
+      },
+      "count": 60
+    },
+    {
+      "kind": "unbound_operand",
+      "query": {
+        "preset": "mixed",
+        "objectId": "R3.recv_src_metadata[0]",
+        "elementPath": [
+          1
+        ],
+        "step": 18,
+        "phase": "history"
+      },
+      "operand": {
+        "objectId": "expert_start",
+        "value": 0
+      },
+      "count": 84
+    },
+    {
+      "kind": "unbound_operand",
+      "query": {
+        "preset": "mixed",
+        "objectId": "R0.psum_num_recv_tokens_per_expert",
+        "elementPath": [
+          0
+        ],
+        "step": 25,
+        "phase": "observe"
+      },
+      "operand": {
+        "objectId": "expert 0 raw count",
+        "value": 6
+      },
+      "count": 36
+    },
+    {
+      "kind": "unbound_operand",
+      "query": {
+        "preset": "mixed",
+        "objectId": "R0.num_unaligned_recv_tokens_per_expert",
+        "elementPath": [
+          0
+        ],
+        "step": 25,
+        "phase": "observe"
+      },
+      "operand": {
+        "objectId": "expert 0 raw count",
+        "value": 6
+      },
+      "count": 36
+    },
+    {
+      "kind": "unbound_operand",
+      "query": {
+        "preset": "mixed",
+        "objectId": "R0.recv_src_metadata[0]",
+        "elementPath": [
+          0
+        ],
+        "step": 25,
+        "phase": "observe"
+      },
+      "operand": {
+        "objectId": "expert_start",
+        "value": 0
+      },
+      "count": 172
+    },
+    {
+      "kind": "unbound_operand",
+      "query": {
+        "preset": "mixed",
+        "objectId": "R1.psum_num_recv_tokens_per_expert",
+        "elementPath": [
+          0
+        ],
+        "step": 25,
+        "phase": "observe"
+      },
+      "operand": {
+        "objectId": "expert 2 raw count",
+        "value": 6
+      },
+      "count": 36
+    },
+    {
+      "kind": "unbound_operand",
+      "query": {
+        "preset": "mixed",
+        "objectId": "R1.num_unaligned_recv_tokens_per_expert",
+        "elementPath": [
+          0
+        ],
+        "step": 25,
+        "phase": "observe"
+      },
+      "operand": {
+        "objectId": "expert 2 raw count",
+        "value": 6
+      },
+      "count": 36
+    },
+    {
+      "kind": "unbound_operand",
+      "query": {
+        "preset": "mixed",
+        "objectId": "R1.recv_src_metadata[0]",
+        "elementPath": [
+          0
+        ],
+        "step": 25,
+        "phase": "observe"
+      },
+      "operand": {
+        "objectId": "expert_start",
+        "value": 0
+      },
+      "count": 126
+    },
+    {
+      "kind": "unbound_operand",
+      "query": {
+        "preset": "mixed",
+        "objectId": "R2.psum_num_recv_tokens_per_expert",
+        "elementPath": [
+          0
+        ],
+        "step": 25,
+        "phase": "observe"
+      },
+      "operand": {
+        "objectId": "expert 4 raw count",
+        "value": 4
+      },
+      "count": 36
+    },
+    {
+      "kind": "unbound_operand",
+      "query": {
+        "preset": "mixed",
+        "objectId": "R2.num_unaligned_recv_tokens_per_expert",
+        "elementPath": [
+          0
+        ],
+        "step": 25,
+        "phase": "observe"
+      },
+      "operand": {
+        "objectId": "expert 4 raw count",
+        "value": 4
+      },
+      "count": 36
+    },
+    {
+      "kind": "unbound_operand",
+      "query": {
+        "preset": "mixed",
+        "objectId": "R2.recv_src_metadata[0]",
+        "elementPath": [
+          0
+        ],
+        "step": 25,
+        "phase": "observe"
+      },
+      "operand": {
+        "objectId": "expert_start",
+        "value": 0
+      },
+      "count": 70
+    },
+    {
+      "kind": "unbound_operand",
+      "query": {
+        "preset": "mixed",
+        "objectId": "R3.psum_num_recv_tokens_per_expert",
+        "elementPath": [
+          0
+        ],
+        "step": 25,
+        "phase": "observe"
+      },
+      "operand": {
+        "objectId": "expert 6 raw count",
+        "value": 5
+      },
+      "count": 36
+    },
+    {
+      "kind": "unbound_operand",
+      "query": {
+        "preset": "mixed",
+        "objectId": "R3.num_unaligned_recv_tokens_per_expert",
+        "elementPath": [
+          0
+        ],
+        "step": 25,
+        "phase": "observe"
+      },
+      "operand": {
+        "objectId": "expert 6 raw count",
+        "value": 5
+      },
+      "count": 36
+    },
+    {
+      "kind": "unbound_operand",
+      "query": {
+        "preset": "mixed",
+        "objectId": "R3.recv_src_metadata[0]",
+        "elementPath": [
+          1
+        ],
+        "step": 25,
+        "phase": "observe"
+      },
+      "operand": {
+        "objectId": "expert_start",
+        "value": 0
+      },
+      "count": 98
+    },
+    {
+      "kind": "operand_snapshot_mismatch",
+      "query": {
+        "preset": "cached",
+        "objectId": "R0.psum_num_recv_tokens_per_rank",
+        "elementPath": [
+          0
+        ],
+        "step": 0,
+        "phase": "initial"
+      },
+      "operand": {
+        "objectId": "R0.rank_histogram_sum_view",
+        "elementPath": [
+          0
+        ],
+        "value": "未写入",
+        "phase": "source-before-producer",
+        "step": 0
+      },
+      "actual": "未",
+      "count": 10
+    },
+    {
+      "kind": "unknown_arithmetic_operand",
+      "query": {
+        "preset": "cached",
+        "objectId": "R0.psum_num_recv_tokens_per_rank",
+        "elementPath": [
+          0
+        ],
+        "step": 0,
+        "phase": "initial"
+      },
+      "operand": {
+        "objectId": "R0.rank_histogram_sum_view",
+        "elementPath": [
+          0
+        ],
+        "value": "未写入",
+        "phase": "source-before-producer",
+        "step": 0
+      },
+      "result": 2,
+      "operation": "缓存继承；复用上次fresh布局",
+      "count": 10
+    },
+    {
+      "kind": "unbound_operand",
+      "query": {
+        "preset": "cached",
+        "objectId": "R0.psum_num_recv_tokens_per_expert",
+        "elementPath": [
+          0
+        ],
+        "step": 0,
+        "phase": "initial"
+      },
+      "operand": {
+        "objectId": "expert 0 raw count",
+        "value": 6
+      },
+      "count": 4
+    },
+    {
+      "kind": "unbound_operand",
+      "query": {
+        "preset": "cached",
+        "objectId": "R0.num_unaligned_recv_tokens_per_expert",
+        "elementPath": [
+          0
+        ],
+        "step": 0,
+        "phase": "initial"
+      },
+      "operand": {
+        "objectId": "expert 0 raw count",
+        "value": 6
+      },
+      "count": 4
+    },
+    {
+      "kind": "unbound_operand",
+      "query": {
+        "preset": "cached",
+        "objectId": "R0.recv_src_metadata[0]",
+        "elementPath": [
+          0
+        ],
+        "step": 0,
+        "phase": "initial"
+      },
+      "operand": {
+        "objectId": "expert_start",
+        "value": 0
+      },
+      "count": 16
+    },
+    {
+      "kind": "operand_snapshot_mismatch",
+      "query": {
+        "preset": "cached",
+        "objectId": "R1.psum_num_recv_tokens_per_rank",
+        "elementPath": [
+          0
+        ],
+        "step": 0,
+        "phase": "initial"
+      },
+      "operand": {
+        "objectId": "R0.rank_histogram_sum_view",
+        "elementPath": [
+          1
+        ],
+        "value": "未写入",
+        "phase": "source-before-producer",
+        "step": 0
+      },
+      "actual": "写",
+      "count": 10
+    },
+    {
+      "kind": "unknown_arithmetic_operand",
+      "query": {
+        "preset": "cached",
+        "objectId": "R1.psum_num_recv_tokens_per_rank",
+        "elementPath": [
+          0
+        ],
+        "step": 0,
+        "phase": "initial"
+      },
+      "operand": {
+        "objectId": "R0.rank_histogram_sum_view",
+        "elementPath": [
+          1
+        ],
+        "value": "未写入",
+        "phase": "source-before-producer",
+        "step": 0
+      },
+      "result": 1,
+      "operation": "缓存继承；复用上次fresh布局",
+      "count": 10
+    },
+    {
+      "kind": "unbound_operand",
+      "query": {
+        "preset": "cached",
+        "objectId": "R1.psum_num_recv_tokens_per_expert",
+        "elementPath": [
+          0
+        ],
+        "step": 0,
+        "phase": "initial"
+      },
+      "operand": {
+        "objectId": "expert 2 raw count",
+        "value": 6
+      },
+      "count": 4
+    },
+    {
+      "kind": "unbound_operand",
+      "query": {
+        "preset": "cached",
+        "objectId": "R1.num_unaligned_recv_tokens_per_expert",
+        "elementPath": [
+          0
+        ],
+        "step": 0,
+        "phase": "initial"
+      },
+      "operand": {
+        "objectId": "expert 2 raw count",
+        "value": 6
+      },
+      "count": 4
+    },
+    {
+      "kind": "unbound_operand",
+      "query": {
+        "preset": "cached",
+        "objectId": "R1.recv_src_metadata[0]",
+        "elementPath": [
+          0
+        ],
+        "step": 0,
+        "phase": "initial"
+      },
+      "operand": {
+        "objectId": "expert_start",
+        "value": 0
+      },
+      "count": 18
+    },
+    {
+      "kind": "operand_snapshot_mismatch",
+      "query": {
+        "preset": "cached",
+        "objectId": "R2.psum_num_recv_tokens_per_rank",
+        "elementPath": [
+          0
+        ],
+        "step": 0,
+        "phase": "initial"
+      },
+      "operand": {
+        "objectId": "R0.rank_histogram_sum_view",
+        "elementPath": [
+          2
+        ],
+        "value": "未写入",
+        "phase": "source-before-producer",
+        "step": 0
+      },
+      "actual": "入",
+      "count": 10
+    },
+    {
+      "kind": "unknown_arithmetic_operand",
+      "query": {
+        "preset": "cached",
+        "objectId": "R2.psum_num_recv_tokens_per_rank",
+        "elementPath": [
+          0
+        ],
+        "step": 0,
+        "phase": "initial"
+      },
+      "operand": {
+        "objectId": "R0.rank_histogram_sum_view",
+        "elementPath": [
+          2
+        ],
+        "value": "未写入",
+        "phase": "source-before-producer",
+        "step": 0
+      },
+      "result": 1,
+      "operation": "缓存继承；复用上次fresh布局",
+      "count": 10
+    },
+    {
+      "kind": "unbound_operand",
+      "query": {
+        "preset": "cached",
+        "objectId": "R2.psum_num_recv_tokens_per_expert",
+        "elementPath": [
+          0
+        ],
+        "step": 0,
+        "phase": "initial"
+      },
+      "operand": {
+        "objectId": "expert 4 raw count",
+        "value": 4
+      },
+      "count": 4
+    },
+    {
+      "kind": "unbound_operand",
+      "query": {
+        "preset": "cached",
+        "objectId": "R2.num_unaligned_recv_tokens_per_expert",
+        "elementPath": [
+          0
+        ],
+        "step": 0,
+        "phase": "initial"
+      },
+      "operand": {
+        "objectId": "expert 4 raw count",
+        "value": 4
+      },
+      "count": 4
+    },
+    {
+      "kind": "unbound_operand",
+      "query": {
+        "preset": "cached",
+        "objectId": "R2.recv_src_metadata[0]",
+        "elementPath": [
+          0
+        ],
+        "step": 0,
+        "phase": "initial"
+      },
+      "operand": {
+        "objectId": "expert_start",
+        "value": 0
+      },
+      "count": 10
+    },
+    {
+      "kind": "operand_snapshot_mismatch",
+      "query": {
+        "preset": "cached",
+        "objectId": "R3.psum_num_recv_tokens_per_rank",
+        "elementPath": [
+          0
+        ],
+        "step": 0,
+        "phase": "initial"
+      },
+      "operand": {
+        "objectId": "R0.rank_histogram_sum_view",
+        "elementPath": [
+          3
+        ],
+        "value": "未写入",
+        "phase": "source-before-producer",
+        "step": 0
+      },
+      "count": 10
+    },
+    {
+      "kind": "unknown_arithmetic_operand",
+      "query": {
+        "preset": "cached",
+        "objectId": "R3.psum_num_recv_tokens_per_rank",
+        "elementPath": [
+          0
+        ],
+        "step": 0,
+        "phase": "initial"
+      },
+      "operand": {
+        "objectId": "R0.rank_histogram_sum_view",
+        "elementPath": [
+          3
+        ],
+        "value": "未写入",
+        "phase": "source-before-producer",
+        "step": 0
+      },
+      "result": 1,
+      "operation": "缓存继承；复用上次fresh布局",
+      "count": 10
+    },
+    {
+      "kind": "unbound_operand",
+      "query": {
+        "preset": "cached",
+        "objectId": "R3.psum_num_recv_tokens_per_expert",
+        "elementPath": [
+          0
+        ],
+        "step": 0,
+        "phase": "initial"
+      },
+      "operand": {
+        "objectId": "expert 6 raw count",
+        "value": 5
+      },
+      "count": 4
+    },
+    {
+      "kind": "unbound_operand",
+      "query": {
+        "preset": "cached",
+        "objectId": "R3.num_unaligned_recv_tokens_per_expert",
+        "elementPath": [
+          0
+        ],
+        "step": 0,
+        "phase": "initial"
+      },
+      "operand": {
+        "objectId": "expert 6 raw count",
+        "value": 5
+      },
+      "count": 4
+    },
+    {
+      "kind": "unbound_operand",
+      "query": {
+        "preset": "cached",
+        "objectId": "R3.recv_src_metadata[0]",
+        "elementPath": [
+          1
+        ],
+        "step": 0,
+        "phase": "initial"
+      },
+      "operand": {
+        "objectId": "expert_start",
+        "value": 0
+      },
+      "count": 14
+    },
+    {
+      "kind": "unbound_operand",
+      "query": {
+        "preset": "cached",
+        "objectId": "R0.recv_src_metadata[0]",
+        "elementPath": [
+          0
+        ],
+        "step": 11,
+        "phase": "read-before"
+      },
+      "operand": {
+        "objectId": "expert_start",
+        "value": 0
+      },
+      "count": 16
+    },
+    {
+      "kind": "unbound_operand",
+      "query": {
+        "preset": "cached",
+        "objectId": "R1.recv_src_metadata[0]",
+        "elementPath": [
+          0
+        ],
+        "step": 11,
+        "phase": "read-before"
+      },
+      "operand": {
+        "objectId": "expert_start",
+        "value": 0
+      },
+      "count": 18
+    },
+    {
+      "kind": "unbound_operand",
+      "query": {
+        "preset": "cached",
+        "objectId": "R2.recv_src_metadata[0]",
+        "elementPath": [
+          0
+        ],
+        "step": 11,
+        "phase": "read-before"
+      },
+      "operand": {
+        "objectId": "expert_start",
+        "value": 0
+      },
+      "count": 10
+    },
+    {
+      "kind": "unbound_operand",
+      "query": {
+        "preset": "cached",
+        "objectId": "R3.recv_src_metadata[0]",
+        "elementPath": [
+          1
+        ],
+        "step": 11,
+        "phase": "read-before"
+      },
+      "operand": {
+        "objectId": "expert_start",
+        "value": 0
+      },
+      "count": 14
+    },
+    {
+      "kind": "operand_snapshot_mismatch",
+      "query": {
+        "preset": "cached",
+        "objectId": "R0.psum_num_recv_tokens_per_rank",
+        "elementPath": [
+          0
+        ],
+        "step": 18,
+        "phase": "observe"
+      },
+      "operand": {
+        "objectId": "R0.rank_histogram_sum_view",
+        "elementPath": [
+          0
+        ],
+        "value": "未写入",
+        "phase": "source-before-producer",
+        "step": 0
+      },
+      "actual": "未",
+      "count": 10
+    },
+    {
+      "kind": "unknown_arithmetic_operand",
+      "query": {
+        "preset": "cached",
+        "objectId": "R0.psum_num_recv_tokens_per_rank",
+        "elementPath": [
+          0
+        ],
+        "step": 18,
+        "phase": "observe"
+      },
+      "operand": {
+        "objectId": "R0.rank_histogram_sum_view",
+        "elementPath": [
+          0
+        ],
+        "value": "未写入",
+        "phase": "source-before-producer",
+        "step": 0
+      },
+      "result": 2,
+      "operation": "缓存继承；复用上次fresh布局",
+      "count": 10
+    },
+    {
+      "kind": "operand_snapshot_mismatch",
+      "query": {
+        "preset": "cached",
+        "objectId": "R1.psum_num_recv_tokens_per_rank",
+        "elementPath": [
+          0
+        ],
+        "step": 18,
+        "phase": "observe"
+      },
+      "operand": {
+        "objectId": "R0.rank_histogram_sum_view",
+        "elementPath": [
+          1
+        ],
+        "value": "未写入",
+        "phase": "source-before-producer",
+        "step": 0
+      },
+      "actual": "写",
+      "count": 10
+    },
+    {
+      "kind": "unknown_arithmetic_operand",
+      "query": {
+        "preset": "cached",
+        "objectId": "R1.psum_num_recv_tokens_per_rank",
+        "elementPath": [
+          0
+        ],
+        "step": 18,
+        "phase": "observe"
+      },
+      "operand": {
+        "objectId": "R0.rank_histogram_sum_view",
+        "elementPath": [
+          1
+        ],
+        "value": "未写入",
+        "phase": "source-before-producer",
+        "step": 0
+      },
+      "result": 1,
+      "operation": "缓存继承；复用上次fresh布局",
+      "count": 10
+    },
+    {
+      "kind": "operand_snapshot_mismatch",
+      "query": {
+        "preset": "cached",
+        "objectId": "R2.psum_num_recv_tokens_per_rank",
+        "elementPath": [
+          0
+        ],
+        "step": 18,
+        "phase": "observe"
+      },
+      "operand": {
+        "objectId": "R0.rank_histogram_sum_view",
+        "elementPath": [
+          2
+        ],
+        "value": "未写入",
+        "phase": "source-before-producer",
+        "step": 0
+      },
+      "actual": "入",
+      "count": 10
+    },
+    {
+      "kind": "unknown_arithmetic_operand",
+      "query": {
+        "preset": "cached",
+        "objectId": "R2.psum_num_recv_tokens_per_rank",
+        "elementPath": [
+          0
+        ],
+        "step": 18,
+        "phase": "observe"
+      },
+      "operand": {
+        "objectId": "R0.rank_histogram_sum_view",
+        "elementPath": [
+          2
+        ],
+        "value": "未写入",
+        "phase": "source-before-producer",
+        "step": 0
+      },
+      "result": 1,
+      "operation": "缓存继承；复用上次fresh布局",
+      "count": 10
+    },
+    {
+      "kind": "operand_snapshot_mismatch",
+      "query": {
+        "preset": "cached",
+        "objectId": "R3.psum_num_recv_tokens_per_rank",
+        "elementPath": [
+          0
+        ],
+        "step": 18,
+        "phase": "observe"
+      },
+      "operand": {
+        "objectId": "R0.rank_histogram_sum_view",
+        "elementPath": [
+          3
+        ],
+        "value": "未写入",
+        "phase": "source-before-producer",
+        "step": 0
+      },
+      "count": 10
+    },
+    {
+      "kind": "unknown_arithmetic_operand",
+      "query": {
+        "preset": "cached",
+        "objectId": "R3.psum_num_recv_tokens_per_rank",
+        "elementPath": [
+          0
+        ],
+        "step": 18,
+        "phase": "observe"
+      },
+      "operand": {
+        "objectId": "R0.rank_histogram_sum_view",
+        "elementPath": [
+          3
+        ],
+        "value": "未写入",
+        "phase": "source-before-producer",
+        "step": 0
+      },
+      "result": 1,
+      "operation": "缓存继承；复用上次fresh布局",
+      "count": 10
+    }
+  ]
+}

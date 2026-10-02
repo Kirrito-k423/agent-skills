@@ -1,0 +1,46 @@
+{
+  "status": "SNAPSHOT_CHECK_PASS",
+  "reviewer": "independent-review",
+  "scope": "phase snapshot/producer upper bound/available computed/operand backreference; semantic audit separate",
+  "model_sha256": "567fc1e82f4c91dd09c481a05d7eee2b6ea850e6f155a541c1a3f1c95b633197",
+  "provenance_sha256": "ae32f742581765396c26bae25267b39d60c3a08925630f9cc777e1685b1cb15c",
+  "stats": {
+    "queries": 629468,
+    "computed": 618112,
+    "operands": 1215934,
+    "missingComputed": 0,
+    "ledgerOperands": 471464,
+    "unboundOperands": 0,
+    "nonNumericOperands": 0
+  },
+  "cases": {
+    "mixed": {
+      "queries": 83221
+    },
+    "concentrated": {
+      "queries": 67288
+    },
+    "invalid": {
+      "queries": 72584
+    },
+    "zero": {
+      "queries": 83221
+    },
+    "fp8": {
+      "queries": 85932
+    },
+    "cached": {
+      "queries": 76742
+    },
+    "noWeights": {
+      "queries": 82736
+    },
+    "uninitialized": {
+      "queries": 71656
+    },
+    "empty": {
+      "queries": 6088
+    }
+  },
+  "issues": []
+}

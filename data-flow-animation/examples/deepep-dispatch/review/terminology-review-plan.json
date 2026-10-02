@@ -1,0 +1,179 @@
+{
+  "reviewer": "/root/terminology_review",
+  "status": "PREPARED",
+  "scope": [
+    "control.html",
+    "visual.html",
+    "source.html",
+    "terminology.mjs",
+    "terminology-ui.mjs",
+    "numeric-ui.mjs",
+    "app.mjs"
+  ],
+  "evidence_boundaries": {
+    "frozen_commit": "3b25377d04b24fc6154698ded78a2bcb2c59afff",
+    "model_unchanged_sha256": "567fc1e82f4c91dd09c481a05d7eee2b6ea850e6f155a541c1a3f1c95b633197",
+    "no_hardware_claim": true,
+    "ui_evidence": "The root and author browser records will be read with scope; independent browser checks will explicitly identify their own coverage."
+  },
+  "required_semantics": {
+    "R": "num_ranks, participating expert parallel ranks; rank label R0 is rank index, not rank count",
+    "E": "num_experts, global expert count, experts per rank E/R",
+    "K": "num_topk, routing entries per token; invalid -1 differs from destination sentinel",
+    "T": "num_tokens effective input row count in this invocation, 0<=T<=M; not capacity",
+    "M": "num_max_tokens_per_rank capacity; all ranks consistent; partitions recv buffer and stride for source global index; not effective T",
+    "H": "hidden vector element dimension; byte count requires dtype width",
+    "A": "expert_alignment, output token count aligned separately for each expert, not address byte alignment",
+    "C": "num_vec_cores teaching label, selected vector cores per rank; 16 is chosen demo and source host lower bound, not universal device maximum",
+    "SF": "scale-factor packs carried with FP8; sf_pack_t=int16; opaque raw bit patterns, not decoded mathematical scaling factors",
+    "gsge": "global_sgep_idx within a vector core logical SQE space; *6+sgep; not across entire ranks or literal single SGE index",
+    "SQE": "send queue entry; dispatch writes logical/physical entries, physical entry is network queue location",
+    "SGE": "scatter gather entry describing source address and byte length; pair is hidden+metadata",
+    "WQEBB": "source constant queue granule 64B; dispatch reserved4 differs valid ceil((48+num_sges*16)/64)",
+    "signals": "teaching aggregation not actual C++ struct; local_copy_ready/metadata_ready UB, arrival field in other status packing",
+    "arrival": "local rank histogram packed high8 arrival vs low24 data; general arrival status contexts differ",
+    "num_unaligned_recv_tokens_per_expert": "raw per local expert count excluding per-expert alignment holes",
+    "psum_num_recv_tokens_per_rank": "inclusive counts per source rank to traverse source partition stream",
+    "psum_num_recv_tokens_per_expert": "prior aligned counts + current raw count; raw expert end, not conventional all-aligned inclusive sum",
+    "recv_src_metadata": "K destination expanded slots, global source index, last matching local topk j; cached uses preserved metadata",
+    "metadata_send_buffer": "metadata contiguous packed bytes separate from hidden; optional SF, weights and fresh topk/global_idx; byte alignment padding remains undefined",
+    "epilogue_expert_counter": "teaching representation of per-core predecessors count/prefix; not literal allocated symbol",
+    "src_global_idx": "src_rank*M+localtoken; not src_rank*T+localtoken",
+    "finalFlags": "strong order/fence/CQE on last physical SQE; submission still not complete",
+    "logicalSQE": "lsqe index in per-core logical grouping; differs psqe physical compaction",
+    "physicalSQE": "psqe in networking SQ; demo one pair/path chosen mapping",
+    "remote_offset": "(sourceRank*M+destinationSlot)*tokenBytes, relative to destination receive base",
+    "hidden": "token feature vector payload, opaque transport no MoE computation",
+    "weights": "routing gate weights copied, no expert weighted sum in dispatch",
+    "padding": "per-expert hole may zero when enabled; token-layout byte padding undefined must distinguish",
+    "handle": "cached routing layout; freshness does not imply dynamic arbitrary change of topk",
+    "Hcomm": "external HCOMM interface/type symbol; full expansion needs verified primary source",
+    "AIV": "AI Vector, vector core; not invented Ai Vector units count universally",
+    "MTE2": "GM to UB copy pipeline",
+    "MTE3": "UB to GM copy pipeline",
+    "SIMT": "single instruction multiple threads; routing/dedup/statistics/SQE paths",
+    "UB": "Unified Buffer core local scratch storage",
+    "GM": "Global Memory device memory outside core",
+    "DB": "doorbell notification submits SQ progression; not data completion"
+  },
+  "source_anchors": [
+    {
+      "file": "csrc/buffers/ep.hpp",
+      "line": 135,
+      "end": 156,
+      "purpose": "T,M,FP8 and SF storage validation"
+    },
+    {
+      "file": "deep_ep/buffers/ep.py",
+      "line": 30,
+      "end": 48,
+      "purpose": "alignment/capacity/SGE-pair public doc"
+    },
+    {
+      "file": "deep_ep/buffers/ep.py",
+      "line": 340,
+      "end": 356,
+      "purpose": "input x/topk/weights actual shapes"
+    },
+    {
+      "file": "deep_ep/include/deep_ep/common/compiled.hpp",
+      "line": 33,
+      "purpose": "int16 SF pack typedef"
+    },
+    {
+      "file": "deep_ep/include/deep_ep/layout/ep/token.hpp",
+      "line": 24,
+      "end": 81,
+      "purpose": "metadata/byte packing addresses"
+    },
+    {
+      "file": "deep_ep/include/deep_ep/layout/ep/token.hpp",
+      "line": 85,
+      "end": 127,
+      "purpose": "M rank partitions"
+    },
+    {
+      "file": "deep_ep/include/deep_ep/impls/ep/dispatch.hpp",
+      "line": 173,
+      "end": 194,
+      "purpose": "rank dedup vs expert count"
+    },
+    {
+      "file": "deep_ep/include/deep_ep/impls/ep/dispatch.hpp",
+      "line": 227,
+      "end": 284,
+      "purpose": "exclusive per-core prefix/gsge mapping"
+    },
+    {
+      "file": "deep_ep/include/deep_ep/impls/ep/dispatch.hpp",
+      "line": 375,
+      "end": 425,
+      "purpose": "physical queue fields and SGE pair"
+    },
+    {
+      "file": "deep_ep/include/deep_ep/impls/ep/dispatch.hpp",
+      "line": 508,
+      "end": 546,
+      "purpose": "expert and rank prefix meanings"
+    },
+    {
+      "file": "deep_ep/include/deep_ep/impls/ep/dispatch_copy_epilogue.hpp",
+      "line": 470,
+      "end": 538,
+      "purpose": "output expanded slots/SF/metadata"
+    },
+    {
+      "file": "deep_ep/include/deep_ep/common/reduction.hpp",
+      "line": 12,
+      "end": 30,
+      "purpose": "packed arrival/value"
+    },
+    {
+      "file": "deep_ep/include/deep_ep/comm/handle.hpp",
+      "line": 18,
+      "end": 32,
+      "purpose": "6SGEpairs/64B/strongorder flags"
+    }
+  ],
+  "official_sources": [
+    {
+      "url": "https://www.hiascend.com/document/detail/en/canncommercial/800/opdevg/Ascendcopdevg/atlas_ascendc_10_0008.html",
+      "claims": [
+        "AIV=AI Vector",
+        "MTE=Memory Transfer Engine",
+        "UB/GM names"
+      ],
+      "boundaries": "hardware capacities and feature support use frozen source; this earlier architecture doc only anchors term names"
+    },
+    {
+      "url": "https://www.hiascend.com/doc_center/source/en/CANNCommunityEdition/900/programug/Ascendcopdevg/atlasascendc_api_07_10293.html",
+      "claims": [
+        "SIMT single instruction multi-thread programming"
+      ]
+    },
+    {
+      "url": "https://docs.openeuler.org/zh/docs/24.03_LTS_SP3/unifiedbus/unifiedbus/urma/URMA%20User%20Guide.ch.html",
+      "claims": [
+        "URMA Unified Remote Memory Access",
+        "WQE Work Queue Element",
+        "SGE Scatter-Gather Entry"
+      ]
+    },
+    {
+      "url": "https://github.com/deepseek-ai/DeepEP/blob/main/deep_ep/buffers/elastic.py",
+      "claims": [
+        "SF carries scale factors in public FP8 input"
+      ],
+      "boundaries": "not evidence for Ascend storage encoding; Ascend source explicitly opaque int16 packs"
+    }
+  ],
+  "acceptance": [
+    "Every visible occurrence of relevant term in all nine presets/stages is bound, not only a glossary or first occurrence.",
+    "Definitions identify context and symbol, unit/type/shape/owner/direction, operation/lifecycle/source when applicable.",
+    "Repeated source spellings are scoped by file,line/object path and never resolved to a same-name unrelated definition.",
+    "Program source textContent equals frozen lines byte for byte.",
+    "Hover/focus/click/Escape tooltip works with numeric explanation; modal usable, no opposite tip trapped.",
+    "Coverage audits exclude no source/module identifier merely to hide missing glossary entry.",
+    "Accurate declaration/type syntax fallback may identify reserved-language keywords; actual variable/function needs meaningful code role."
+  ]
+}

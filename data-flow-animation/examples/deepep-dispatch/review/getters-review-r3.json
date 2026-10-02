@@ -1,0 +1,71 @@
+[
+  {
+    "function_id": "epi-iter-163",
+    "revision": 3,
+    "draft_author": "walkthrough-agent",
+    "reviewer": "independent-review",
+    "source_sha256": "3666da791943b16986c7a0258c52cc022361c1a07d364098e0713036bd412a25",
+    "draft_sha256": "0760ed0ea45c0348ccaac03d2f85b832fc7770006ac0f0890110b583fe0dc2a5",
+    "function_sha256": "186b1aaec5beb23a82cb3103d3928963146926c80f436aa49e09e23571d859e2",
+    "line_range": [
+      163,
+      165
+    ],
+    "gaps": [],
+    "overlaps": [],
+    "unresolved": [],
+    "verdict": "PASS",
+    "required_changes": [],
+    "verified": [
+      "重新读取完整getter及PSumIterator成员、issue_load和topk_iter调用方",
+      "逐行notes及segment公式/输入/返回值无副作用核对",
+      "函数无malloc/同步/通信，内存owner由调用方管理"
+    ]
+  },
+  {
+    "function_id": "epi-iter-167",
+    "revision": 3,
+    "draft_author": "walkthrough-agent",
+    "reviewer": "independent-review",
+    "source_sha256": "3666da791943b16986c7a0258c52cc022361c1a07d364098e0713036bd412a25",
+    "draft_sha256": "0760ed0ea45c0348ccaac03d2f85b832fc7770006ac0f0890110b583fe0dc2a5",
+    "function_sha256": "c503ebbfc9aa00014868f0eec3ecfdef8ff2fe0a06169cdb9a72d152483c5ecf",
+    "line_range": [
+      167,
+      169
+    ],
+    "gaps": [],
+    "overlaps": [],
+    "unresolved": [],
+    "verdict": "PASS",
+    "required_changes": [],
+    "verified": [
+      "重新读取完整getter及PSumIterator成员、issue_load和topk_iter调用方",
+      "逐行notes及segment公式/输入/返回值无副作用核对",
+      "函数无malloc/同步/通信，内存owner由调用方管理"
+    ]
+  },
+  {
+    "function_id": "epi-iter-171",
+    "revision": 3,
+    "draft_author": "walkthrough-agent",
+    "reviewer": "independent-review",
+    "source_sha256": "3666da791943b16986c7a0258c52cc022361c1a07d364098e0713036bd412a25",
+    "draft_sha256": "0760ed0ea45c0348ccaac03d2f85b832fc7770006ac0f0890110b583fe0dc2a5",
+    "function_sha256": "bab5db12d7e88d1dfd3b07a964d10ed2e3be4174642029d464491beaf843631d",
+    "line_range": [
+      171,
+      173
+    ],
+    "gaps": [],
+    "overlaps": [],
+    "unresolved": [],
+    "verdict": "PASS",
+    "required_changes": [],
+    "verified": [
+      "重新读取完整getter及PSumIterator成员、issue_load和topk_iter调用方",
+      "逐行notes及segment公式/输入/返回值无副作用核对",
+      "函数无malloc/同步/通信，内存owner由调用方管理"
+    ]
+  }
+]

@@ -1,0 +1,658 @@
+{
+  "reviewer": "/root/terminology_review",
+  "revision": 1,
+  "status": "STATIC_CHECK_PASS_PENDING_MANUAL_AND_UI",
+  "hashes": {
+    "model": "567fc1e82f4c91dd09c481a05d7eee2b6ea850e6f155a541c1a3f1c95b633197",
+    "terminology": "ebc7810d7c739552b6ff5d82b665049308c889078a06f68f5ea41563f0f3d47c"
+  },
+  "coverage": {
+    "sourceFiles": 9,
+    "sourceLines": 3732,
+    "sourceBindings": 11871,
+    "contextCases": 59,
+    "configQueries": 72,
+    "objectQueries": 4398
+  },
+  "gaps": [],
+  "semanticCases": [
+    {
+      "name": "expert_histogram",
+      "file": "deep_ep/include/deep_ep/impls/ep/dispatch.hpp",
+      "line": 179,
+      "expected": [
+        "/全局expert/",
+        "/本核|每AIV/"
+      ],
+      "definition": "每AIV按全局expert ID统计有效top-k命中数，尚未是远端接收local expert总数。",
+      "status": "PASS"
+    },
+    {
+      "name": "expert_histogram",
+      "file": "deep_ep/include/deep_ep/impls/ep/dispatch.hpp",
+      "line": 511,
+      "expected": [
+        "/本地expert/",
+        "/远端|source rank/"
+      ],
+      "definition": "AIV0等待所有source rank汇总后保存的本地expert有效接收数，索引为本地expert；不再是本核源路由统计。",
+      "status": "PASS"
+    },
+    {
+      "name": "rank_histogram",
+      "file": "deep_ep/include/deep_ep/impls/ep/dispatch.hpp",
+      "line": 186,
+      "expected": [
+        "/计数/"
+      ],
+      "definition": "每AIV、每目的rank的去重token副本计数；本阶段atomic+1取旧计数作为核内slot。",
+      "status": "PASS"
+    },
+    {
+      "name": "rank_histogram",
+      "file": "deep_ep/include/deep_ep/impls/ep/dispatch.hpp",
+      "line": 272,
+      "expected": [
+        "/排他前缀/"
+      ],
+      "definition": "同名UB数组已复用为本AIV之前各核count的排他前缀；dst slot=该前缀+核内旧计数。",
+      "status": "PASS"
+    },
+    {
+      "name": "dst_slot_idx",
+      "file": "deep_ep/include/deep_ep/impls/ep/dispatch.hpp",
+      "line": 272,
+      "expected": [
+        "/来源rank分区/"
+      ],
+      "definition": "dispatch目的buffer中本来源rank分区内的槽号；epilogue同名变量为expert展开输出槽，按文件区分。",
+      "status": "PASS"
+    },
+    {
+      "name": "dst_slot_idx",
+      "file": "deep_ep/include/deep_ep/impls/ep/dispatch_copy_epilogue.hpp",
+      "line": 484,
+      "expected": [
+        "/输出行/"
+      ],
+      "definition": "当前expert展开后的输出行号；从ub_next_dst_slot_idx取号或cached recv_src_metadata读取。单位是recv_x行，不是接收来源分区slot。",
+      "status": "PASS"
+    },
+    {
+      "name": "dst_slot_idx",
+      "file": "deep_ep/include/deep_ep/impls/ep/dispatch_copy_epilogue.hpp",
+      "line": 108,
+      "expected": [
+        "/本地expert|local expert|expert/",
+        "/数组|计数|下一|next|起始/"
+      ],
+      "definition": "initialize_dst_slot_idx中的每local expert下一输出槽数组，加上对齐expert起点；不是dispatch接收槽。",
+      "status": "PASS"
+    },
+    {
+      "name": "ptr",
+      "file": "deep_ep/include/deep_ep/impls/ep/dispatch_copy_epilogue.hpp",
+      "line": 21,
+      "expected": [
+        "/UB/",
+        "/填充/"
+      ],
+      "definition": "fill_ubuf要填充的UB int数组起点，要求32字节对齐。",
+      "status": "PASS"
+    },
+    {
+      "name": "value",
+      "file": "deep_ep/include/deep_ep/impls/ep/dispatch_copy_epilogue.hpp",
+      "line": 21,
+      "expected": [
+        "/填充值/"
+      ],
+      "definition": "fill_ubuf指定的整数填充值，broadcast到SIMD向量。",
+      "status": "PASS"
+    },
+    {
+      "name": "num_tokens",
+      "file": "csrc/buffers/ep.hpp",
+      "line": 430,
+      "expected": [
+        "/expand|展开|combine/"
+      ],
+      "definition": "combine输入hidden的本地expanded行数=x.size(0)，可大于M；M约束num_combined_tokens输出容量，不是此输入行数。",
+      "status": "PASS"
+    },
+    {
+      "name": "rank_idx",
+      "file": "deep_ep/include/deep_ep/impls/ep/dispatch_copy_epilogue.hpp",
+      "line": 143,
+      "expected": [
+        "/来源rank/"
+      ],
+      "definition": "PSumIterator当前接收流位置所属的来源rank，不是本设备rank。",
+      "status": "PASS"
+    },
+    {
+      "name": "has_dst_slot",
+      "file": "deep_ep/include/deep_ep/impls/ep/dispatch_copy_epilogue.hpp",
+      "line": 482,
+      "expected": [
+        "/当前|本/",
+        "/top-k|位置|j/"
+      ],
+      "definition": "当前top-k位置j是否匹配一个本地expert输出槽。",
+      "status": "PASS"
+    },
+    {
+      "name": "token_idx",
+      "file": "deep_ep/include/deep_ep/impls/ep/dispatch_copy_epilogue.hpp",
+      "line": 133,
+      "expected": [
+        "/接收流/",
+        "/总|全/"
+      ],
+      "definition": "当前接收流总序号，由rank包含前缀定位为来源分区slot。",
+      "status": "PASS"
+    },
+    {
+      "name": "num_tokens",
+      "file": "deep_ep/include/deep_ep/impls/ep/dispatch_copy_epilogue.hpp",
+      "line": 151,
+      "expected": [
+        "/步|移动/"
+      ],
+      "definition": "迭代器要向前移动的接收流记录步数，与源输入T不同。",
+      "status": "PASS"
+    },
+    {
+      "name": "ptr",
+      "file": "csrc/kernels/ep/dispatch.hpp",
+      "line": 58,
+      "expected": [
+        "/函数指针|kernel.*指针|指向.*dispatch_impl/"
+      ],
+      "definition": "JIT compile返回的kernel函数入口指针，用作launch调用，不是工作区统计信号地址。",
+      "status": "PASS"
+    },
+    {
+      "name": "ptr",
+      "file": "csrc/kernels/ep/dispatch.hpp",
+      "line": 119,
+      "expected": [
+        "/函数指针|kernel.*指针|指向.*epilogue/"
+      ],
+      "definition": "JIT compile返回的kernel函数入口指针，用作launch调用，不是工作区统计信号地址。",
+      "status": "PASS"
+    },
+    {
+      "name": "ptr",
+      "file": "deep_ep/include/deep_ep/layout/ep/token.hpp",
+      "line": 50,
+      "expected": [
+        "/base|基址/"
+      ],
+      "definition": "TokenLayout.set_base_ptr传入的新记录/内存起始指针；改变访问器基址，不代表复制数据。",
+      "status": "PASS"
+    },
+    {
+      "name": "rank_idx",
+      "file": "deep_ep/include/deep_ep/layout/ep/token.hpp",
+      "line": 118,
+      "expected": [
+        "/分区|选|目标/"
+      ],
+      "definition": "BufferLayout.get_rank_buffer所选择的来源rank分区编号，决定rank分区字节偏移。",
+      "status": "PASS"
+    },
+    {
+      "name": "len",
+      "file": "deep_ep/include/deep_ep/comm/handle.hpp",
+      "line": 299,
+      "expected": [
+        "/字节|byte/"
+      ],
+      "definition": "SGE源内存片段的字节长度字段（byte），不是Python序列len。",
+      "status": "PASS"
+    },
+    {
+      "name": "status",
+      "file": "deep_ep/include/deep_ep/comm/handle.hpp",
+      "line": 430,
+      "expected": [
+        "/CQE/",
+        "/状态|错误/"
+      ],
+      "definition": "从CQE header提取的完成状态码，用于检查通信错误；不是reduction到达次数/count packed字段。",
+      "status": "PASS"
+    },
+    {
+      "name": "value",
+      "file": "csrc/buffers/ep.hpp",
+      "line": 206,
+      "expected": [
+        "/optional|可选/",
+        "/取|值/"
+      ],
+      "definition": "本处std::optional.value()取已提供张量或配置的值；作为局部变量时按本处声明解释。",
+      "status": "PASS"
+    },
+    {
+      "name": "data",
+      "file": "deep_ep/buffers/ep.py",
+      "line": 149,
+      "expected": [
+        "/Tensor|张量/",
+        "/重排|排序|view/"
+      ],
+      "definition": "Python当前排序重排的hidden/SF/weights Tensor视图，依shape和索引更新；不是SIMD histogram expert ID数组。",
+      "status": "PASS"
+    },
+    {
+      "name": "data",
+      "file": "deep_ep/buffers/ep.py",
+      "line": 35,
+      "expected": [
+        "/属性|底层存储/",
+        "/版本|检查/"
+      ],
+      "definition": "Tensor.data直接访问底层存储的视图属性；修改可能绕过Tensor版本检查，cached handle不能据此安全检测路由变化。",
+      "status": "PASS"
+    },
+    {
+      "name": "i",
+      "file": "csrc/buffers/ep.hpp",
+      "line": 301,
+      "expected": [
+        "/rank|来源/",
+        "/统计|同步|计数/"
+      ],
+      "definition": "CPU同步按来源rank读取host_rank_count的编号，累加去重接收记录总数。",
+      "status": "PASS"
+    },
+    {
+      "name": "i",
+      "file": "csrc/buffers/ep.hpp",
+      "line": 309,
+      "expected": [
+        "/本地expert|local expert|专家/",
+        "/统计|同步|计数/"
+      ],
+      "definition": "CPU同步按local expert读取对齐host_expert_count，构造输出容量列表。",
+      "status": "PASS"
+    },
+    {
+      "name": "i",
+      "file": "csrc/buffers/ep.hpp",
+      "line": 463,
+      "expected": [
+        "/bias/",
+        "/两|2/"
+      ],
+      "definition": "combine两份可选bias输入编号，逐项校验shape/dtype并提取指针。",
+      "status": "PASS"
+    },
+    {
+      "name": "i",
+      "file": "deep_ep/buffers/ep.py",
+      "line": 41,
+      "expected": [
+        "/expert|专家/"
+      ],
+      "definition": "local expert列表索引，对每expert前缀向expert_alignment对齐形成输出段起点。",
+      "status": "PASS"
+    },
+    {
+      "name": "src",
+      "file": "deep_ep/include/deep_ep/comm/handle.hpp",
+      "line": 119,
+      "expected": [
+        "/SQ|CQ/",
+        "/字段|上下文/"
+      ],
+      "definition": "Jetty SQ/CQ上下文加载的GM源地址，由jetty_table中当前端点表项取得，不是metadata_send_buffer。",
+      "status": "PASS"
+    },
+    {
+      "name": "size",
+      "file": "deep_ep/include/deep_ep/comm/handle.hpp",
+      "line": 149,
+      "expected": [
+        "/byte|字节|容量/"
+      ],
+      "definition": "远端注册rma buffer的字节容量字段，提供寻址/保护边界，不是Tensor维度。",
+      "status": "PASS"
+    },
+    {
+      "name": "num_bytes",
+      "file": "deep_ep/buffers/ep.py",
+      "line": 227,
+      "expected": [
+        "/容量|分配|buffer|缓冲/"
+      ],
+      "definition": "整个EPBuffer待分配的通信buffer字节容量，不是一个SGE传输片段长度。",
+      "status": "PASS"
+    },
+    {
+      "name": "status",
+      "file": "deep_ep/include/deep_ep/comm/barrier.hpp",
+      "line": 148,
+      "expected": [
+        "/轮|phase|两bit|2/",
+        "/符号|sign|状态/"
+      ],
+      "definition": "barrier_counter&3得到的两bit轮次/符号状态，不是reduction packed count+arrival。",
+      "status": "PASS"
+    },
+    {
+      "name": "rank_idx",
+      "file": "deep_ep/include/deep_ep/layout/ep/workspace.hpp",
+      "line": 43,
+      "expected": [
+        "/目的rank/"
+      ],
+      "definition": "local rank统计矩阵当前目的rank列编号，与核索引一起定位GM统计信号。",
+      "status": "PASS"
+    },
+    {
+      "name": "rank_idx",
+      "file": "deep_ep/include/deep_ep/layout/ep/workspace.hpp",
+      "line": 47,
+      "expected": [
+        "/来源rank/"
+      ],
+      "definition": "接收/host统计信号对应的来源rank编号，按来源分区计数，不是本kernel所在rank。",
+      "status": "PASS"
+    },
+    {
+      "name": "signals",
+      "file": "deep_ep/include/deep_ep/layout/ep/workspace.hpp",
+      "line": 21,
+      "expected": [
+        "/EPSignals/",
+        "/统计|前缀/"
+      ],
+      "definition": "整个EPSignals工作区结构，含公共对称信号、rank/expert histogram、host count和epilogue expert前缀；不是动画聚合signals。",
+      "status": "PASS"
+    },
+    {
+      "name": "i",
+      "file": "deep_ep/include/deep_ep/impls/ep/dispatch_copy_epilogue.hpp",
+      "line": 105,
+      "expected": [
+        "/local expert|本地expert|expert|bin/"
+      ],
+      "definition": "initialize_dst_slot_idx等价伪码的local expert bin编号，遍历kNumBins输出slot起点数组。",
+      "status": "PASS"
+    },
+    {
+      "name": "i",
+      "file": "deep_ep/include/deep_ep/impls/ep/dispatch_copy_epilogue.hpp",
+      "line": 401,
+      "expected": [
+        "/AIV|核/",
+        "/后/"
+      ],
+      "definition": "Atomic & Broadcast注释中后续AIV核编号，当前核expert计数广播累加到每个后续核行。",
+      "status": "PASS"
+    },
+    {
+      "name": "i",
+      "file": "deep_ep/include/deep_ep/impls/ep/dispatch_copy_epilogue.hpp",
+      "line": 431,
+      "expected": [
+        "/MTE/",
+        "/stage|预加载/"
+      ],
+      "definition": "尚未预加载的token MTE stage编号，从preload_stage_idx到kNumMTEStages依次issue_load。",
+      "status": "PASS"
+    },
+    {
+      "name": "i",
+      "file": "deep_ep/include/deep_ep/impls/ep/dispatch_copy_epilogue.hpp",
+      "line": 444,
+      "expected": [
+        "/metadata/",
+        "/stage|事件/"
+      ],
+      "definition": "输出metadata pipeline stage编号，初始化其notify/wait事件。",
+      "status": "PASS"
+    },
+    {
+      "name": "i",
+      "file": "deep_ep/include/deep_ep/comm/barrier.hpp",
+      "line": 100,
+      "expected": [
+        "/轮询|空指令|周期/"
+      ],
+      "definition": "轮询间隔内空操作循环的次数索引，形成等待周期，非token/expert编号。",
+      "status": "PASS"
+    },
+    {
+      "name": "j",
+      "file": "deep_ep/include/deep_ep/impls/ep/dispatch.hpp",
+      "line": 226,
+      "expected": [
+        "/目的rank/"
+      ],
+      "definition": "local-rank-histogram-new矩阵的目的rank列编号，不是top-k位置。",
+      "status": "PASS"
+    },
+    {
+      "name": "ptr",
+      "file": "deep_ep/include/deep_ep/impls/ep/dispatch.hpp",
+      "line": 362,
+      "expected": [
+        "/hidden/",
+        "/源|x/"
+      ],
+      "definition": "注释SGE源地址：token data项指x+token×hiddenBytes，token meta项指metadata_send_buffer+token×metadataBytes；两者是独立源段，不是工作区信号。",
+      "status": "PASS"
+    },
+    {
+      "name": "ptr",
+      "file": "deep_ep/include/deep_ep/impls/ep/dispatch.hpp",
+      "line": 364,
+      "expected": [
+        "/metadata/",
+        "/源/"
+      ],
+      "definition": "注释SGE源地址：token data项指x+token×hiddenBytes，token meta项指metadata_send_buffer+token×metadataBytes；两者是独立源段，不是工作区信号。",
+      "status": "PASS"
+    },
+    {
+      "name": "x",
+      "file": "deep_ep/include/deep_ep/impls/ep/dispatch.hpp",
+      "line": 104,
+      "expected": [
+        "/threadIdx|线程|坐标/"
+      ],
+      "definition": "threadIdx.x为SIMT内建线程编号坐标的x分量，不是token hidden输入数组。",
+      "status": "PASS"
+    },
+    {
+      "name": "get_iqent",
+      "file": "deep_ep/include/deep_ep/impls/ep/dispatch_copy_epilogue.hpp",
+      "line": 390,
+      "expected": [
+        "/MTE2/",
+        "/预加载|队列/"
+      ],
+      "definition": "查询PIPE_MTE2指令队列状态/可发令能力；本代码返回值>1才继续issue_load预加载。精确硬件返回字段没有在此源码展开，不臆造缩写。",
+      "status": "PASS"
+    },
+    {
+      "name": "token_idx",
+      "file": "deep_ep/include/deep_ep/layout/ep/token.hpp",
+      "line": 124,
+      "expected": [
+        "/record|slot|槽|记录/",
+        "/分区|布局/"
+      ],
+      "definition": "BufferLayout当前所选分区内的record槽，get_token_buffer按该索引×每record字节推进base；既适用于来源接收分区也适用于UB stage，不是固定源输入T编号。",
+      "status": "PASS"
+    },
+    {
+      "name": "global",
+      "file": "deep_ep/include/deep_ep/impls/ep/dispatch_copy_epilogue.hpp",
+      "line": 318,
+      "expected": [
+        "/空间|全局|接收流/"
+      ],
+      "definition": "全局编号或地址空间，具体对象可为全局expert ID、来源token global_idx或核内全部逻辑SQE范围；不能把所有global都当token编号。",
+      "status": "PASS"
+    },
+    {
+      "name": "raw pointers",
+      "file": "deep_ep/buffers/ep.py",
+      "line": 35,
+      "expected": [
+        "/指针|存储/",
+        "/版本|检查/"
+      ],
+      "definition": "直接访问Tensor底层存储的内存指针，可能绕过Tensor的版本/原地修改检查；不是expert未对齐计数。",
+      "status": "PASS"
+    },
+    {
+      "name": "k",
+      "file": "deep_ep/include/deep_ep/impls/ep/dispatch.hpp",
+      "line": 226,
+      "expected": [
+        "/核|AIV/",
+        "/求和|累计/"
+      ],
+      "definition": "注释求和公式中的AIV核索引，local-rank-histogram-new[i,j]累加k=0到i-1的核；不等于教学参数K/top-k。",
+      "status": "PASS"
+    },
+    {
+      "name": "N",
+      "file": "deep_ep/include/deep_ep/impls/ep/dispatch_copy_epilogue.hpp",
+      "line": 57,
+      "expected": [
+        "/元素|数量/"
+      ],
+      "definition": "SIMD采样说明中的输入元素数量，int64[N]是N个expert ID，重解释int16[N][4]是每个ID的4个16bit字。",
+      "status": "PASS"
+    },
+    {
+      "name": "my_vec_core_idx",
+      "file": "deep_ep/include/deep_ep/impls/ep/dispatch_copy_epilogue.hpp",
+      "line": 401,
+      "expected": [
+        "/AIV|核/",
+        "/当前|本/"
+      ],
+      "definition": "Atomic & Broadcast注释中的当前AIV核编号，广播给它之后的核。",
+      "status": "PASS"
+    },
+    {
+      "name": "n_burst",
+      "file": "deep_ep/include/deep_ep/impls/ep/dispatch_copy_epilogue.hpp",
+      "line": 401,
+      "expected": [
+        "/后续|后面|核|AIV/",
+        "/次数|数量|个数/"
+      ],
+      "definition": "MTE复制burst次数；注释广播例为后续AIV核数量。",
+      "status": "PASS"
+    },
+    {
+      "name": "burst_len",
+      "file": "deep_ep/include/deep_ep/impls/ep/dispatch_copy_epilogue.hpp",
+      "line": 402,
+      "expected": [
+        "/字节|sizeof/",
+        "/expert|专家/"
+      ],
+      "definition": "MTE每burst字节长度；expert计数广播例是每rank专家数×sizeof(int)。",
+      "status": "PASS"
+    },
+    {
+      "name": "expert_count",
+      "file": "deep_ep/include/deep_ep/impls/ep/dispatch_copy_epilogue.hpp",
+      "line": 402,
+      "expected": [
+        "/核|AIV|数组/",
+        "/计数/"
+      ],
+      "definition": "Atomic & Broadcast注释中的二维expert计数矩阵[AIV,local expert]，后续核累加当前核统计。",
+      "status": "PASS"
+    },
+    {
+      "name": "my_expert_count",
+      "file": "deep_ep/include/deep_ep/impls/ep/dispatch_copy_epilogue.hpp",
+      "line": 402,
+      "expected": [
+        "/本核|当前核|AIV/",
+        "/计数/"
+      ],
+      "definition": "Atomic & Broadcast注释中的当前核local expert计数行，MTE原子广播到每个后续核。",
+      "status": "PASS"
+    },
+    {
+      "name": "signals.arrival",
+      "objectId": "R0.signals",
+      "definition": "signals.arrival是教学聚合到达状态字符串，例如未到/counts就绪；它不是一个真实reduction packed字段，也不能证明payload就绪。",
+      "status": "PASS"
+    },
+    {
+      "name": "capacity bytes",
+      "query": {
+        "termId": "bytes",
+        "context": {
+          "objectId": "R0.SQE[2]",
+          "surface": "control",
+          "step": 12
+        }
+      },
+      "definition": "字节长度，单位 B；不是数组元素个数。hiddenBytes=H×元素字节数。",
+      "currentValue": 256,
+      "status": "PASS"
+    },
+    {
+      "name": "SGE bytes",
+      "query": {
+        "termId": "field.bytes",
+        "context": {
+          "objectId": "R0.SQE[2]",
+          "elementPath": [
+            0,
+            "SGEs",
+            0,
+            "bytes"
+          ],
+          "step": 12
+        }
+      },
+      "definition": "当前SGE描述符的源内存片段字节长度；hidden和metadata的两SGE分别使用hiddenBytes和metadataBytes。",
+      "currentValue": 512,
+      "status": "PASS"
+    },
+    {
+      "name": "source rank partition",
+      "query": {
+        "termId": "source",
+        "context": {
+          "surface": "visual",
+          "stage": "counts"
+        }
+      },
+      "definition": "来源：在接收buffer容量公式中指来源rank分区，在数值推导中指操作数从哪个对象、元素路径及前置步骤读取；source-before-producer表示该来源尚未由生产步骤写入。具体SGE.source字段才表示传输源地址。",
+      "status": "PASS"
+    },
+    {
+      "name": "operand source before producer",
+      "query": {
+        "termId": "source",
+        "context": {
+          "objectId": "R0.x[0]",
+          "elementPath": [
+            0
+          ]
+        }
+      },
+      "definition": "来源：在接收buffer容量公式中指来源rank分区，在数值推导中指操作数从哪个对象、元素路径及前置步骤读取；source-before-producer表示该来源尚未由生产步骤写入。具体SGE.source字段才表示传输源地址。",
+      "status": "PASS"
+    }
+  ],
+  "references": [],
+  "unresolved": [],
+  "badSourceText": []
+}

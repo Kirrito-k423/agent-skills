@@ -1,0 +1,128 @@
+[
+  {
+    "model": "dispatch",
+    "status": "REWORK",
+    "reviewer": "independent-review",
+    "draft_author": "root-memory",
+    "revision": 1,
+    "draft_sha256": "4ed0601fc49299e44e41e722b8ac253262d539215acdfec05c37c0f0a3871619",
+    "source_revisions": [
+      "DeepEP-Ascend@3b25377d04b24fc6154698ded78a2bcb2c59afff",
+      "DeepJIT-gitlink@65f513952b8771408a19202f65e36398522db6db",
+      "allocator:本仓SymmetricMemory，无额外SHMEM allocator"
+    ],
+    "unresolved": [],
+    "required_changes": [
+      {
+        "path": "transfers.self-load.line",
+        "line": 818,
+        "issue": "主API定位错到参数行819",
+        "change": "主line=818，相关evidence校正"
+      },
+      {
+        "path": "transfers.self-store.line",
+        "line": 831,
+        "issue": "主API定位错到参数行832",
+        "change": "主line=831"
+      },
+      {
+        "path": "transfers.remote-hidden",
+        "line": 409,
+        "issue": "主line408为else分支；peer_info.remote_addr非源码字段",
+        "change": "主line=409/sourceSGE，目的证据402；目标写peer_info->rmt_base_addr+recv_buffer_offset+slot*T"
+      },
+      {
+        "path": "transfers.sq-commit",
+        "line": 857,
+        "issue": "主line859是空行",
+        "change": "改857 ring；855 advance，849-850 VF join；去掉859假调用证据"
+      },
+      {
+        "path": "transfers.remote-count",
+        "line": 460,
+        "issue": "主line458是取count而非remote atomic",
+        "change": "主line460，461-463给远端地址与贡献值"
+      },
+      {
+        "path": "regions.evidence_lines",
+        "line": 409,
+        "issue": "多处证据是相邻旧行号，比如x652为trace标记，remote-buffer399为lane1条件",
+        "change": "按冻结源修正所有region/transfer行引用；x409/820，remote目标402/681，metadata UB635-640，hidden814/818/831等"
+      }
+    ],
+    "verified": [
+      "SymmetricMemory/Context/HCCLContext owner、物理容量与最终shared owner释放",
+      "fresh/cached TokenLayout metadata字节布局和实际容量门禁",
+      "发送源x/meta到drain排队捕获生命周期",
+      "L2 cache hints与无显式L1 scratch边界",
+      "SQ固定4 WQEBB/6 pair/末WRITE完成标志",
+      "输出expert raw-end与padding、两UB阶段复用"
+    ]
+  },
+  {
+    "model": "dispatch_copy_epilogue",
+    "status": "REWORK",
+    "reviewer": "independent-review",
+    "draft_author": "root-memory",
+    "revision": 1,
+    "draft_sha256": "4ed0601fc49299e44e41e722b8ac253262d539215acdfec05c37c0f0a3871619",
+    "source_revisions": [
+      "DeepEP-Ascend@3b25377d04b24fc6154698ded78a2bcb2c59afff",
+      "DeepJIT-gitlink@65f513952b8771408a19202f65e36398522db6db",
+      "allocator:本仓SymmetricMemory，无额外SHMEM allocator"
+    ],
+    "unresolved": [],
+    "required_changes": [
+      {
+        "path": "transfers.hist-count",
+        "line": 99,
+        "issue": "asc_store_interleave不存在；98是加法",
+        "change": "API asc_storealign_intlv，主line99；93-98描述拓宽与累加"
+      },
+      {
+        "path": "transfers.zero-weights",
+        "line": 580,
+        "issue": "数据箭头from UB zero却实际读取Scalar literal0，空间来源矛盾",
+        "change": "新增Scalar常数/控制region，from真实Scalar；UB zero purpose移除Scalar读源暗示"
+      },
+      {
+        "path": "regions.out-meta/resource_budget.outputs",
+        "line": 476,
+        "issue": "Nrecv allocator预留与本次visible接收流未区分，无CPU sync会预留R*M",
+        "change": "Nrecv_alloc=CPU sync actual / no sync R*M / cached saved容量；nrecv_actual=psum[R-1]，bytes分别列；Qcached也仅缓存容量不保证exact"
+      },
+      {
+        "path": "transfers/regions",
+        "line": 272,
+        "issue": "fresh绝对expert起点关键GM→UB搬运未纳入图",
+        "change": "新增psum GM region及272 MTE2左补0读取前E/R-1终点到UB起点向量；E/R=1时268 Scalar写0条件分支写明"
+      },
+      {
+        "path": "transfers/paths",
+        "line": 476,
+        "issue": "cached槽号来源的GM Scalar读取缺失",
+        "change": "新增recv_src_metadata→Scalar dst_slot_idx读取边及cached route路径；不要画为UB expert cursor写入"
+      },
+      {
+        "path": "transfers.expand-sf.sync",
+        "line": 499,
+        "issue": "MTE2/S→MTE3可能被读作显式S→MTE3事件；此处只有此前MTE2→S wait",
+        "change": "准确说S等MTE2完成后发MTE3，token stage消费结束用MTE3→MTE2事件保护refill"
+      },
+      {
+        "path": "regions.evidence_lines",
+        "line": 253,
+        "issue": "expert/metadata/zero绑定证据多处旧行号",
+        "change": "expert253-256，metadata260，zero261/436；逐项对齐冻结源码"
+      }
+    ],
+    "verified": [
+      "SymmetricMemory/Context/HCCLContext owner、物理容量与最终shared owner释放",
+      "fresh/cached TokenLayout metadata字节布局和实际容量门禁",
+      "发送源x/meta到drain排队捕获生命周期",
+      "L2 cache hints与无显式L1 scratch边界",
+      "SQ固定4 WQEBB/6 pair/末WRITE完成标志",
+      "输出expert raw-end与padding、两UB阶段复用"
+    ]
+  }
+]

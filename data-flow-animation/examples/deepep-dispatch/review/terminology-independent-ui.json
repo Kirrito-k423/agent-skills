@@ -1,0 +1,235 @@
+{
+  "reviewer": "/root/terminology_review",
+  "revision": 1,
+  "status": "TARGETED_UI_PASS",
+  "scope": "Targeted actual pointer/focus/click on independent browser; full DOM coverage is separate",
+  "viewport": {
+    "width": 1280,
+    "height": 720
+  },
+  "checks": [
+    {
+      "name": "parameter M",
+      "status": "PASS",
+      "selector": "#visualConfig [data-term-id=\"M\"]",
+      "definition": "每个来源 Rank 接收分区预留的最大 token 容量",
+      "context": {
+        "step": 0,
+        "preset": "mixed",
+        "stage": "input",
+        "surface": "visual"
+      },
+      "text": "M · 教学参数与源码参数的对应\n×\n\n每个来源 Rank 接收分区预留的最大 token 容量\n\n名称/全称：kNumMaxTokensPerRank / num_max_tokens_per_rank\n\n当前作用：当前预设 mixed：M=4；每个来源 Rank 接收分区预留的最大 token 容量。\n\n单位/类型：slot/source-rank\n\n范围/约束：M>0；有效输入T=4；接收分区shape=[R,M]，分区每rank 4条。\n\n关联值：4（点击数字查看计算）\n\n相关：T · M\n\ndeep_ep/include/deep_ep/layout/ep/token.hpp:107 · 依据\n\n悬浮 / 聚焦查看；点击或Enter固定；Esc关闭",
+      "box": {
+        "x": 194.9375,
+        "y": 40,
+        "width": 430,
+        "height": 364
+      }
+    },
+    {
+      "name": "parameter T",
+      "status": "PASS",
+      "selector": "#visualConfig [data-term-id=\"T\"]",
+      "definition": "本轮每个 Rank 的有效输入 token 数量",
+      "context": {
+        "step": 0,
+        "preset": "mixed",
+        "stage": "input",
+        "surface": "visual"
+      },
+      "text": "T · 教学参数与源码参数的对应\n×\n\n本轮每个 Rank 的有效输入 token 数量\n\n名称/全称：num_tokens\n\n当前作用：当前预设 mixed：T=4；本轮每个 Rank 的有效输入 token 数量。\n\n单位/类型：token/rank\n\n范围/约束：0≤T≤M，当前 4≤4；T=0仍保留M个容量槽。\n\n关联值：4（点击数字查看计算）\n\n相关：T · M\n\ndeep_ep/include/deep_ep/impls/ep/dispatch.hpp:98 · 依据\n\n悬浮 / 聚焦查看；点击或Enter固定；Esc关闭",
+      "box": {
+        "x": 130.453125,
+        "y": 40,
+        "width": 430,
+        "height": 325
+      }
+    },
+    {
+      "name": "parameter A",
+      "status": "PASS",
+      "selector": "#visualConfig [data-term-id=\"A\"]",
+      "definition": "每个 expert 输出段的 token 行数对齐单位",
+      "context": {
+        "step": 0,
+        "preset": "mixed",
+        "stage": "input",
+        "surface": "visual"
+      },
+      "text": "A · 教学参数与源码参数的对应\n×\n\n每个 expert 输出段的 token 行数对齐单位\n\n名称/全称：kExpertAlignment / expert_alignment\n\n当前作用：当前预设 mixed：A=4；每个 expert 输出段的 token 行数对齐单位。\n\n单位/类型：row\n\n范围/约束：要求2的幂；单位输出行，例如align(5,4)=ceil(5/4)×4=8，3行padding。\n\n关联值：4（点击数字查看计算）\n\n相关：alignment · padding\n\ndeep_ep/include/deep_ep/impls/ep/dispatch_copy_epilogue.hpp:176 · 依据\n\n悬浮 / 聚焦查看；点击或Enter固定；Esc关闭",
+      "box": {
+        "x": 277.140625,
+        "y": 40,
+        "width": 430,
+        "height": 364
+      }
+    },
+    {
+      "name": "parameter SF",
+      "status": "PASS",
+      "selector": "#visualConfig [data-term-id=\"SF\"]",
+      "definition": "FP8 的缩放因子相关数据；本实现通过 sf_pack_t=int16_t 的 pack 搬运原始位模式，动画没有解码或计算 scale。",
+      "context": {
+        "step": 0,
+        "preset": "mixed",
+        "stage": "input",
+        "surface": "visual"
+      },
+      "text": "SF · 术语\n×\n\nFP8 的缩放因子相关数据；本实现通过 sf_pack_t=int16_t 的 pack 搬运原始位模式，动画没有解码或计算 scale。\n\n名称/全称：Scale Factor（缩放因子；pack表示见本实现）\n\n当前作用：当前BF16预设sfPacks=0，不走可选SF搬运分支；“无SF”不是scale数值0。\n\n单位/类型：pack（16 bit原始位模式）\n\n相关：FP8 · BF16 · sf · recv_sf\n\ndeep_ep/include/deep_ep/common/compiled.hpp:33 · 依据\n\n官方术语定义\n\n悬浮 / 聚焦查看；点击或Enter固定；Esc关闭",
+      "box": {
+        "x": 408.484375,
+        "y": 40,
+        "width": 430,
+        "height": 317
+      }
+    },
+    {
+      "name": "parameter AIV",
+      "status": "PASS",
+      "selector": "#visualConfig [data-term-id=\"AIV\"]",
+      "definition": "Ascend 的向量核执行主体。本图每 rank 使用 C 个 AIV；按容量 M 分配连续 token 范围，T 小于 M 时尾部核可为空。",
+      "context": {
+        "step": 0,
+        "preset": "mixed",
+        "stage": "input",
+        "surface": "visual"
+      },
+      "text": "AIV · 术语\n×\n\nAscend 的向量核执行主体。本图每 rank 使用 C 个 AIV；按容量 M 分配连续 token 范围，T 小于 M 时尾部核可为空。\n\n名称/全称：AI Vector\n\n当前作用：Ascend 的向量核执行主体。本图每 rank 使用 C 个 AIV；按容量 M 分配连续 token 范围，T 小于 M 时尾部核可为空。\n\ndeep_ep/include/deep_ep/impls/ep/dispatch.hpp:98 · 依据\n\n官方术语定义\n\n悬浮 / 聚焦查看；点击或Enter固定；Esc关闭",
+      "box": {
+        "x": 453.90625,
+        "y": 40,
+        "width": 430,
+        "height": 262
+      }
+    },
+    {
+      "name": "keyboard focus Enter pin Escape close",
+      "status": "PASS"
+    },
+    {
+      "name": "term pin and related panel switch preserves shared state",
+      "status": "PASS"
+    },
+    {
+      "name": "empty T0 M4",
+      "status": "PASS",
+      "selector": "#visualConfig [data-term-id=\"T\"]",
+      "definition": "本轮每个 Rank 的有效输入 token 数量",
+      "context": {
+        "step": 0,
+        "preset": "empty",
+        "stage": "input",
+        "surface": "visual"
+      },
+      "text": "T · 教学参数与源码参数的对应\n×\n\n本轮每个 Rank 的有效输入 token 数量\n\n名称/全称：num_tokens\n\n当前作用：当前预设 empty：T=0；本轮每个 Rank 的有效输入 token 数量。\n\n单位/类型：token/rank\n\n范围/约束：0≤T≤M，当前 0≤4；T=0仍保留M个容量槽。\n\n关联值：0（点击数字查看计算）\n\n相关：T · M\n\ndeep_ep/include/deep_ep/impls/ep/dispatch.hpp:98 · 依据\n\n悬浮 / 聚焦查看；点击或Enter固定；Esc关闭",
+      "box": {
+        "x": 130.453125,
+        "y": 40,
+        "width": 430,
+        "height": 325
+      }
+    },
+    {
+      "name": "modal remote_offset scoped",
+      "status": "PASS",
+      "selector": "#dialogContent [data-term-id=\"field.remote_offset\"]",
+      "definition": "远端地址相对接收区起点的字节偏移=(sourceRank×M+slot)×tokenBytes。",
+      "context": {
+        "step": 12,
+        "phase": "auto",
+        "objectId": "R0.SQE[2]",
+        "elementPath": [
+          0,
+          "remote_offset"
+        ],
+        "surface": "nested-field"
+      },
+      "text": "remote_offset · 嵌套字段\n×\n\n远端地址相对接收区起点的字节偏移=(sourceRank×M+slot)×tokenBytes。\n\n当前作用：嵌套字段 R0.SQE[2][0].remote_offset：远端地址相对接收区起点的字节偏移=(sourceRank×M+slot)×tokenBytes。\n\n关联值：0（点击数字查看计算）\n\ndeep_ep/include/deep_ep/impls/ep/dispatch.hpp:402 · 依据\n\n悬浮 / 聚焦查看；点击或Enter固定；Esc关闭",
+      "box": {
+        "x": 780.84375,
+        "y": 186,
+        "width": 430,
+        "height": 234.5
+      }
+    },
+    {
+      "name": "modal pin related switch close clickable",
+      "status": "PASS"
+    },
+    {
+      "name": "full source expanded dst slot",
+      "status": "PASS",
+      "selector": "#L484 [data-term-id=\"src.dst_slot_idx\"]",
+      "definition": "当前expert展开后的输出行号；从ub_next_dst_slot_idx取号或cached recv_src_metadata读取。单位是recv_x行，不是接收来源分区slot。",
+      "context": {
+        "preset": "mixed",
+        "step": 0,
+        "surface": "source",
+        "file": "deep_ep/include/deep_ep/impls/ep/dispatch_copy_epilogue.hpp",
+        "line": 484,
+        "identifier": "dst_slot_idx",
+        "sourceLine": "                        dst_slot_idx = static_cast<int>(ub_next_dst_slot_idx[local_expert_idx]);"
+      },
+      "text": "dst_slot_idx · 源码标识符\n×\n\n当前expert展开后的输出行号；从ub_next_dst_slot_idx取号或cached recv_src_metadata读取。单位是recv_x行，不是接收来源分区slot。\n\n当前作用：当前expert展开后的输出行号；从ub_next_dst_slot_idx取号或cached recv_src_metadata读取。单位是recv_x行，不是接收来源分区slot。\n\n当前准确原文与作用域\n\ndeep_ep/include/deep_ep/impls/ep/dispatch_copy_epilogue.hpp:484 · 依据\n\n悬浮 / 聚焦查看；点击或Enter固定；Esc关闭",
+      "box": {
+        "x": 360.859375,
+        "y": 8,
+        "width": 430,
+        "height": 293
+      }
+    },
+    {
+      "name": "source related expert identity and evidence scope",
+      "status": "PASS",
+      "definition": "处理 token 的专家；全局 ID 范围 [0,E)。expert 编号与 rank 编号不是同一个对象。",
+      "context": {
+        "step": 0,
+        "preset": "mixed",
+        "surface": "term-reference",
+        "relatedFrom": {
+          "termId": "src.dst_slot_idx",
+          "objectId": null,
+          "elementPath": null
+        }
+      },
+      "sourceRef": {
+        "file": "deep_ep/include/deep_ep/impls/ep/dispatch.hpp",
+        "line": 177,
+        "fn": "",
+        "commit": "3b25377d04b24fc6154698ded78a2bcb2c59afff",
+        "url": "https://github.com/deepseek-ai/DeepEP-Ascend/blob/3b25377d04b24fc6154698ded78a2bcb2c59afff/deep_ep/include/deep_ep/impls/ep/dispatch.hpp#L177"
+      }
+    },
+    {
+      "name": "full source fill value context",
+      "status": "PASS",
+      "selector": "#L21 [data-term-id=\"src.value\"]",
+      "definition": "fill_ubuf指定的整数填充值，broadcast到SIMD向量。",
+      "context": {
+        "preset": "mixed",
+        "step": 0,
+        "surface": "source",
+        "file": "deep_ep/include/deep_ep/impls/ep/dispatch_copy_epilogue.hpp",
+        "line": 21,
+        "identifier": "value",
+        "sourceLine": "__simd_vf__ void fill_ubuf(__ubuf__ int* ptr, const int num_elems, const int value) {"
+      },
+      "text": "value · 源码标识符\n×\n\nfill_ubuf指定的整数填充值，broadcast到SIMD向量。\n\n当前作用：fill_ubuf指定的整数填充值，broadcast到SIMD向量。\n\n当前准确原文与作用域\n\ndeep_ep/include/deep_ep/impls/ep/dispatch_copy_epilogue.hpp:21 · 依据\n\n悬浮 / 聚焦查看；点击或Enter固定；Esc关闭",
+      "box": {
+        "x": 719.90625,
+        "y": 352.75,
+        "width": 430,
+        "height": 215
+      }
+    }
+  ],
+  "errors": [],
+  "hashes": {
+    "terminology.mjs": "ebc7810d7c739552b6ff5d82b665049308c889078a06f68f5ea41563f0f3d47c",
+    "numeric-ui.mjs": "432726a01acec95d1881cc1842f9d352dbe98f018cfb1679d7bbbda6efe9a648",
+    "app.mjs": "bfc8c966eda1f13f49126f3e5aa04f0609658ee151437638aa4c131e7fe23af4",
+    "style.css": "94a4bf33a948915d7fa377c6be54e21059e7143ea76c39d30acae684096427e0",
+    "source.mjs": "ada3c285a6fbe68dd8eaf809e6949b821813b2986c2abd54a9c89f8f7469e7c0"
+  }
+}

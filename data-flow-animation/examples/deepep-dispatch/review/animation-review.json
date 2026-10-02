@@ -1,0 +1,108 @@
+{
+  "reviewer": "independent-review",
+  "draft_author": "animation-agent",
+  "status": "PASS",
+  "scope": "source semantic teaching model; UI review is separate",
+  "source_revision": "3b25377d04b24fc6154698ded78a2bcb2c59afff",
+  "model_path": "animation/model.mjs",
+  "model_sha256": "567fc1e82f4c91dd09c481a05d7eee2b6ea850e6f155a541c1a3f1c95b633197",
+  "oracle_path": "review/check-animation.mjs",
+  "presets": [
+    {
+      "preset": "mixed",
+      "nRecv": 21,
+      "nExpand": 29,
+      "readyCells": 64,
+      "oracle": "PASS",
+      "issues": []
+    },
+    {
+      "preset": "concentrated",
+      "nRecv": 16,
+      "nExpand": 32,
+      "readyCells": 64,
+      "oracle": "PASS",
+      "issues": []
+    },
+    {
+      "preset": "invalid",
+      "nRecv": 20,
+      "nExpand": 27,
+      "readyCells": 64,
+      "oracle": "PASS",
+      "issues": []
+    },
+    {
+      "preset": "zero",
+      "nRecv": 21,
+      "nExpand": 29,
+      "readyCells": 64,
+      "oracle": "PASS",
+      "issues": []
+    },
+    {
+      "preset": "fp8",
+      "nRecv": 21,
+      "nExpand": 29,
+      "readyCells": 64,
+      "oracle": "PASS",
+      "issues": []
+    },
+    {
+      "preset": "cached",
+      "nRecv": 21,
+      "nExpand": 29,
+      "readyCells": 0,
+      "oracle": "PASS",
+      "issues": []
+    },
+    {
+      "preset": "noWeights",
+      "nRecv": 21,
+      "nExpand": 29,
+      "readyCells": 64,
+      "oracle": "PASS",
+      "issues": []
+    },
+    {
+      "preset": "uninitialized",
+      "nRecv": 21,
+      "nExpand": 29,
+      "readyCells": 64,
+      "oracle": "PASS",
+      "issues": []
+    },
+    {
+      "preset": "empty",
+      "nRecv": 0,
+      "nExpand": 0,
+      "readyCells": 64,
+      "oracle": "PASS",
+      "issues": []
+    }
+  ],
+  "verified": [
+    "从输入topk独立重算rank去重count、expert保留重复Rank命中count、rank inclusive psum与expert raw end",
+    "每个expanded slot逐元素匹配hidden/SF、按route weight、最后本地j为master",
+    "padding 0与UNKNOWN区分；cached handle复用/zero hidden/no weights/empty均守恒",
+    "每frame reads为变更前快照；write before/after一致",
+    "metadata_ready发布在local metadata和expert归约前；local_copy_ready只说明槽映射；doorbell不等payload完成；drain后展开",
+    "physical SQ固定4WQEBB/hidden+metadata SGEs/NOP/末WRITE完成标志教学模型",
+    "source多片段包含实际ready发布、counts outputs、expanded aux/metadata、可选padding路径",
+    "UB逐核expert histogram与教学求和视图区分，prefix读取真实per-core count cells",
+    "最终sources再次逐片核对：cached无fresh写标红、no-padding无补零标红、SF采用实际stride1及小SF分支；几何切片未改变数据语义",
+    "重新读取dispatch217–255：所有AIV即使无token也发布identity|count=0；wait_ready1后才能扫描，随后arrival2与清0",
+    "独立oracle新增对每个fresh预设64个rank/core cell显式0→arrival1(count)→arrival2(prefix)→0全链断言，逐核count由原tokens重算",
+    "empty预设明确idle帧先发布64个ready零计数，prefix不把初始0误作已到达；cached省略该fresh统计流程",
+    "final source references补217–224与真实发布/屏障语句，原路由/输出/计数oracle9预设继续全通过"
+  ],
+  "limitations": [
+    "合法的小规模确定性教学线性化，固定4 ranks/16 AIV/最多每核一条输入与接收记录",
+    "不是硬件trace、设备精度测试或性能证据；inactive大SF padding分支需源码走读而非该预设执行"
+  ],
+  "required_changes": [],
+  "unresolved": [],
+  "revision": 3,
+  "prior_model_sha256": "4d0b95f88676f31747dff9ee9446e50259ec3d0c0204fa86f3a2251c4b0ee8e2",
+  "oracle_sha256": "ca5aff61f16b6a69849a06e15041a58137d5e66a2881aa33d27b98038720462f"
+}

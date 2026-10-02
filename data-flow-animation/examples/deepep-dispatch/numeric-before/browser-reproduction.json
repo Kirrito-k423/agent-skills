@@ -1,0 +1,19 @@
+{
+  "viewport": [
+    1280,
+    720
+  ],
+  "status": "REPRODUCED",
+  "issues": {
+    "arrayElements": {
+      "text": "[-1,0]",
+      "title": "R0.topk_idx[3]",
+      "numericTargets": 0
+    },
+    "countDerivation": {
+      "currentValue": "写：[0,0,0,0] → [2,1,1,1]",
+      "numericTargets": 0
+    }
+  },
+  "sourceModelHash": "567fc1e82f4c91dd09c481a05d7eee2b6ea850e6f155a541c1a3f1c95b633197"
+}

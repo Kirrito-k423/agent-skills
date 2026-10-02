@@ -1,0 +1,219 @@
+[
+  {
+    "function_id": "epi-fill-21",
+    "revision": 2,
+    "draft_author": "walkthrough-agent",
+    "reviewer": "independent-review",
+    "source_sha256": "3666da791943b16986c7a0258c52cc022361c1a07d364098e0713036bd412a25",
+    "draft_sha256": "f263daf1ed8dcfd484933f6f6d2ca6e7fa203b6983545bdf4d8c8090a3b51acf",
+    "line_range": [
+      21,
+      30
+    ],
+    "gaps": [],
+    "overlaps": [],
+    "unresolved": [],
+    "verdict": "REWORK",
+    "required_changes": [
+      {
+        "line": 24,
+        "issue": "value_vec被标成读无写；28 ptr/remaining无写",
+        "change": "按API方向标注输出value_vec与ptr、remaining，声明23不是读取未初始化寄存器"
+      }
+    ]
+  },
+  {
+    "function_id": "epi-histogram-37",
+    "revision": 2,
+    "draft_author": "walkthrough-agent",
+    "reviewer": "independent-review",
+    "source_sha256": "3666da791943b16986c7a0258c52cc022361c1a07d364098e0713036bd412a25",
+    "draft_sha256": "f263daf1ed8dcfd484933f6f6d2ca6e7fa203b6983545bdf4d8c8090a3b51acf",
+    "line_range": [
+      37,
+      101
+    ],
+    "gaps": [],
+    "overlaps": [],
+    "unresolved": [],
+    "verdict": "REWORK",
+    "required_changes": [
+      {
+        "line": 38,
+        "issue": "签名被误收录为递归内部call",
+        "change": "删除38的self call，仅在真实调用点登记；全部函数同查"
+      },
+      {
+        "line": 59,
+        "issue": "所有SIMD API输出均当read无write",
+        "change": "load输出sampled、deintlv输出两向量、sub/add输出、histogram累加hist、update_mask的remaining、99目标histogram_offset均按真实方向登记"
+      }
+    ]
+  },
+  {
+    "function_id": "epi-init-slot-107",
+    "revision": 2,
+    "draft_author": "walkthrough-agent",
+    "reviewer": "independent-review",
+    "source_sha256": "3666da791943b16986c7a0258c52cc022361c1a07d364098e0713036bd412a25",
+    "draft_sha256": "f263daf1ed8dcfd484933f6f6d2ca6e7fa203b6983545bdf4d8c8090a3b51acf",
+    "line_range": [
+      107,
+      128
+    ],
+    "gaps": [],
+    "overlaps": [],
+    "unresolved": [],
+    "verdict": "REWORK",
+    "required_changes": [
+      {
+        "line": 108,
+        "issue": "签名被误收录self-call",
+        "change": "删除签名self call"
+      },
+      {
+        "line": 120,
+        "issue": "注释被登记writes dst_slot_idx，真实SIMD121-126无write",
+        "change": "注释reads/writes清空；API寄存器与126 UB目标标writes"
+      }
+    ]
+  },
+  {
+    "function_id": "epi-iter-139",
+    "revision": 2,
+    "draft_author": "walkthrough-agent",
+    "reviewer": "independent-review",
+    "source_sha256": "3666da791943b16986c7a0258c52cc022361c1a07d364098e0713036bd412a25",
+    "draft_sha256": "f263daf1ed8dcfd484933f6f6d2ca6e7fa203b6983545bdf4d8c8090a3b51acf",
+    "line_range": [
+      139,
+      148
+    ],
+    "gaps": [],
+    "overlaps": [],
+    "unresolved": [],
+    "verdict": "REWORK",
+    "required_changes": [
+      {
+        "line": 140,
+        "issue": "140–145初始化成员写被当成read；outputs漏psum/token_idx/token_end_idx",
+        "change": "登记每行成员写及参数/psum值读；outputs包含初始化所有成员"
+      }
+    ]
+  },
+  {
+    "function_id": "epi-iter-150",
+    "revision": 2,
+    "draft_author": "walkthrough-agent",
+    "reviewer": "independent-review",
+    "source_sha256": "3666da791943b16986c7a0258c52cc022361c1a07d364098e0713036bd412a25",
+    "draft_sha256": "f263daf1ed8dcfd484933f6f6d2ca6e7fa203b6983545bdf4d8c8090a3b51acf",
+    "line_range": [
+      150,
+      152
+    ],
+    "gaps": [],
+    "overlaps": [],
+    "unresolved": [],
+    "verdict": "REWORK",
+    "required_changes": [
+      {
+        "line": 151,
+        "issue": "仍缺advance_to传递的rank_start_idx/rank_end_idx输出，line写token_idx未登",
+        "change": "补inputs当前rank边界/psum，outputs所有变动成员；151可仅writes token_idx因其他成员未出现本行，副作用在函数级补完整"
+      }
+    ]
+  },
+  {
+    "function_id": "epi-iter-154",
+    "revision": 2,
+    "draft_author": "walkthrough-agent",
+    "reviewer": "independent-review",
+    "source_sha256": "3666da791943b16986c7a0258c52cc022361c1a07d364098e0713036bd412a25",
+    "draft_sha256": "f263daf1ed8dcfd484933f6f6d2ca6e7fa203b6983545bdf4d8c8090a3b51acf",
+    "line_range": [
+      154,
+      161
+    ],
+    "gaps": [],
+    "overlaps": [],
+    "unresolved": [],
+    "verdict": "REWORK",
+    "required_changes": [
+      {
+        "line": 156,
+        "issue": "函数inputs只列target_token_idx/psum，遗漏条件读取的rank_idx/rank_end_idx",
+        "change": "补充这两个真实成员输入"
+      }
+    ]
+  },
+  {
+    "function_id": "epi-iter-163",
+    "revision": 2,
+    "draft_author": "walkthrough-agent",
+    "reviewer": "independent-review",
+    "source_sha256": "3666da791943b16986c7a0258c52cc022361c1a07d364098e0713036bd412a25",
+    "draft_sha256": "f263daf1ed8dcfd484933f6f6d2ca6e7fa203b6983545bdf4d8c8090a3b51acf",
+    "line_range": [
+      163,
+      165
+    ],
+    "gaps": [],
+    "overlaps": [],
+    "unresolved": [],
+    "verdict": "REWORK",
+    "required_changes": [
+      {
+        "line": 163,
+        "issue": "getter side_effects仍填函数摘要，虽然segment已确认不改状态",
+        "change": "side_effects=[]；保持segment返回公式说明"
+      }
+    ]
+  },
+  {
+    "function_id": "epi-iter-167",
+    "revision": 2,
+    "draft_author": "walkthrough-agent",
+    "reviewer": "independent-review",
+    "source_sha256": "3666da791943b16986c7a0258c52cc022361c1a07d364098e0713036bd412a25",
+    "draft_sha256": "f263daf1ed8dcfd484933f6f6d2ca6e7fa203b6983545bdf4d8c8090a3b51acf",
+    "line_range": [
+      167,
+      169
+    ],
+    "gaps": [],
+    "overlaps": [],
+    "unresolved": [],
+    "verdict": "REWORK",
+    "required_changes": [
+      {
+        "line": 167,
+        "issue": "getter side_effects仍填函数摘要，虽然segment已确认不改状态",
+        "change": "side_effects=[]；保持segment返回公式说明"
+      }
+    ]
+  },
+  {
+    "function_id": "epi-iter-171",
+    "revision": 2,
+    "draft_author": "walkthrough-agent",
+    "reviewer": "independent-review",
+    "source_sha256": "3666da791943b16986c7a0258c52cc022361c1a07d364098e0713036bd412a25",
+    "draft_sha256": "f263daf1ed8dcfd484933f6f6d2ca6e7fa203b6983545bdf4d8c8090a3b51acf",
+    "line_range": [
+      171,
+      173
+    ],
+    "gaps": [],
+    "overlaps": [],
+    "unresolved": [],
+    "verdict": "REWORK",
+    "required_changes": [
+      {
+        "line": 171,
+        "issue": "getter side_effects仍填函数摘要，虽然segment已确认不改状态",
+        "change": "side_effects=[]；保持segment返回公式说明"
+      }
+    ]
+  }
+]

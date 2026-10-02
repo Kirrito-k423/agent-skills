@@ -1,0 +1,236 @@
+[
+  {
+    "function_id": "epi-fill-21",
+    "revision": 4,
+    "draft_author": "walkthrough-agent",
+    "reviewer": "independent-review",
+    "source_sha256": "3666da791943b16986c7a0258c52cc022361c1a07d364098e0713036bd412a25",
+    "draft_sha256": "101b759f6f1580dee2f1dae07f9a9a8fbde17a0473d4236b45647a25d7b7873c",
+    "function_content_sha256": "28b0a5b1ab908b05c112417097b85d45b7ea41c85250720c3d0b36f4900317ec",
+    "line_range": [
+      21,
+      30
+    ],
+    "gaps": [],
+    "overlaps": [],
+    "unresolved": [],
+    "verdict": "PASS",
+    "status": "PASS",
+    "required_changes": [],
+    "verified": [
+      "重新读取完整定义与caller的输入前提/UB地址空间",
+      "line_notes每行含签名/注释/brace/空行；读写方向与SIMD纯输出寄存器逐项核对",
+      "segments连续且输入机制输出原因具体",
+      "公式、返回值、成员副作用与调用目标明确",
+      "此函数无独立allocator；UB/tensor来自主kernel与Context，owner已在memory模型独立核对"
+    ]
+  },
+  {
+    "function_id": "epi-histogram-37",
+    "revision": 4,
+    "draft_author": "walkthrough-agent",
+    "reviewer": "independent-review",
+    "source_sha256": "3666da791943b16986c7a0258c52cc022361c1a07d364098e0713036bd412a25",
+    "draft_sha256": "101b759f6f1580dee2f1dae07f9a9a8fbde17a0473d4236b45647a25d7b7873c",
+    "function_content_sha256": "09e0cf0f89e8e7a96e9a2ecf19c3207b48e3279d96ad5fb385e9a470f270e5d5",
+    "line_range": [
+      37,
+      101
+    ],
+    "gaps": [],
+    "overlaps": [],
+    "unresolved": [],
+    "verdict": "PASS",
+    "status": "PASS",
+    "required_changes": [],
+    "verified": [
+      "重新读取完整定义与caller的输入前提/UB地址空间",
+      "line_notes每行含签名/注释/brace/空行；读写方向与SIMD纯输出寄存器逐项核对",
+      "segments连续且输入机制输出原因具体",
+      "候选桶padding与真实本地专家范围、uint16到uint32累加明确",
+      "此函数无独立allocator；UB/tensor来自主kernel与Context，owner已在memory模型独立核对"
+    ]
+  },
+  {
+    "function_id": "epi-init-slot-107",
+    "revision": 4,
+    "draft_author": "walkthrough-agent",
+    "reviewer": "independent-review",
+    "source_sha256": "3666da791943b16986c7a0258c52cc022361c1a07d364098e0713036bd412a25",
+    "draft_sha256": "101b759f6f1580dee2f1dae07f9a9a8fbde17a0473d4236b45647a25d7b7873c",
+    "function_content_sha256": "f637ae6f108a883e67e0e66e1cc0f0a631105238ad173f874a7d0a188cddbe75",
+    "line_range": [
+      107,
+      128
+    ],
+    "gaps": [],
+    "overlaps": [],
+    "unresolved": [],
+    "verdict": "PASS",
+    "status": "PASS",
+    "required_changes": [],
+    "verified": [
+      "重新读取完整定义与caller的输入前提/UB地址空间",
+      "line_notes每行含签名/注释/brace/空行；读写方向与SIMD纯输出寄存器逐项核对",
+      "segments连续且输入机制输出原因具体",
+      "公式、返回值、成员副作用与调用目标明确",
+      "此函数无独立allocator；UB/tensor来自主kernel与Context，owner已在memory模型独立核对"
+    ]
+  },
+  {
+    "function_id": "epi-iter-139",
+    "revision": 4,
+    "draft_author": "walkthrough-agent",
+    "reviewer": "independent-review",
+    "source_sha256": "3666da791943b16986c7a0258c52cc022361c1a07d364098e0713036bd412a25",
+    "draft_sha256": "101b759f6f1580dee2f1dae07f9a9a8fbde17a0473d4236b45647a25d7b7873c",
+    "function_content_sha256": "dda5e475844d4fef2f9350b9c7e762ada48483a5458e1e7f0557aa3a9c582902",
+    "line_range": [
+      139,
+      148
+    ],
+    "gaps": [],
+    "overlaps": [],
+    "unresolved": [],
+    "verdict": "PASS",
+    "status": "PASS",
+    "required_changes": [],
+    "verified": [
+      "重新读取完整定义与caller的输入前提/UB地址空间",
+      "line_notes每行含签名/注释/brace/空行；读写方向与SIMD纯输出寄存器逐项核对",
+      "segments连续且输入机制输出原因具体",
+      "公式、返回值、成员副作用与调用目标明确",
+      "此函数无独立allocator；UB/tensor来自主kernel与Context，owner已在memory模型独立核对"
+    ]
+  },
+  {
+    "function_id": "epi-iter-150",
+    "revision": 4,
+    "draft_author": "walkthrough-agent",
+    "reviewer": "independent-review",
+    "source_sha256": "3666da791943b16986c7a0258c52cc022361c1a07d364098e0713036bd412a25",
+    "draft_sha256": "101b759f6f1580dee2f1dae07f9a9a8fbde17a0473d4236b45647a25d7b7873c",
+    "function_content_sha256": "ff41090d66e548ed16b288b413d7f1f5e267902fc5edcd49e7fb71488ef2ad20",
+    "line_range": [
+      150,
+      152
+    ],
+    "gaps": [],
+    "overlaps": [],
+    "unresolved": [],
+    "verdict": "PASS",
+    "status": "PASS",
+    "required_changes": [],
+    "verified": [
+      "重新读取完整定义与caller的输入前提/UB地址空间",
+      "line_notes每行含签名/注释/brace/空行；读写方向与SIMD纯输出寄存器逐项核对",
+      "segments连续且输入机制输出原因具体",
+      "公式、返回值、成员副作用与调用目标明确",
+      "此函数无独立allocator；UB/tensor来自主kernel与Context，owner已在memory模型独立核对"
+    ]
+  },
+  {
+    "function_id": "epi-iter-154",
+    "revision": 4,
+    "draft_author": "walkthrough-agent",
+    "reviewer": "independent-review",
+    "source_sha256": "3666da791943b16986c7a0258c52cc022361c1a07d364098e0713036bd412a25",
+    "draft_sha256": "101b759f6f1580dee2f1dae07f9a9a8fbde17a0473d4236b45647a25d7b7873c",
+    "function_content_sha256": "e13083ed469cdf7feb322d1ddb544b87e5de235f9af0862519019785f366dabf",
+    "line_range": [
+      154,
+      161
+    ],
+    "gaps": [],
+    "overlaps": [],
+    "unresolved": [],
+    "verdict": "PASS",
+    "status": "PASS",
+    "required_changes": [],
+    "verified": [
+      "重新读取完整定义与caller的输入前提/UB地址空间",
+      "line_notes每行含签名/注释/brace/空行；读写方向与SIMD纯输出寄存器逐项核对",
+      "segments连续且输入机制输出原因具体",
+      "公式、返回值、成员副作用与调用目标明确",
+      "此函数无独立allocator；UB/tensor来自主kernel与Context，owner已在memory模型独立核对"
+    ]
+  },
+  {
+    "function_id": "epi-iter-163",
+    "revision": 4,
+    "draft_author": "walkthrough-agent",
+    "reviewer": "independent-review",
+    "source_sha256": "3666da791943b16986c7a0258c52cc022361c1a07d364098e0713036bd412a25",
+    "draft_sha256": "101b759f6f1580dee2f1dae07f9a9a8fbde17a0473d4236b45647a25d7b7873c",
+    "function_content_sha256": "6129102b1ea4a19815d130a4308079717f805ff4d767aba6bdc948cae8f95d7f",
+    "line_range": [
+      163,
+      165
+    ],
+    "gaps": [],
+    "overlaps": [],
+    "unresolved": [],
+    "verdict": "PASS",
+    "status": "PASS",
+    "required_changes": [],
+    "verified": [
+      "重新读取完整定义与caller的输入前提/UB地址空间",
+      "line_notes每行含签名/注释/brace/空行；读写方向与SIMD纯输出寄存器逐项核对",
+      "segments连续且输入机制输出原因具体",
+      "公式、返回值、成员副作用与调用目标明确",
+      "此函数无独立allocator；UB/tensor来自主kernel与Context，owner已在memory模型独立核对"
+    ]
+  },
+  {
+    "function_id": "epi-iter-167",
+    "revision": 4,
+    "draft_author": "walkthrough-agent",
+    "reviewer": "independent-review",
+    "source_sha256": "3666da791943b16986c7a0258c52cc022361c1a07d364098e0713036bd412a25",
+    "draft_sha256": "101b759f6f1580dee2f1dae07f9a9a8fbde17a0473d4236b45647a25d7b7873c",
+    "function_content_sha256": "0abe79695a0eff9c4953cfaca652d7ff72b46301c329942c8a340d9b9b688f65",
+    "line_range": [
+      167,
+      169
+    ],
+    "gaps": [],
+    "overlaps": [],
+    "unresolved": [],
+    "verdict": "PASS",
+    "status": "PASS",
+    "required_changes": [],
+    "verified": [
+      "重新读取完整定义与caller的输入前提/UB地址空间",
+      "line_notes每行含签名/注释/brace/空行；读写方向与SIMD纯输出寄存器逐项核对",
+      "segments连续且输入机制输出原因具体",
+      "公式、返回值、成员副作用与调用目标明确",
+      "此函数无独立allocator；UB/tensor来自主kernel与Context，owner已在memory模型独立核对"
+    ]
+  },
+  {
+    "function_id": "epi-iter-171",
+    "revision": 4,
+    "draft_author": "walkthrough-agent",
+    "reviewer": "independent-review",
+    "source_sha256": "3666da791943b16986c7a0258c52cc022361c1a07d364098e0713036bd412a25",
+    "draft_sha256": "101b759f6f1580dee2f1dae07f9a9a8fbde17a0473d4236b45647a25d7b7873c",
+    "function_content_sha256": "0a04ebf3aeab0e971d71291d72a6f9a8de4bf7d37e11bda9f776499350eea188",
+    "line_range": [
+      171,
+      173
+    ],
+    "gaps": [],
+    "overlaps": [],
+    "unresolved": [],
+    "verdict": "PASS",
+    "status": "PASS",
+    "required_changes": [],
+    "verified": [
+      "重新读取完整定义与caller的输入前提/UB地址空间",
+      "line_notes每行含签名/注释/brace/空行；读写方向与SIMD纯输出寄存器逐项核对",
+      "segments连续且输入机制输出原因具体",
+      "公式、返回值、成员副作用与调用目标明确",
+      "此函数无独立allocator；UB/tensor来自主kernel与Context，owner已在memory模型独立核对"
+    ]
+  }
+]

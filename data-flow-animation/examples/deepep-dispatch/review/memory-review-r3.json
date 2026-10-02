@@ -1,0 +1,54 @@
+[
+  {
+    "model": "dispatch",
+    "status": "PASS",
+    "verdict": "PASS",
+    "reviewer": "independent-review",
+    "draft_author": "root-memory",
+    "revision": 3,
+    "draft_sha256": "809dee5622dd7dd82be16164c01f1ce9be9dfadb959894fdc5f1a9aa7569043e",
+    "model_content_sha256": "485146277f58c6f11f95d42097a599248f6fa3984cff1fdbcda4ec19ebe88385",
+    "source_revisions": [
+      "DeepEP-Ascend@3b25377d04b24fc6154698ded78a2bcb2c59afff",
+      "DeepJIT-gitlink@65f513952b8771408a19202f65e36398522db6db"
+    ],
+    "required_changes": [],
+    "unresolved": [],
+    "verified": [
+      "重新对照两完整源码、TokenLayout、EPWorkspaceLayout、HcommJetty/barrier",
+      "全部region/transfer/path地址、Rank owner、byte/element长度与source evidence逐项核对",
+      "SymmetricMemory aclrtMalloc/memset/shared_ptr最终释放；Context/HCCLContext注册与映射",
+      "实际buffer fresh layout门禁、end_offset、2MiB对齐、hint形状假设和UB两个峰值",
+      "远端SGE直接x+紧凑metadata、固定SQ槽/NOP/末WRITE标志、advance仅UB/ring发布GM",
+      "count就绪不等payload；drain后消费；Host闭包保活x/metadata/context至drain排队",
+      "recv_src_metadata allocated Nrecv_alloc与used nrecv；fresh/cached专家raw-end与padding",
+      "L2显式hint、无显式L1 scratch、URMA控制内存不当payload或UB scratch"
+    ]
+  },
+  {
+    "model": "dispatch_copy_epilogue",
+    "status": "PASS",
+    "verdict": "PASS",
+    "reviewer": "independent-review",
+    "draft_author": "root-memory",
+    "revision": 3,
+    "draft_sha256": "809dee5622dd7dd82be16164c01f1ce9be9dfadb959894fdc5f1a9aa7569043e",
+    "model_content_sha256": "c983271937b0108d3bcc0daeaabb2d3489d72e82f53243e02eada1a9c2b0144a",
+    "source_revisions": [
+      "DeepEP-Ascend@3b25377d04b24fc6154698ded78a2bcb2c59afff",
+      "DeepJIT-gitlink@65f513952b8771408a19202f65e36398522db6db"
+    ],
+    "required_changes": [],
+    "unresolved": [],
+    "verified": [
+      "重新对照两完整源码、TokenLayout、EPWorkspaceLayout、HcommJetty/barrier",
+      "全部region/transfer/path地址、Rank owner、byte/element长度与source evidence逐项核对",
+      "SymmetricMemory aclrtMalloc/memset/shared_ptr最终释放；Context/HCCLContext注册与映射",
+      "实际buffer fresh layout门禁、end_offset、2MiB对齐、hint形状假设和UB两个峰值",
+      "远端SGE直接x+紧凑metadata、固定SQ槽/NOP/末WRITE标志、advance仅UB/ring发布GM",
+      "count就绪不等payload；drain后消费；Host闭包保活x/metadata/context至drain排队",
+      "recv_src_metadata allocated Nrecv_alloc与used nrecv；fresh/cached专家raw-end与padding",
+      "L2显式hint、无显式L1 scratch、URMA控制内存不当payload或UB scratch"
+    ]
+  }
+]

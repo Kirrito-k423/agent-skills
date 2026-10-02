@@ -1,0 +1,393 @@
+[
+  {
+    "function_id": "epi-fill-21",
+    "revision": 4,
+    "draft_author": "walkthrough-agent",
+    "reviewer": "independent-review",
+    "source_sha256": "3666da791943b16986c7a0258c52cc022361c1a07d364098e0713036bd412a25",
+    "draft_sha256": "101b759f6f1580dee2f1dae07f9a9a8fbde17a0473d4236b45647a25d7b7873c",
+    "function_content_sha256": "28b0a5b1ab908b05c112417097b85d45b7ea41c85250720c3d0b36f4900317ec",
+    "line_range": [
+      21,
+      30
+    ],
+    "gaps": [],
+    "overlaps": [],
+    "unresolved": [],
+    "verdict": "PASS",
+    "status": "PASS",
+    "required_changes": [],
+    "verified": [
+      "重新读取完整定义与caller的输入前提/UB地址空间",
+      "line_notes每行含签名/注释/brace/空行；读写方向与SIMD纯输出寄存器逐项核对",
+      "segments连续且输入机制输出原因具体",
+      "公式、返回值、成员副作用与调用目标明确",
+      "此函数无独立allocator；UB/tensor来自主kernel与Context，owner已在memory模型独立核对"
+    ]
+  },
+  {
+    "function_id": "epi-histogram-37",
+    "revision": 5,
+    "draft_author": "walkthrough-agent",
+    "reviewer": "independent-review",
+    "source_sha256": "3666da791943b16986c7a0258c52cc022361c1a07d364098e0713036bd412a25",
+    "draft_sha256": "dc01efb69a3429d1deae73490f57c535ea05bb5f6509f16613fce3dd9613ac6a",
+    "function_content_sha256": "5c8a1d8c0a15473523e7aa3adaa931a442304ba98c7dd7ff1d6501ab44b10423",
+    "line_range": [
+      37,
+      101
+    ],
+    "gaps": [],
+    "overlaps": [],
+    "unresolved": [],
+    "verdict": "PASS",
+    "status": "PASS",
+    "required_changes": [],
+    "verified": [
+      "重新读取完整定义与caller的输入前提/UB地址空间",
+      "line_notes每行含签名/注释/brace/空行；读写方向与SIMD纯输出寄存器逐项核对",
+      "segments连续且输入机制输出原因具体",
+      "候选桶padding与真实本地专家范围、uint16到uint32累加明确",
+      "此函数无独立allocator；UB/tensor来自主kernel与Context，owner已在memory模型独立核对",
+      "独立复审renderer整改：仅既有标识符周边空白，calls/notes/IO/ranges完全一致"
+    ],
+    "prior_function_content_sha256": "09e0cf0f89e8e7a96e9a2ecf19c3207b48e3279d96ad5fb385e9a470f270e5d5"
+  },
+  {
+    "function_id": "epi-init-slot-107",
+    "revision": 5,
+    "draft_author": "walkthrough-agent",
+    "reviewer": "independent-review",
+    "source_sha256": "3666da791943b16986c7a0258c52cc022361c1a07d364098e0713036bd412a25",
+    "draft_sha256": "dc01efb69a3429d1deae73490f57c535ea05bb5f6509f16613fce3dd9613ac6a",
+    "function_content_sha256": "49216fae715e20351ca043d2195b3152615829523d5e31841903588e1fcb0269",
+    "line_range": [
+      107,
+      128
+    ],
+    "gaps": [],
+    "overlaps": [],
+    "unresolved": [],
+    "verdict": "PASS",
+    "status": "PASS",
+    "required_changes": [],
+    "verified": [
+      "重新读取完整定义与caller的输入前提/UB地址空间",
+      "line_notes每行含签名/注释/brace/空行；读写方向与SIMD纯输出寄存器逐项核对",
+      "segments连续且输入机制输出原因具体",
+      "公式、返回值、成员副作用与调用目标明确",
+      "此函数无独立allocator；UB/tensor来自主kernel与Context，owner已在memory模型独立核对",
+      "独立复审renderer整改：仅既有标识符周边空白，calls/notes/IO/ranges完全一致"
+    ],
+    "prior_function_content_sha256": "f637ae6f108a883e67e0e66e1cc0f0a631105238ad173f874a7d0a188cddbe75"
+  },
+  {
+    "function_id": "epi-iter-139",
+    "revision": 4,
+    "draft_author": "walkthrough-agent",
+    "reviewer": "independent-review",
+    "source_sha256": "3666da791943b16986c7a0258c52cc022361c1a07d364098e0713036bd412a25",
+    "draft_sha256": "101b759f6f1580dee2f1dae07f9a9a8fbde17a0473d4236b45647a25d7b7873c",
+    "function_content_sha256": "dda5e475844d4fef2f9350b9c7e762ada48483a5458e1e7f0557aa3a9c582902",
+    "line_range": [
+      139,
+      148
+    ],
+    "gaps": [],
+    "overlaps": [],
+    "unresolved": [],
+    "verdict": "PASS",
+    "status": "PASS",
+    "required_changes": [],
+    "verified": [
+      "重新读取完整定义与caller的输入前提/UB地址空间",
+      "line_notes每行含签名/注释/brace/空行；读写方向与SIMD纯输出寄存器逐项核对",
+      "segments连续且输入机制输出原因具体",
+      "公式、返回值、成员副作用与调用目标明确",
+      "此函数无独立allocator；UB/tensor来自主kernel与Context，owner已在memory模型独立核对"
+    ]
+  },
+  {
+    "function_id": "epi-iter-150",
+    "revision": 4,
+    "draft_author": "walkthrough-agent",
+    "reviewer": "independent-review",
+    "source_sha256": "3666da791943b16986c7a0258c52cc022361c1a07d364098e0713036bd412a25",
+    "draft_sha256": "101b759f6f1580dee2f1dae07f9a9a8fbde17a0473d4236b45647a25d7b7873c",
+    "function_content_sha256": "ff41090d66e548ed16b288b413d7f1f5e267902fc5edcd49e7fb71488ef2ad20",
+    "line_range": [
+      150,
+      152
+    ],
+    "gaps": [],
+    "overlaps": [],
+    "unresolved": [],
+    "verdict": "PASS",
+    "status": "PASS",
+    "required_changes": [],
+    "verified": [
+      "重新读取完整定义与caller的输入前提/UB地址空间",
+      "line_notes每行含签名/注释/brace/空行；读写方向与SIMD纯输出寄存器逐项核对",
+      "segments连续且输入机制输出原因具体",
+      "公式、返回值、成员副作用与调用目标明确",
+      "此函数无独立allocator；UB/tensor来自主kernel与Context，owner已在memory模型独立核对"
+    ]
+  },
+  {
+    "function_id": "epi-iter-154",
+    "revision": 4,
+    "draft_author": "walkthrough-agent",
+    "reviewer": "independent-review",
+    "source_sha256": "3666da791943b16986c7a0258c52cc022361c1a07d364098e0713036bd412a25",
+    "draft_sha256": "101b759f6f1580dee2f1dae07f9a9a8fbde17a0473d4236b45647a25d7b7873c",
+    "function_content_sha256": "e13083ed469cdf7feb322d1ddb544b87e5de235f9af0862519019785f366dabf",
+    "line_range": [
+      154,
+      161
+    ],
+    "gaps": [],
+    "overlaps": [],
+    "unresolved": [],
+    "verdict": "PASS",
+    "status": "PASS",
+    "required_changes": [],
+    "verified": [
+      "重新读取完整定义与caller的输入前提/UB地址空间",
+      "line_notes每行含签名/注释/brace/空行；读写方向与SIMD纯输出寄存器逐项核对",
+      "segments连续且输入机制输出原因具体",
+      "公式、返回值、成员副作用与调用目标明确",
+      "此函数无独立allocator；UB/tensor来自主kernel与Context，owner已在memory模型独立核对"
+    ]
+  },
+  {
+    "function_id": "epi-iter-163",
+    "revision": 4,
+    "draft_author": "walkthrough-agent",
+    "reviewer": "independent-review",
+    "source_sha256": "3666da791943b16986c7a0258c52cc022361c1a07d364098e0713036bd412a25",
+    "draft_sha256": "101b759f6f1580dee2f1dae07f9a9a8fbde17a0473d4236b45647a25d7b7873c",
+    "function_content_sha256": "6129102b1ea4a19815d130a4308079717f805ff4d767aba6bdc948cae8f95d7f",
+    "line_range": [
+      163,
+      165
+    ],
+    "gaps": [],
+    "overlaps": [],
+    "unresolved": [],
+    "verdict": "PASS",
+    "status": "PASS",
+    "required_changes": [],
+    "verified": [
+      "重新读取完整定义与caller的输入前提/UB地址空间",
+      "line_notes每行含签名/注释/brace/空行；读写方向与SIMD纯输出寄存器逐项核对",
+      "segments连续且输入机制输出原因具体",
+      "公式、返回值、成员副作用与调用目标明确",
+      "此函数无独立allocator；UB/tensor来自主kernel与Context，owner已在memory模型独立核对"
+    ]
+  },
+  {
+    "function_id": "epi-iter-167",
+    "revision": 5,
+    "draft_author": "walkthrough-agent",
+    "reviewer": "independent-review",
+    "source_sha256": "3666da791943b16986c7a0258c52cc022361c1a07d364098e0713036bd412a25",
+    "draft_sha256": "dc01efb69a3429d1deae73490f57c535ea05bb5f6509f16613fce3dd9613ac6a",
+    "function_content_sha256": "fb190026190bbb53fd770ab573d65f9c8402f067f05230e1742d56744a73e4a8",
+    "line_range": [
+      167,
+      169
+    ],
+    "gaps": [],
+    "overlaps": [],
+    "unresolved": [],
+    "verdict": "PASS",
+    "status": "PASS",
+    "required_changes": [],
+    "verified": [
+      "重新读取完整定义与caller的输入前提/UB地址空间",
+      "line_notes每行含签名/注释/brace/空行；读写方向与SIMD纯输出寄存器逐项核对",
+      "segments连续且输入机制输出原因具体",
+      "公式、返回值、成员副作用与调用目标明确",
+      "此函数无独立allocator；UB/tensor来自主kernel与Context，owner已在memory模型独立核对",
+      "独立复审renderer整改：仅既有标识符周边空白，calls/notes/IO/ranges完全一致；getter返回三种余量最小值说明扩写与168行公式一致"
+    ],
+    "prior_function_content_sha256": "0abe79695a0eff9c4953cfaca652d7ff72b46301c329942c8a340d9b9b688f65"
+  },
+  {
+    "function_id": "epi-iter-171",
+    "revision": 4,
+    "draft_author": "walkthrough-agent",
+    "reviewer": "independent-review",
+    "source_sha256": "3666da791943b16986c7a0258c52cc022361c1a07d364098e0713036bd412a25",
+    "draft_sha256": "101b759f6f1580dee2f1dae07f9a9a8fbde17a0473d4236b45647a25d7b7873c",
+    "function_content_sha256": "0a04ebf3aeab0e971d71291d72a6f9a8de4bf7d37e11bda9f776499350eea188",
+    "line_range": [
+      171,
+      173
+    ],
+    "gaps": [],
+    "overlaps": [],
+    "unresolved": [],
+    "verdict": "PASS",
+    "status": "PASS",
+    "required_changes": [],
+    "verified": [
+      "重新读取完整定义与caller的输入前提/UB地址空间",
+      "line_notes每行含签名/注释/brace/空行；读写方向与SIMD纯输出寄存器逐项核对",
+      "segments连续且输入机制输出原因具体",
+      "公式、返回值、成员副作用与调用目标明确",
+      "此函数无独立allocator；UB/tensor来自主kernel与Context，owner已在memory模型独立核对"
+    ]
+  },
+  {
+    "function_id": "dispatch-simt-77",
+    "revision": 5,
+    "draft_author": "walkthrough-agent",
+    "reviewer": "independent-review",
+    "source_sha256": "25244c66d5937e9e7521400792c2e0ddc974512971f582e95d19c4828c31b678",
+    "draft_sha256": "c677c39bd97dd8d012890977136938a59e146388b03c68435c37786eb099ca82",
+    "function_content_sha256": "f96927221de9d7fc47ffb6cb304e65161502f9dad7acd2048a8cdfa834def2b5",
+    "line_range": [
+      77,
+      549
+    ],
+    "gaps": [],
+    "overlaps": [],
+    "unresolved": [],
+    "verdict": "PASS",
+    "status": "PASS",
+    "required_changes": [],
+    "verified": [
+      "lane组同token Rank去重但expert频数不去重；原子槽顺序与输入顺序分开",
+      "同warp两段AIV排他前缀、arrival状态复用/清零与local_copy_ready发布",
+      "逻辑SGE cached恢复、4WQEBB固定槽/NOP/owner位/最后WRITE完成标志",
+      "metadata_ready后local GM copy；raw expert计数、host aligned通知与两类psum不同",
+      "完整定义逐行含signature/comment/brace/blank复核；无fallback或错误跨域变量解释",
+      "caller/callee真实调用点、IO/成员/GM/UB/remote状态变化核对",
+      "allocator/owner/capacity/alignment/lifetime/cache边界详见独立PASS memory-review-r3",
+      "独立复审renderer整改：仅既有标识符周边空白，calls/notes/IO/ranges完全一致"
+    ],
+    "prior_function_content_sha256": "097e81b6b9fea41f68d211aa2af66fd7f49ea44945e0266cdb4db4b47218033d"
+  },
+  {
+    "function_id": "dispatch-impl-551",
+    "revision": 5,
+    "draft_author": "walkthrough-agent",
+    "reviewer": "independent-review",
+    "source_sha256": "25244c66d5937e9e7521400792c2e0ddc974512971f582e95d19c4828c31b678",
+    "draft_sha256": "c677c39bd97dd8d012890977136938a59e146388b03c68435c37786eb099ca82",
+    "function_content_sha256": "988e21a222c96f2a26a64eee1df900afcdc2ea18ec2009010881bb5290fc0831",
+    "line_range": [
+      551,
+      865
+    ],
+    "gaps": [],
+    "overlaps": [],
+    "unresolved": [],
+    "verdict": "PASS",
+    "status": "PASS",
+    "required_changes": [],
+    "verified": [
+      "模板计数/容量门禁与UB预算，首屏障和可选尾drain区别",
+      "异步SIMT启动；metadata SF连续/NDDMA、fresh TopK/src、可选weight打包",
+      "MTE2/S/MTE3阶段事件、metadata_ready与local_copy_ready独立依赖",
+      "local hidden仅经UB，remote hidden直接x；advance_sq仅UB，ring才GM head+DSB+doorbell",
+      "完整定义逐行含signature/comment/brace/blank复核；无fallback或错误跨域变量解释",
+      "caller/callee真实调用点、IO/成员/GM/UB/remote状态变化核对",
+      "allocator/owner/capacity/alignment/lifetime/cache边界详见独立PASS memory-review-r3",
+      "独立复审renderer整改：仅既有标识符周边空白，calls/notes/IO/ranges完全一致"
+    ],
+    "prior_function_content_sha256": "2dca5d9b898a6f68366f5f90b746305af40e1b6289aac54a6b444165019a8bc4"
+  },
+  {
+    "function_id": "dispatch-preload-688",
+    "revision": 5,
+    "draft_author": "walkthrough-agent",
+    "reviewer": "independent-review",
+    "source_sha256": "25244c66d5937e9e7521400792c2e0ddc974512971f582e95d19c4828c31b678",
+    "draft_sha256": "c677c39bd97dd8d012890977136938a59e146388b03c68435c37786eb099ca82",
+    "function_content_sha256": "625f05fc0060000a6c709d3b8b308067c195f65092a89981b97b0a8ab8312005",
+    "line_range": [
+      688,
+      753
+    ],
+    "gaps": [],
+    "overlaps": [],
+    "unresolved": [],
+    "verdict": "PASS",
+    "status": "PASS",
+    "required_changes": [],
+    "verified": [
+      "token/stage双坐标与尾AIV夹取",
+      "SF stride1与二维NDDMA的element stride；fresh Top-K与可选weight输入范围",
+      "MTE3释放后复用UB，MTE2→S发布；TokenLayout视图不是(K+2)回程metadata",
+      "完整定义逐行含signature/comment/brace/blank复核；无fallback或错误跨域变量解释",
+      "caller/callee真实调用点、IO/成员/GM/UB/remote状态变化核对",
+      "allocator/owner/capacity/alignment/lifetime/cache边界详见独立PASS memory-review-r3",
+      "独立复审renderer整改：仅既有标识符周边空白，calls/notes/IO/ranges完全一致"
+    ],
+    "prior_function_content_sha256": "e98fdf26656e4bf01d81b5c0048acf7da3177e8210fd80e1fbaad62b298af8bc"
+  },
+  {
+    "function_id": "epi-impl-176",
+    "revision": 5,
+    "draft_author": "walkthrough-agent",
+    "reviewer": "independent-review",
+    "source_sha256": "3666da791943b16986c7a0258c52cc022361c1a07d364098e0713036bd412a25",
+    "draft_sha256": "dc01efb69a3429d1deae73490f57c535ea05bb5f6509f16613fce3dd9613ac6a",
+    "function_content_sha256": "18ab158c94816faa41c1a9cafa15eed022e8c53c5850689a29fa437974627043",
+    "line_range": [
+      176,
+      621
+    ],
+    "gaps": [],
+    "overlaps": [],
+    "unresolved": [],
+    "verdict": "PASS",
+    "status": "PASS",
+    "required_changes": [],
+    "verified": [
+      "入口drain/barrier与host配置；接收流按来源Rank切片",
+      "histogram与token staging分阶段复用，常驻expert两数组、metadata两stage、zero预算",
+      "clear barrier→atomic MTE3广播→cumsum barrier→GM prefix回读→SIMD aligned start",
+      "fresh分配专家绝对输出行，cached读取已保存slot；最后本地j master",
+      "hidden/SF MTE3与weight Scalar写，K+2回程metadata保存，stage事件回收",
+      "padding均分最多4part、重复zero源、SF整块与tail、状态恢复、关闭补零保持未定义",
+      "完整定义逐行含signature/comment/brace/blank复核；无fallback或错误跨域变量解释",
+      "caller/callee真实调用点、IO/成员/GM/UB/remote状态变化核对",
+      "allocator/owner/capacity/alignment/lifetime/cache边界详见独立PASS memory-review-r3",
+      "独立复审renderer整改：仅既有标识符周边空白，calls/notes/IO/ranges完全一致"
+    ],
+    "prior_function_content_sha256": "ebee62b34ee816371608dfc1c66eda0273f38fe0d9f201d149abf4ec742a8b47"
+  },
+  {
+    "function_id": "epi-issue-load-291",
+    "revision": 5,
+    "draft_author": "walkthrough-agent",
+    "reviewer": "independent-review",
+    "source_sha256": "3666da791943b16986c7a0258c52cc022361c1a07d364098e0713036bd412a25",
+    "draft_sha256": "dc01efb69a3429d1deae73490f57c535ea05bb5f6509f16613fce3dd9613ac6a",
+    "function_content_sha256": "608ac78ee0595b87df8c4f7d00ad43d36f79648a0b12e1766058b3fd9680f3d4",
+    "line_range": [
+      291,
+      324
+    ],
+    "gaps": [],
+    "overlaps": [],
+    "unresolved": [],
+    "verdict": "PASS",
+    "status": "PASS",
+    "required_changes": [],
+    "verified": [
+      "PSumIterator只向前跳过空Rank、三边界批长",
+      "GM固定Rank容量切片与紧凑接收流坐标换算",
+      "初始预取/refill分支、MTE3→MTE2回收与MTE2→S发布",
+      "stage真实长度/全局base记录及issue_iter推进",
+      "完整定义逐行含signature/comment/brace/blank复核；无fallback或错误跨域变量解释",
+      "caller/callee真实调用点、IO/成员/GM/UB/remote状态变化核对",
+      "allocator/owner/capacity/alignment/lifetime/cache边界详见独立PASS memory-review-r3",
+      "独立复审renderer整改：仅既有标识符周边空白，calls/notes/IO/ranges完全一致"
+    ],
+    "prior_function_content_sha256": "22bf76e7d208d3e4cea245ee0a503ad310ed036eec353b4c4a51dcf898c392d0"
+  }
+]

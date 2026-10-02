@@ -1,0 +1,1880 @@
+{
+  "dispatch": {
+    "summary": "远端hidden直接由SGE引用输入GM；metadata经UB打包到GM；本机hidden经UB而本机metadata走SIMT store；统计/doorbell和payload分别建边。",
+    "facts": [
+      "当前Rank s和目标Rank d的GM是不同owner；远端通信窗口是对称分配的地址映射。",
+      "AIV __ubuf__ staging由kernel按runtime U静态切片，不进行设备malloc。",
+      "本实现没有独立shared-expert专用发送分支；如路由命中此类专家，仍遵循普通topk/Rank路径。",
+      "输入SF、权重和补零是条件路径；metadata对齐padding或未写入区域不视为零。",
+      "L2 NORMAL_FV、NOTALLOC_CLEAN、NOTALLOC_CI提示在源码显式可见；未见显式L1 scratch。",
+      "doorbell是提交；消费payload需实际配置中的drain+跨Rank barrier，不能由count通知推断数据到达。"
+    ],
+    "canvas": {
+      "width": 1240,
+      "height": 650
+    },
+    "spaces": [
+      {
+        "id": "gm",
+        "name": "当前 Rank GM",
+        "kind": "gm",
+        "scope": "当前执行Rank",
+        "color": "#2457d6",
+        "description": "输入、元数据、通信buffer与框架输出位于当前Rank的设备全局内存。"
+      },
+      {
+        "id": "ub",
+        "name": "当前 AIV UB",
+        "kind": "ub",
+        "scope": "vec_core_idx私有片上UB",
+        "color": "#b66516",
+        "description": "__ubuf__指针从地址0划分本AIV的workspace、staging与复用区。"
+      },
+      {
+        "id": "remote",
+        "name": "目标 Rank GM",
+        "kind": "gm",
+        "scope": "远端Rank d，d != s",
+        "color": "#168765",
+        "description": "由HCCL/HCOMM注册并映射的对端对称分配；不是本Rank再次malloc。"
+      },
+      {
+        "id": "control",
+        "name": "队列与通知控制面",
+        "kind": "control",
+        "scope": "当前Rank jetty及对端UBMEM signal",
+        "color": "#8650b8",
+        "description": "HCOMM拥有SQ、doorbell与完成队列；EPSignals提供跨AIV/跨Rank统计和握手。"
+      },
+      {
+        "id": "host",
+        "name": "CPU 映射通知区",
+        "kind": "control",
+        "scope": "当前Rank Host/NPU映射地址",
+        "color": "#607285",
+        "description": "Host pinned allocation登记成NPU可写映射，用于CPU精确计数。"
+      }
+    ],
+    "regions": [
+      {
+        "id": "x",
+        "space_id": "gm",
+        "name": "输入 hidden x",
+        "owner": "当前Rank s",
+        "address": "x + token_idx*Hbytes",
+        "size": "allocated=N*Hbytes；每次hidden读Hbytes",
+        "purpose": "远端SGE直接引用；本机hidden先到UB",
+        "position": {
+          "x": 120,
+          "y": 90
+        },
+        "evidence_lines": [
+          409,
+          820
+        ]
+      },
+      {
+        "id": "aux",
+        "space_id": "gm",
+        "name": "topk_idx / sf / weights",
+        "owner": "当前Rank s",
+        "address": "topk_idx + token_idx*K；sf/weights按stride",
+        "size": "allocated=8NK+optional(2NP+4NK)；有效N行",
+        "purpose": "元数据来源；cached不重复搬topk",
+        "position": {
+          "x": 120,
+          "y": 280
+        },
+        "evidence_lines": [
+          177,
+          698,
+          729,
+          741
+        ]
+      },
+      {
+        "id": "ub-meta",
+        "space_id": "ub",
+        "name": "metadata staging",
+        "owner": "AIV c 私有",
+        "address": "ub->metadata[stage_idx]",
+        "size": "reserved=stages*stageBytes；used=batch*Tmeta",
+        "purpose": "SF、topk、weights及fresh全局token编号",
+        "position": {
+          "x": 380,
+          "y": 280
+        },
+        "evidence_lines": [
+          635,
+          639,
+          688,
+          779
+        ]
+      },
+      {
+        "id": "meta",
+        "space_id": "gm",
+        "name": "metadata_send_buffer",
+        "owner": "当前Rank s",
+        "address": "metadata_send_buffer + token_idx*Tmeta",
+        "size": "allocated=N*Tmeta_fresh；used=N*Tmeta_current",
+        "purpose": "紧凑打包元数据，URMA与self store读源",
+        "position": {
+          "x": 640,
+          "y": 280
+        },
+        "evidence_lines": [
+          413,
+          439,
+          786,
+          787
+        ]
+      },
+      {
+        "id": "ub-hidden",
+        "space_id": "ub",
+        "name": "hidden staging",
+        "owner": "AIV c 私有",
+        "address": "ub->hidden[hidden_stage_idx]",
+        "size": "reserved=stages*align32(Hbytes)；used=Hbytes/stage",
+        "purpose": "仅本机hidden经MTE2/MTE3复制",
+        "position": {
+          "x": 380,
+          "y": 90
+        },
+        "evidence_lines": [
+          814,
+          819,
+          833
+        ]
+      },
+      {
+        "id": "self",
+        "space_id": "gm",
+        "name": "本机接收分区",
+        "owner": "当前Rank s，同时为目的",
+        "address": "buffer[s] + s*M*T + slot*T",
+        "size": "reserved=M*T；used=N(s→s)*T",
+        "purpose": "self-copy，按来源Rank s保留分区",
+        "position": {
+          "x": 640,
+          "y": 90
+        },
+        "evidence_lines": [
+          623,
+          832,
+          441
+        ]
+      },
+      {
+        "id": "remote-buffer",
+        "space_id": "remote",
+        "name": "远端接收分区",
+        "owner": "目标Rank d != s",
+        "address": "buffer[d] + s*M*T + slot*T",
+        "size": "reserved=M*T/源Rank；used=N(s→d)*T",
+        "purpose": "hidden+metadata顺序拼接，源Rank固定容量分区",
+        "position": {
+          "x": 1080,
+          "y": 210
+        },
+        "evidence_lines": [
+          402,
+          621,
+          623,
+          681
+        ]
+      },
+      {
+        "id": "route",
+        "space_id": "ub",
+        "name": "DispatchUBLayout",
+        "owner": "AIV c 私有",
+        "address": "ub->workspace",
+        "size": "reserved=sizeof(DispatchUBLayout)；entry有效<=Ctoken*K",
+        "purpose": "rank/expert计数、slot/SGE、jetty descriptors",
+        "position": {
+          "x": 380,
+          "y": 470
+        },
+        "evidence_lines": [
+          27,
+          33,
+          46,
+          302,
+          634
+        ]
+      },
+      {
+        "id": "sq",
+        "space_id": "control",
+        "name": "SQ / WQEBB",
+        "owner": "当前Rank s，AIV c 的jetty",
+        "address": "sq_base_addr + wqebb_idx*64",
+        "size": "协议容量kSQDepth*64；本次SQE数*256B",
+        "purpose": "描述符存储；不是token payload",
+        "position": {
+          "x": 640,
+          "y": 470
+        },
+        "evidence_lines": [
+          422,
+          423,
+          424,
+          852
+        ]
+      },
+      {
+        "id": "db",
+        "space_id": "control",
+        "name": "SQ head / doorbell",
+        "owner": "当前Rank s，AIV c 的jetty",
+        "address": "jetty_info.sq_head_addr / sq_doorbell_addr",
+        "size": "head8B+doorbell4B逻辑字段；本次一次commit",
+        "purpose": "推进head并让URMA消费已准备SQE",
+        "position": {
+          "x": 880,
+          "y": 470
+        },
+        "evidence_lines": [
+          855,
+          856,
+          857
+        ]
+      },
+      {
+        "id": "stats",
+        "space_id": "gm",
+        "name": "本机 EPSignals / prefixes",
+        "owner": "当前Rank s",
+        "address": "workspace_layout signals与psum指针",
+        "size": "reserved=S及独立int张量；used=活动E/R/C统计",
+        "purpose": "到达计数与数据到达不是同一状态",
+        "position": {
+          "x": 120,
+          "y": 470
+        },
+        "evidence_lines": [
+          213,
+          220,
+          221,
+          517,
+          538
+        ]
+      },
+      {
+        "id": "remote-stats",
+        "space_id": "remote",
+        "name": "对端统计 signal",
+        "owner": "目标Rank d",
+        "address": "get_sym_ptr(signals,stats_ptr,d)",
+        "size": "reserved=对端S内部固定数组；used=活动专家/Rank计数",
+        "purpose": "UBMEM远端原子归约与rank总数通知",
+        "position": {
+          "x": 1080,
+          "y": 470
+        },
+        "evidence_lines": [
+          318,
+          320,
+          323,
+          461
+        ]
+      },
+      {
+        "id": "host-count",
+        "space_id": "host",
+        "name": "Host count映射",
+        "owner": "当前Rank s / Host",
+        "address": "host_workspace_layout.get_host_*_count_ptr",
+        "size": "allocated=S pinned；used=R+E/R个int字段",
+        "purpose": "CPU-sync读取精确分配计数",
+        "position": {
+          "x": 880,
+          "y": 90
+        },
+        "evidence_lines": [
+          479,
+          480,
+          540,
+          541
+        ]
+      }
+    ],
+    "transfers": [
+      {
+        "id": "meta-load",
+        "kind": "data",
+        "from": "aux",
+        "to": "ub-meta",
+        "function_id": "dispatch-preload-688",
+        "line": 728,
+        "api": "asc_copy_gm2ub_align",
+        "engine": "MTE2",
+        "size": "batch*K*8B；可选SF batch*2P、weights batch*4K",
+        "source_address": "topk_idx+token_idx*K / sf+token_idx*stride / topk_weights+token_idx*K",
+        "target_address": "UB metadata token字段，dst stride=Tmeta",
+        "sync": "MTE3→MTE2 stage复用；MTE2→S completion",
+        "description": "fresh搬topk；SF行连续copy/列连续NDDMA；weights非空才搬",
+        "module_ids": [
+          "metadata"
+        ],
+        "evidence_lines": [
+          701,
+          720,
+          728,
+          729,
+          741,
+          752
+        ],
+        "curve": 0
+      },
+      {
+        "id": "meta-pack",
+        "kind": "data",
+        "from": "ub-meta",
+        "to": "meta",
+        "function_id": "dispatch-impl-551",
+        "line": 786,
+        "api": "asc_copy_ub2gm_align",
+        "engine": "MTE3",
+        "size": "batch*Tmeta bytes",
+        "source_address": "ub_metadata_buffer.get_token_buffer(stage*Kstage).base",
+        "target_address": "metadata_send_buffer+first_token_idx*Tmeta",
+        "sync": "S→MTE3保障global_idx写入；各stage MTE3完成后metadata_ready=1",
+        "description": "把打包metadata写GM，供远端SGE和本机uint64 store读取",
+        "module_ids": [
+          "issue"
+        ],
+        "evidence_lines": [
+          779,
+          784,
+          785,
+          786,
+          787,
+          788,
+          798,
+          801
+        ],
+        "curve": 0
+      },
+      {
+        "id": "self-load",
+        "kind": "data",
+        "from": "x",
+        "to": "ub-hidden",
+        "function_id": "dispatch-impl-551",
+        "line": 818,
+        "api": "asc_copy_gm2ub_align",
+        "engine": "MTE2",
+        "size": "Hbytes bytes/本机token",
+        "source_address": "x+token_idx*Hbytes",
+        "target_address": "ub->hidden[hidden_stage_idx]",
+        "sync": "local_copy_ready说明slot已产生；MTE3→MTE2保护staging复用",
+        "description": "本机hidden原文输入搬入当前AIV UB",
+        "module_ids": [
+          "issue"
+        ],
+        "evidence_lines": [
+          803,
+          814,
+          817,
+          818,
+          820,
+          827
+        ],
+        "curve": 0
+      },
+      {
+        "id": "self-store",
+        "kind": "data",
+        "from": "ub-hidden",
+        "to": "self",
+        "function_id": "dispatch-impl-551",
+        "line": 831,
+        "api": "asc_copy_ub2gm_align",
+        "engine": "MTE3",
+        "size": "Hbytes bytes/本机token",
+        "source_address": "ub->hidden[hidden_stage_idx]",
+        "target_address": "buffer[s]+s*M*T+dst_slot_idx*T",
+        "sync": "MTE2→MTE3 wait；MTE3→MTE2回收stage",
+        "description": "把本机token hidden写本机接收分区",
+        "module_ids": [
+          "issue"
+        ],
+        "evidence_lines": [
+          830,
+          831,
+          832,
+          833,
+          838
+        ],
+        "curve": 0
+      },
+      {
+        "id": "self-meta",
+        "kind": "data",
+        "from": "meta",
+        "to": "self",
+        "function_id": "dispatch-simt-77",
+        "line": 444,
+        "api": "asc_stcg",
+        "engine": "SIMT GM store",
+        "size": "Tmeta bytes，uint64分工",
+        "source_address": "metadata_send_buffer+token_idx*Tmeta",
+        "target_address": "workspace_base+recv_buffer_offset+slot*T+Hbytes",
+        "sync": "metadata_ready==1后SIMT同步；VF完成后S join",
+        "description": "本机metadata绕过UB hidden管线，直接GM到GM分word store",
+        "module_ids": [
+          "routing"
+        ],
+        "evidence_lines": [
+          431,
+          439,
+          440,
+          441,
+          444
+        ],
+        "curve": 0
+      },
+      {
+        "id": "remote-hidden",
+        "kind": "data",
+        "from": "x",
+        "to": "remote-buffer",
+        "function_id": "dispatch-simt-77",
+        "line": 409,
+        "api": "URMA WRITE · hidden SGE",
+        "engine": "URMA网络引擎",
+        "size": "每SGE Hbytes；每SQE至多6 token pairs",
+        "source_address": "x+token_idx*Hbytes",
+        "target_address": "peer_info->rmt_base_addr+recv_buffer_offset+slot*T",
+        "sync": "SQE全写完且metadata/self-copy完成后ring DB；drain+跨Rank barrier后接收端读",
+        "description": "SQE hidden描述符直接引用x；没有远端hidden的UB打包步骤",
+        "module_ids": [
+          "routing"
+        ],
+        "evidence_lines": [
+          402,
+          407,
+          409,
+          422,
+          857
+        ],
+        "curve": 0
+      },
+      {
+        "id": "remote-meta",
+        "kind": "data",
+        "from": "meta",
+        "to": "remote-buffer",
+        "function_id": "dispatch-simt-77",
+        "line": 413,
+        "api": "URMA WRITE · metadata SGE",
+        "engine": "URMA网络引擎",
+        "size": "每SGE Tmeta；与hidden形成一行T bytes",
+        "source_address": "metadata_send_buffer+token_idx*Tmeta",
+        "target_address": "peer destination slot*T+Hbytes（hidden SGE后顺序拼接）",
+        "sync": "metadata_ready发布前已等MTE3；最后WRITE strong-order/fence/CQE，消费前drain/barrier",
+        "description": "在同一WRITE中交错hidden与metadata两段SGE",
+        "module_ids": [
+          "routing"
+        ],
+        "evidence_lines": [
+          402,
+          411,
+          413,
+          414,
+          422,
+          857
+        ],
+        "curve": 30
+      },
+      {
+        "id": "sq-write",
+        "kind": "control",
+        "from": "route",
+        "to": "sq",
+        "function_id": "dispatch-simt-77",
+        "line": 422,
+        "api": "asc_stcg · SQE",
+        "engine": "SIMT GM store",
+        "size": "4*64B固定槽；48B头+最多12*16B SGE，余块NOP",
+        "source_address": "SIMT构造sqe_word；peer_info、sgep_to_entry与slot映射",
+        "target_address": "sq_base_addr+(wqebb_head%kSQDepth)*64+laneWord*8",
+        "sync": "所有warp写descriptor；V→S完成join在ring DB前",
+        "description": "把UB route/peer元数据编成实际SQ描述符",
+        "module_ids": [
+          "routing"
+        ],
+        "evidence_lines": [
+          351,
+          352,
+          393,
+          396,
+          417,
+          422,
+          423,
+          424,
+          849,
+          850
+        ],
+        "curve": 0
+      },
+      {
+        "id": "sq-commit",
+        "kind": "control",
+        "from": "sq",
+        "to": "db",
+        "function_id": "dispatch-impl-551",
+        "line": 857,
+        "api": "jetty.ring_doorbell",
+        "engine": "Scalar / GM head+MMIO",
+        "size": "head更新8B，doorbell4B；head+=SQEs*4 WQEBB",
+        "source_address": "jetty_info.packed_head（advance_sq后）",
+        "target_address": "sq_head_addr与sq_doorbell_addr",
+        "sync": "HcommJetty内WriteGmByPassDCache+DDR DSB；不证明remote可读",
+        "description": "将已写SQE批次提交给通信设备",
+        "module_ids": [
+          "issue"
+        ],
+        "evidence_lines": [
+          849,
+          850,
+          855,
+          857
+        ],
+        "curve": 0
+      },
+      {
+        "id": "expert-count",
+        "kind": "control",
+        "from": "route",
+        "to": "stats",
+        "function_id": "dispatch-simt-77",
+        "line": 212,
+        "api": "asc_atomic_add · local histogram",
+        "engine": "SIMT 原子归约",
+        "size": "每expert一个32bit status：高位到达、低24bit计数",
+        "source_address": "reduction identity | ub_layout->expert_histogram[e]",
+        "target_address": "workspace_layout.local_expert_histogram[e]",
+        "sync": "等待C个AIV贡献后vec_core0读并清零",
+        "description": "本核expert命中数先归约成当前源Rank总量",
+        "module_ids": [
+          "routing"
+        ],
+        "evidence_lines": [
+          212,
+          213,
+          214,
+          453,
+          454,
+          467
+        ],
+        "curve": 0
+      },
+      {
+        "id": "remote-count",
+        "kind": "control",
+        "from": "stats",
+        "to": "remote-stats",
+        "function_id": "dispatch-simt-77",
+        "line": 460,
+        "api": "asc_atomic_add · remote expert",
+        "engine": "UBMEM远端原子",
+        "size": "每源Rank向每目的local expert添加一个32bit status",
+        "source_address": "本源expert total经wait_ready(C)取低24位",
+        "target_address": "get_sym_ptr(signals,remote_expert_histogram[localExpert],d)",
+        "sync": "对端wait_ready(R)后读；与payload完成相独立",
+        "description": "把专家总数归约到专家所属Rank",
+        "module_ids": [
+          "routing"
+        ],
+        "evidence_lines": [
+          453,
+          454,
+          458,
+          460,
+          461,
+          462,
+          472,
+          473
+        ],
+        "curve": 0
+      },
+      {
+        "id": "rank-count",
+        "kind": "control",
+        "from": "route",
+        "to": "remote-stats",
+        "function_id": "dispatch-simt-77",
+        "line": 323,
+        "api": "SIMT remote GM store · rank count",
+        "engine": "UBMEM GM store",
+        "size": "每源/目的Rank一个32bit reduction status",
+        "source_address": "make_reduction_status(C,ub_layout->rank_psum[peer_idx])",
+        "target_address": "对端remote_rank_histogram[srcRank]",
+        "sync": "各AIV已算rank prefix；对端vec_core1等高位C",
+        "description": "发布源Rank向该目的Rank的去重token数量",
+        "module_ids": [
+          "routing"
+        ],
+        "evidence_lines": [
+          318,
+          320,
+          323,
+          497,
+          498
+        ],
+        "curve": 0
+      },
+      {
+        "id": "cpu-count",
+        "kind": "control",
+        "from": "stats",
+        "to": "host-count",
+        "function_id": "dispatch-simt-77",
+        "line": 480,
+        "api": "Host mapped GM store",
+        "engine": "SIMT 映射Host写",
+        "size": "专家E/R个与Rank R个32bit status",
+        "source_address": "对端expert raw→alignA；rank raw计数",
+        "target_address": "host_workspace_layout.get_host_expert/rank_count_ptr",
+        "sync": "仅kDoCPUSync；Host wait_ready后决定exact输出容量",
+        "description": "把精确容量信息告知当前Rank CPU",
+        "module_ids": [
+          "routing"
+        ],
+        "evidence_lines": [
+          479,
+          480,
+          538,
+          540,
+          541
+        ],
+        "curve": 0
+      }
+    ],
+    "paths": [
+      {
+        "id": "remote",
+        "name": "远端 token",
+        "color": "#2457d6",
+        "description": "输入hidden直接URMA；metadata先打包，提交SQE后由目标Rank drain边界消费。",
+        "transfer_ids": [
+          "meta-load",
+          "meta-pack",
+          "sq-write",
+          "sq-commit",
+          "remote-hidden",
+          "remote-meta"
+        ]
+      },
+      {
+        "id": "self",
+        "name": "本机 self-copy",
+        "color": "#b66516",
+        "description": "本机hidden经MTE2/UB/MTE3，metadata由SIMT直接GM store。",
+        "transfer_ids": [
+          "meta-load",
+          "meta-pack",
+          "self-load",
+          "self-store",
+          "self-meta"
+        ]
+      },
+      {
+        "id": "counts",
+        "name": "统计 / CPU通知",
+        "color": "#168765",
+        "description": "统计到达说明count归约完成，不等于payload到达。",
+        "transfer_ids": [
+          "expert-count",
+          "remote-count",
+          "rank-count",
+          "cpu-count"
+        ]
+      },
+      {
+        "id": "queue",
+        "name": "URMA 控制面",
+        "color": "#8650b8",
+        "description": "route/peer字段编成SQE；Scalar推进SQ head并ring doorbell。",
+        "transfer_ids": [
+          "sq-write",
+          "sq-commit"
+        ]
+      }
+    ],
+    "allocations": [
+      {
+        "id": "symmetric",
+        "space_id": "gm",
+        "name": "对称通信大块",
+        "kind": "aclrtMalloc / SymmetricMemory",
+        "scope": "每个Rank",
+        "capacity": "S+align2MiB(B+L)",
+        "base": "workspace=base；buffer=base+S",
+        "alignment": "base检查2MiB对齐；token/metadata内部32B",
+        "lifetime": "EPBuffer构造；Context/HCCLContext共享owner；最后owner析构aclrtFree",
+        "reuse": "dispatch/combine复用同一B；调用方必须等通信完成后复用",
+        "purpose": "包括固定signals、最坏接收buffer与可选LB；remote mapping不额外分配",
+        "evidence": [
+          "csrc/buffers/ep.hpp:37-55,64-72",
+          "csrc/kernels/comm/api.hpp:48-63,95-100",
+          "csrc/kernels/comm/symmetric.hpp:16-24"
+        ],
+        "region_ids": [
+          "self",
+          "stats"
+        ]
+      },
+      {
+        "id": "framework",
+        "space_id": "gm",
+        "name": "框架输入与发送metadata",
+        "kind": "torch::Tensor / torch::empty",
+        "scope": "每个Rank",
+        "capacity": "x=N*Hbytes；metadata=N*Tmeta_fresh；其他optional独立",
+        "base": "x.data_ptr / metadata_send_buffer.data_ptr",
+        "alignment": "张量由PyTorch NPU allocator提供；layout内部32B",
+        "lifetime": "metadata每次dispatch申请；epilogue闭包捕获x/metadata/context至drain排队",
+        "reuse": "cached复用routing handle，仍新发payload和metadata",
+        "purpose": "原始x不先整块打包；URMA引用x与metadata两个独立源",
+        "evidence": [
+          "csrc/buffers/ep.hpp:202-204,258-286"
+        ],
+        "region_ids": [
+          "x",
+          "aux",
+          "meta"
+        ]
+      },
+      {
+        "id": "ub-launch",
+        "space_id": "ub",
+        "name": "本AIV UB launch预算",
+        "kind": "DeepJIT num_ubuf_bytes",
+        "scope": "每个使用AIV",
+        "capacity": "U bytes / AIV",
+        "base": "reinterpret_cast<__ubuf__ layout*>(0)",
+        "alignment": "32B对齐结构与staging",
+        "lifetime": "kernel launch期间；硬件UB资源",
+        "reuse": "metadata与hidden多stage环形复用",
+        "purpose": "workspace+metadata staging+hidden staging同时受U静态门禁",
+        "evidence": [
+          "csrc/kernels/ep/dispatch.hpp:66-69",
+          "dispatch.hpp:26-74,629-639"
+        ],
+        "region_ids": [
+          "ub-meta",
+          "ub-hidden",
+          "route"
+        ]
+      },
+      {
+        "id": "host-notify",
+        "space_id": "host",
+        "name": "CPU pinned通知",
+        "kind": "aclrtMallocHost + HostRegister",
+        "scope": "每个Rank",
+        "capacity": "S=sizeof(EPSignals)",
+        "base": "host_workspace / mapped_host_workspace",
+        "alignment": "Host与mapped地址对齐EPSignals",
+        "lifetime": "EPBuffer构造；destroy barrier后Unregister+FreeHost",
+        "reuse": "fresh每次清活动count字段；cached不用CPU-sync",
+        "purpose": "CPU精确计数读写映射，不是payload临时存储",
+        "evidence": [
+          "csrc/buffers/ep.hpp:54-59,64-72,249-254"
+        ],
+        "region_ids": [
+          "host-count"
+        ]
+      }
+    ],
+    "resource_budget": {
+      "summary": "分别列出用户buffer、layout保留跨度和end_offset、对称物理分配、全域容量、每AIV UB与独立输出张量。",
+      "assumptions": [
+        "R=通信Rank数；M=每Rank最大tokens；N=当前输入tokens；C=使用AIV数；E=专家数；K=top-k；A=专家alignment；U=runtime每AIV UB bytes。",
+        "Hbytes=hidden*元素字节；P=SF pack数；SFbytes=2P；meta_raw=4K+(fresh?align32(8K)+4:0)。",
+        "align32(v)=ceil(v/32)*32；alignA(v)=ceil(v/A)*A",
+        "合法expert索引为[0,E)或-1，每token有效top-k专家互异。host选择C>=16，kernel/worker要求C<=64、E<=512、K<=32。",
+        "没有显式L1 scratch分配；源码显式使用L2 cache hints。不把UBMEM通信协议当作片上AIV UB。"
+      ],
+      "cards": [
+        {
+          "id": "requested",
+          "label": "用户通信容量",
+          "value": "B=EPBuffer.num_buffer_bytes；L=可选LB bytes",
+          "detail": "B和L各自2MiB对齐；默认B=align2MiB(max(dispatch_fresh_span,combine_span))。workspace S另计。",
+          "evidence": [
+            "csrc/buffers/ep.hpp:37-47,583-604"
+          ],
+          "level": "verified"
+        },
+        {
+          "id": "offset",
+          "label": "本次 layout 基址偏移",
+          "value": "base_offset=S=sizeof(EPSignals)",
+          "detail": "workspace=allocation_base；buffer=allocation_base+S。本组编译常量使S为2MiB。",
+          "evidence": [
+            "csrc/kernels/comm/api.hpp:48-63",
+            "deep_ep/layout/ep/workspace.hpp:8-17"
+          ],
+          "level": "verified"
+        },
+        {
+          "id": "span",
+          "label": "接收 layout 保留跨度",
+          "value": "span=R*M*T；end_offset=S+span",
+          "detail": "T=Hbytes+align32(SFbytes)+align32(meta_raw)（SFbytes=0时省SF项）；fresh/cached的T不同，B按fresh门禁。源Rank s的分区跨度M*T，实际有效extent=N(s→d)*T。",
+          "evidence": [
+            "deep_ep/layout/ep/token.hpp:17-42,100-124",
+            "csrc/buffers/ep.hpp:195-204"
+          ],
+          "level": "verified"
+        },
+        {
+          "id": "physical",
+          "label": "每 Rank 对称物理分配",
+          "value": "S+align2MiB(B+L)；EP的RDMA storage=0",
+          "detail": "SymmetricMemory一次aclrtMalloc后清零。注册远端地址不新增本Rank物理分配。SQ/CQ、框架输入输出与Host通知另计。",
+          "evidence": [
+            "csrc/kernels/comm/api.hpp:48-63",
+            "csrc/kernels/comm/symmetric.hpp:16-24"
+          ],
+          "level": "verified"
+        },
+        {
+          "id": "domain",
+          "label": "全通信域对称分配",
+          "value": "R*(S+align2MiB(B+L))",
+          "detail": "假设各Rank同样B/L；不把远端虚拟映射再次乘以传输数。",
+          "evidence": [
+            "csrc/buffers/ep.hpp:44-47",
+            "csrc/kernels/comm/hccl.hpp:65-81"
+          ],
+          "level": "verified"
+        },
+        {
+          "id": "hint",
+          "label": "容量提示的形状假设",
+          "value": "K=0时按32；FP8 P≈ceil(H/32)",
+          "detail": "hint已经计入metadata并最终2MiB对齐；P是近似而运行时P来自sf.size(1)。当前Host用实际shape的fresh layout<=B断言，没有证据证明固定净缺口。",
+          "evidence": [
+            "csrc/buffers/ep.hpp:195-200,583-604"
+          ],
+          "level": "warning"
+        },
+        {
+          "id": "lifetime",
+          "label": "释放和异步源生命周期",
+          "value": "最后shared_ptr owner释放SymmetricMemory→aclrtFree",
+          "detail": "Context与HCCLContext共享memory；EP destroy先barrier再finalize。URMA仍读x和metadata，Host epilogue闭包捕获它们至drain排队。",
+          "evidence": [
+            "csrc/kernels/comm/api.hpp:95-100",
+            "csrc/buffers/ep.hpp:64-72,284-286",
+            "csrc/kernels/comm/symmetric.hpp:23-24"
+          ],
+          "level": "verified"
+        },
+        {
+          "id": "ub",
+          "label": "每 AIV UB：流水线预算",
+          "value": "sizeof(DispatchUBLayout)+metadataStages*metadataStageBytes+hiddenStages*align32(Hbytes)<=U",
+          "detail": "Ctoken=ceil(M/C)；metadata stage一次4或64条、最多8层；hidden最多8层。实际U由runtime传入，并有编译期容量断言。",
+          "evidence": [
+            "dispatch.hpp:26-74,629-639"
+          ],
+          "level": "verified"
+        },
+        {
+          "id": "meta",
+          "label": "发送 metadata tensor",
+          "value": "allocated=N*Tmeta_fresh；used=N*Tmeta_current",
+          "detail": "Host按fresh字节行分配torch::empty；cached仅用紧凑current前缀。对齐padding及未提供weights区域不保证被初始化；不画成零。",
+          "evidence": [
+            "csrc/buffers/ep.hpp:202-204",
+            "dispatch.hpp:615-619,770-801"
+          ],
+          "level": "verified"
+        },
+        {
+          "id": "sq",
+          "label": "每 AIV SQ 空间",
+          "value": "每SQE固定4*64B；最多6对SGE",
+          "detail": "最后physical WRITE附强序、fence和CQE。软件比较handle::kSQDepth=32768 WQEBB；SQ/CQ由HCOMM拥有，未取得完整runtime内部物理分配总量。",
+          "evidence": [
+            "dispatch.hpp:597-608,355-425,851-859",
+            "deep_ep/comm/handle.hpp:17-32"
+          ],
+          "level": "info"
+        }
+      ]
+    },
+    "review": {
+      "model": "dispatch",
+      "status": "PASS",
+      "verdict": "PASS",
+      "reviewer": "independent-review",
+      "draft_author": "root-memory",
+      "revision": 4,
+      "draft_sha256": "c677c39bd97dd8d012890977136938a59e146388b03c68435c37786eb099ca82",
+      "model_content_sha256": "d1295b2bb19ec69981069b60a26e7fca676d2ded9841cb41e2537168e3558df6",
+      "source_revisions": [
+        "DeepEP-Ascend@3b25377d04b24fc6154698ded78a2bcb2c59afff",
+        "DeepJIT-gitlink@65f513952b8771408a19202f65e36398522db6db"
+      ],
+      "required_changes": [],
+      "unresolved": [],
+      "verified": [
+        "重新对照两完整源码、TokenLayout、EPWorkspaceLayout、HcommJetty/barrier",
+        "全部region/transfer/path地址、Rank owner、byte/element长度与source evidence逐项核对",
+        "SymmetricMemory aclrtMalloc/memset/shared_ptr最终释放；Context/HCCLContext注册与映射",
+        "实际buffer fresh layout门禁、end_offset、2MiB对齐、hint形状假设和UB两个峰值",
+        "远端SGE直接x+紧凑metadata、固定SQ槽/NOP/末WRITE标志、advance仅UB/ring发布GM",
+        "count就绪不等payload；drain后消费；Host闭包保活x/metadata/context至drain排队",
+        "recv_src_metadata allocated Nrecv_alloc与used nrecv；fresh/cached专家raw-end与padding",
+        "L2显式hint、无显式L1 scratch、URMA控制内存不当payload或UB scratch",
+        "renderer region标签扩为输入 hidden x；源/目标/owner/size/同步与预算无变化"
+      ],
+      "prior_model_content_sha256": "485146277f58c6f11f95d42097a599248f6fa3984cff1fdbcda4ec19ebe88385"
+    }
+  },
+  "dispatch_copy_epilogue": {
+    "summary": "通信完成边界后，从固定源Rank分区读token到UB；fresh先建核内/核间专家前缀，再按本地expert复制到框架输出，cached复用来源slots。",
+    "facts": [
+      "当前Rank s和目标Rank d的GM是不同owner；远端通信窗口是对称分配的地址映射。",
+      "AIV __ubuf__ staging由kernel按runtime U静态切片，不进行设备malloc。",
+      "本实现没有独立shared-expert专用发送分支；如路由命中此类专家，仍遵循普通topk/Rank路径。",
+      "输入SF、权重和补零是条件路径；metadata对齐padding或未写入区域不视为零。",
+      "L2 NORMAL_FV、NOTALLOC_CLEAN、NOTALLOC_CI提示在源码显式可见；未见显式L1 scratch。",
+      "doorbell是提交；消费payload需实际配置中的drain+跨Rank barrier，不能由count通知推断数据到达。"
+    ],
+    "canvas": {
+      "width": 1240,
+      "height": 650
+    },
+    "spaces": [
+      {
+        "id": "gm",
+        "name": "当前 Rank GM",
+        "kind": "gm",
+        "scope": "当前执行Rank",
+        "color": "#2457d6",
+        "description": "输入、元数据、通信buffer与框架输出位于当前Rank的设备全局内存。"
+      },
+      {
+        "id": "ub",
+        "name": "当前 AIV UB",
+        "kind": "ub",
+        "scope": "vec_core_idx私有片上UB",
+        "color": "#b66516",
+        "description": "__ubuf__指针从地址0划分本AIV的workspace、staging与复用区。"
+      },
+      {
+        "id": "control",
+        "name": "队列与通知控制面",
+        "kind": "control",
+        "scope": "当前Rank jetty及对端UBMEM signal",
+        "color": "#8650b8",
+        "description": "HCOMM拥有SQ、doorbell与完成队列；EPSignals提供跨AIV/跨Rank统计和握手。"
+      }
+    ],
+    "regions": [
+      {
+        "id": "recv",
+        "space_id": "gm",
+        "name": "接收通信 buffer",
+        "owner": "当前接收Rank d",
+        "address": "buffer[d]+srcRank*M*T+slot*T",
+        "size": "reserved=R*M*T；used=sum_s N(s→d)*T",
+        "purpose": "固定源Rank分区；drain/barrier后可读",
+        "position": {
+          "x": 130,
+          "y": 140
+        },
+        "evidence_lines": [
+          258,
+          299,
+          300,
+          301
+        ]
+      },
+      {
+        "id": "hist",
+        "space_id": "ub",
+        "name": "Top-K histogram staging",
+        "owner": "AIV c 私有",
+        "address": "ub_histogram+stage*32768",
+        "size": "reserved=4*32768；used=batch*align32(8K)",
+        "purpose": "与token staging分阶段复用同一首址",
+        "position": {
+          "x": 430,
+          "y": 90
+        },
+        "evidence_lines": [
+          219,
+          220,
+          256,
+          351,
+          357,
+          359
+        ]
+      },
+      {
+        "id": "token",
+        "space_id": "ub",
+        "name": "token staging",
+        "owner": "AIV c 私有",
+        "address": "ub_token_buffer[stage,t]",
+        "size": "reserved=stages*tokensPerStage*T；used=batch*T",
+        "purpose": "MTE2读完整token，供Scalar/MTE3消费",
+        "position": {
+          "x": 430,
+          "y": 280
+        },
+        "evidence_lines": [
+          259,
+          296,
+          297,
+          309
+        ]
+      },
+      {
+        "id": "expert",
+        "space_id": "ub",
+        "name": "expert count / dst cursor",
+        "owner": "AIV c 私有",
+        "address": "ub_expert_token_count == ub_next_dst_slot_idx",
+        "size": "reserved=2*bins*4B incl aligned-start vector；used=E/R bins",
+        "purpose": "先局部hist，后复用为本核专家写游标",
+        "position": {
+          "x": 730,
+          "y": 90
+        },
+        "evidence_lines": [
+          253,
+          254,
+          255,
+          330,
+          426
+        ]
+      },
+      {
+        "id": "counter",
+        "space_id": "gm",
+        "name": "epilogue_expert_counter",
+        "owner": "当前Rank d，各AIV行",
+        "address": "workspace + counter_offset + c*(E/R)*4",
+        "size": "reserved=kMaxC*kMaxE*4B；used=C*(E/R)*4B",
+        "purpose": "给后续AIV加本核counts，构造exclusive前缀",
+        "position": {
+          "x": 1040,
+          "y": 90
+        },
+        "evidence_lines": [
+          336,
+          404,
+          418,
+          420
+        ]
+      },
+      {
+        "id": "metadata-ub",
+        "space_id": "ub",
+        "name": "来源 metadata staging",
+        "owner": "AIV c 私有",
+        "address": "ub_metadata_buffers+stage*metaStage",
+        "size": "reserved=2*metaStage；used=batch*(K+2)*4",
+        "purpose": "fresh slots[K]+sourceGlobal+lastMasterJ",
+        "position": {
+          "x": 730,
+          "y": 280
+        },
+        "evidence_lines": [
+          260,
+          465,
+          467,
+          515,
+          520,
+          521
+        ]
+      },
+      {
+        "id": "out",
+        "space_id": "gm",
+        "name": "recv_x",
+        "owner": "当前Rank d，框架tensor",
+        "address": "recv_x+dst_slot_idx*Hbytes",
+        "size": "allocated=Q*Hbytes；used=sum_e n_e*Hbytes；padding条件写零",
+        "purpose": "每命中本地expert产生一行hidden",
+        "position": {
+          "x": 1040,
+          "y": 280
+        },
+        "evidence_lines": [
+          492,
+          493,
+          567,
+          568
+        ]
+      },
+      {
+        "id": "out-aux",
+        "space_id": "gm",
+        "name": "recv_sf / recv_topk_weights",
+        "owner": "当前Rank d，框架tensor",
+        "address": "recv_sf+slot*stride；weights+slot",
+        "size": "allocated=optional(2QP+4Q)；有效sum_e n_e行",
+        "purpose": "SF一行与对应top-k单weight；权重未乘hidden",
+        "position": {
+          "x": 1040,
+          "y": 470
+        },
+        "evidence_lines": [
+          499,
+          501,
+          507,
+          508,
+          580,
+          588
+        ]
+      },
+      {
+        "id": "out-meta",
+        "space_id": "gm",
+        "name": "recv_src_metadata",
+        "owner": "当前Rank d，handle tensor",
+        "address": "recv_src_metadata+stream_idx*(K+2)",
+        "size": "allocated=Nrecv_alloc*(K+2)*4；used=nrecv*(K+2)*4，nrecv=psum_rank[R-1]；不按Q分配",
+        "purpose": "fresh写来源与展开slots，cached只读取",
+        "position": {
+          "x": 730,
+          "y": 470
+        },
+        "evidence_lines": [
+          280,
+          464,
+          476,
+          531,
+          532
+        ]
+      },
+      {
+        "id": "zero",
+        "space_id": "ub",
+        "name": "ub_zero_buffer",
+        "owner": "AIV c 私有",
+        "address": "ub_zero_buffer位于metadata staging之后",
+        "size": "reserved=do_zero_padding?256B:0；used=256B重复源",
+        "purpose": "SIMD填零后重复MTE3写hidden/SF padding",
+        "position": {
+          "x": 430,
+          "y": 470
+        },
+        "evidence_lines": [
+          261,
+          436,
+          569
+        ]
+      },
+      {
+        "id": "scalar",
+        "space_id": "control",
+        "name": "Scalar slot / 常数0",
+        "owner": "AIV c 的Scalar管线",
+        "address": "dst_slot_idx寄存器 / 标量字面值0",
+        "size": "控制值而非malloc存储；slot整型与0位模式4B",
+        "purpose": "cached从GM读slot；padding weight直接写标量0",
+        "position": {
+          "x": 130,
+          "y": 470
+        },
+        "evidence_lines": [
+          476,
+          477,
+          580
+        ]
+      },
+      {
+        "id": "expert-base",
+        "space_id": "gm",
+        "name": "专家 end 前缀",
+        "owner": "当前Rank d，独立GM tensor",
+        "address": "psum_num_recv_tokens_per_expert[e]",
+        "size": "allocated=(E/R)*4B；used=(E/R)*4B",
+        "purpose": "sum_{q<e}alignA(n_q)+n_e；用于aligned专家起点",
+        "position": {
+          "x": 130,
+          "y": 310
+        },
+        "evidence_lines": [
+          272,
+          273,
+          556
+        ]
+      }
+    ],
+    "transfers": [
+      {
+        "id": "hist-load",
+        "kind": "data",
+        "from": "recv",
+        "to": "hist",
+        "function_id": "epi-impl-176",
+        "line": 357,
+        "api": "asc_copy_gm2ub_align · Top-K",
+        "engine": "MTE2",
+        "size": "batch*K*8B，UB按align32(8K)补-1",
+        "source_address": "recv_buffer[srcRank][slot].topk_idx",
+        "target_address": "ub_histogram+hist_stage*32768",
+        "sync": "V→MTE2等stage；MTE2→V后SIMD histogram消费",
+        "description": "fresh只读Top-K，按源Rank连续范围取样并填-1 padding",
+        "module_ids": [
+          "epilogue"
+        ],
+        "evidence_lines": [
+          348,
+          353,
+          357,
+          359,
+          364,
+          368
+        ],
+        "curve": 0
+      },
+      {
+        "id": "hist-count",
+        "kind": "data",
+        "from": "hist",
+        "to": "expert",
+        "function_id": "epi-histogram-37",
+        "line": 99,
+        "api": "asc_storealign_intlv · histogram",
+        "engine": "SIMD V",
+        "size": "kNumHistogramBins*4B累计逻辑计数",
+        "source_address": "histogram_accumulate_u32临时uint16 hist+已有acc",
+        "target_address": "ub_expert_token_count即acc",
+        "sync": "MTE2→V已到达；只活动E/R bins参与后续GM广播",
+        "description": "把低16位候选编号的分段频数累加到UB 32bit count",
+        "module_ids": [
+          "histogram"
+        ],
+        "evidence_lines": [
+          70,
+          80,
+          90,
+          95,
+          98,
+          99
+        ],
+        "curve": 0
+      },
+      {
+        "id": "expert-base-load",
+        "kind": "data",
+        "from": "expert-base",
+        "to": "expert",
+        "function_id": "epi-impl-176",
+        "line": 272,
+        "api": "asc_copy_gm2ub_align · expert base",
+        "engine": "MTE2",
+        "size": "(E/R-1)*4B，左padding补0；单expert只Scalar置0",
+        "source_address": "psum_num_recv_tokens_per_expert[0:E/R-1]",
+        "target_address": "ub_psum_num_recv_tokens_per_expert，前置0，随后SIMD alignA",
+        "sync": "fresh only；MTE2→V在initialize_dst_slot_idx之前完成",
+        "description": "获取各专家raw前一end并对齐成专家起点；与核prefix相加",
+        "module_ids": [
+          "epilogue"
+        ],
+        "evidence_lines": [
+          267,
+          268,
+          272,
+          274,
+          424,
+          426
+        ],
+        "curve": 0
+      },
+      {
+        "id": "counter-clear",
+        "kind": "control",
+        "from": "expert",
+        "to": "counter",
+        "function_id": "epi-impl-176",
+        "line": 335,
+        "api": "asc_copy_ub2gm_align · clear",
+        "engine": "MTE3",
+        "size": "E/R*4B",
+        "source_address": "fill_ubuf清零后的ub_expert_token_count",
+        "target_address": "workspace_layout.epilogue_expert_counter[c,0]",
+        "sync": "V→MTE3等fill；跨AIV cleared barrier在atomic前",
+        "description": "清本核prefix行；不清其他Rank或payload",
+        "module_ids": [
+          "epilogue"
+        ],
+        "evidence_lines": [
+          330,
+          334,
+          335,
+          340,
+          396
+        ],
+        "curve": 0
+      },
+      {
+        "id": "counter-add",
+        "kind": "control",
+        "from": "expert",
+        "to": "counter",
+        "function_id": "epi-impl-176",
+        "line": 404,
+        "api": "asc_copy_ub2gm_align · atomic add",
+        "engine": "MTE3原子广播",
+        "size": "(C-c-1)行，每行E/R*4B",
+        "source_address": "ub_expert_token_count当前AIV局部计数",
+        "target_address": "epilogue_expert_counter[c+1:C,0:E/R]",
+        "sync": "所有clear完成；atomic模式只包当前copy；cumsum barrier后读",
+        "description": "向后续核行添加本核counts，产生exclusive核前缀",
+        "module_ids": [
+          "epilogue"
+        ],
+        "evidence_lines": [
+          395,
+          403,
+          404,
+          407,
+          411,
+          413,
+          416
+        ],
+        "curve": 35
+      },
+      {
+        "id": "cursor-load",
+        "kind": "data",
+        "from": "counter",
+        "to": "expert",
+        "function_id": "epi-impl-176",
+        "line": 418,
+        "api": "asc_copy_gm2ub_align · prefix",
+        "engine": "MTE2",
+        "size": "E/R*4B",
+        "source_address": "epilogue_expert_counter[c,:]",
+        "target_address": "ub_next_dst_slot_idx（复用原count区）",
+        "sync": "MTE3/MTE2跨核cumsum等待后load；MTE2→V后add aligned expert start",
+        "description": "将exclusive核prefix读回UB，与专家aligned起点相加",
+        "module_ids": [
+          "epilogue"
+        ],
+        "evidence_lines": [
+          416,
+          418,
+          420,
+          424,
+          426
+        ],
+        "curve": 0
+      },
+      {
+        "id": "token-load",
+        "kind": "data",
+        "from": "recv",
+        "to": "token",
+        "function_id": "epi-issue-load-291",
+        "line": 309,
+        "api": "asc_copy_gm2ub_align · token",
+        "engine": "MTE2",
+        "size": "num_stage_tokens*T",
+        "source_address": "buffer+srcRank*M*T+srcLocalSlot*T",
+        "target_address": "ub_token_buffer[load_stage_idx,0]",
+        "sync": "入口已drain/barrier；refill等MTE3→MTE2；load后MTE2→S通知",
+        "description": "按PSumIterator把紧凑去重流映射回固定Rank分区，整行读入UB",
+        "module_ids": [
+          "epilogue"
+        ],
+        "evidence_lines": [
+          299,
+          305,
+          309,
+          311,
+          315
+        ],
+        "curve": 0
+      },
+      {
+        "id": "expand-hidden",
+        "kind": "data",
+        "from": "token",
+        "to": "out",
+        "function_id": "epi-impl-176",
+        "line": 492,
+        "api": "asc_copy_ub2gm_align · hidden",
+        "engine": "MTE3",
+        "size": "Hbytes/有效local expert",
+        "source_address": "token.hidden字段",
+        "target_address": "recv_x+dst_slot_idx*Hbytes",
+        "sync": "consumer先等MTE2→S；本轮MTE3完成后才refill该token stage",
+        "description": "每命中本地专家生成hidden副本；cached直接复用metadata slots",
+        "module_ids": [
+          "epilogue"
+        ],
+        "evidence_lines": [
+          475,
+          482,
+          485,
+          492,
+          493,
+          496,
+          525
+        ],
+        "curve": 0
+      },
+      {
+        "id": "expand-sf",
+        "kind": "data",
+        "from": "token",
+        "to": "out-aux",
+        "function_id": "epi-impl-176",
+        "line": 499,
+        "api": "asc_copy_ub2gm_align · SF",
+        "engine": "MTE3",
+        "size": "2P bytes/有效local expert，P>0",
+        "source_address": "token.get_sf_ptr()",
+        "target_address": "recv_sf+dst_slot_idx*recv_sf_token_stride*2",
+        "sync": "Scalar已wait MTE2→S后发MTE3；该处没有单独S→MTE3 event；MTE3→MTE2保护stage回收",
+        "description": "FP8条件路径复制SF，kernel输出row-major",
+        "module_ids": [
+          "epilogue"
+        ],
+        "evidence_lines": [
+          498,
+          499,
+          501,
+          503,
+          525
+        ],
+        "curve": 0
+      },
+      {
+        "id": "expand-weight",
+        "kind": "data",
+        "from": "token",
+        "to": "out-aux",
+        "function_id": "epi-impl-176",
+        "line": 507,
+        "api": "WriteGmByPassDCache · weight",
+        "engine": "Scalar GM store",
+        "size": "4B/有效local expert，weights非空",
+        "source_address": "token.topk_weights[j]的32bit位模式",
+        "target_address": "recv_topk_weights+dst_slot_idx",
+        "sync": "本stage MTE2→S已到达；不把权重乘入hidden",
+        "description": "单个top-k权重复制到对应专家输出行",
+        "module_ids": [
+          "epilogue"
+        ],
+        "evidence_lines": [
+          506,
+          507,
+          509
+        ],
+        "curve": 30
+      },
+      {
+        "id": "source-metadata",
+        "kind": "data",
+        "from": "metadata-ub",
+        "to": "out-meta",
+        "function_id": "epi-impl-176",
+        "line": 531,
+        "api": "asc_copy_ub2gm_align · source metadata",
+        "engine": "MTE3",
+        "size": "num_stage_tokens*(K+2)*4B",
+        "source_address": "ub_metadata_buffers[metadata_buffer_idx]",
+        "target_address": "recv_src_metadata+token_base_idx*(K+2)",
+        "sync": "Scalar填slots/global/sourceLastJ后S→MTE3；MTE3→S保护metadata双stage复用",
+        "description": "fresh写每接收token的展开位置；cached跳过写入并复用handle",
+        "module_ids": [
+          "epilogue"
+        ],
+        "evidence_lines": [
+          515,
+          520,
+          521,
+          529,
+          531,
+          534,
+          536
+        ],
+        "curve": 0
+      },
+      {
+        "id": "zero-hidden",
+        "kind": "data",
+        "from": "zero",
+        "to": "out",
+        "function_id": "epi-impl-176",
+        "line": 567,
+        "api": "asc_copy_ub2gm_align · padding",
+        "engine": "MTE3重复广播",
+        "size": "num_part_tokens*Hbytes",
+        "source_address": "ub_zero_buffer的256B向量重复",
+        "target_address": "recv_x+(expert_end+part_start)*Hbytes",
+        "sync": "kDoZeroPadding；V→MTE3等零源；loop配置发完还原",
+        "description": "最多四份分工把专家raw末尾至aligned末尾hidden写零",
+        "module_ids": [
+          "epilogue"
+        ],
+        "evidence_lines": [
+          436,
+          549,
+          550,
+          557,
+          565,
+          567,
+          568,
+          570,
+          574
+        ],
+        "curve": 0
+      },
+      {
+        "id": "zero-sf",
+        "kind": "data",
+        "from": "zero",
+        "to": "out-aux",
+        "function_id": "epi-impl-176",
+        "line": 588,
+        "api": "asc_copy_ub2gm_align · SF padding",
+        "engine": "MTE3",
+        "size": "num_part_tokens*2P，P>0",
+        "source_address": "ub_zero_buffer的256B零向量，必要时多chunk及tail",
+        "target_address": "recv_sf+(expert_end+part_start)*recv_sf_token_stride*2",
+        "sync": "kDoZeroPadding且SF存在；V→MTE3零源完成；loop配置恢复",
+        "description": "将padding行SF清零，长SF分整chunk和尾部",
+        "module_ids": [
+          "epilogue"
+        ],
+        "evidence_lines": [
+          584,
+          588,
+          590,
+          597,
+          604,
+          607
+        ],
+        "curve": 0
+      },
+      {
+        "id": "zero-weights",
+        "kind": "data",
+        "from": "scalar",
+        "to": "out-aux",
+        "function_id": "epi-impl-176",
+        "line": 580,
+        "api": "WriteGmByPassDCache · weight padding",
+        "engine": "Scalar GM store",
+        "size": "num_part_tokens*4B",
+        "source_address": "Scalar字面值0；不是ub_zero_buffer读源",
+        "target_address": "recv_topk_weights+expert_end+part_start+pad_idx",
+        "sync": "kDoZeroPadding且weights非空；与payload展开范围不重叠",
+        "description": "逐padding行直接写0权重，GM标量store与MTE3补零分别建边",
+        "module_ids": [
+          "epilogue"
+        ],
+        "evidence_lines": [
+          576,
+          579,
+          580
+        ],
+        "curve": 30
+      },
+      {
+        "id": "cached-slot",
+        "kind": "control",
+        "from": "out-meta",
+        "to": "scalar",
+        "function_id": "epi-impl-176",
+        "line": 476,
+        "api": "metadata_ptr[j] · cached slot read",
+        "engine": "Scalar GM load",
+        "size": "每个top-k项一个4B整型slot",
+        "source_address": "recv_src_metadata+stream_idx*(K+2)+j",
+        "target_address": "Scalar dst_slot_idx，slot>=0才复制",
+        "sync": "仅kCachedMode；metadata由既有handle持有且路由不变；入口通信完成边界后读",
+        "description": "cached从GM来源metadata恢复展开输出slot，不重建专家hist/prefix",
+        "module_ids": [
+          "epilogue"
+        ],
+        "evidence_lines": [
+          464,
+          475,
+          476,
+          477
+        ],
+        "curve": 0
+      }
+    ],
+    "paths": [
+      {
+        "id": "expand",
+        "name": "Fresh 接收 → 专家展开",
+        "color": "#2457d6",
+        "description": "已完成通信后的完整token按每个本地expert复制；SF和weight条件化。",
+        "transfer_ids": [
+          "token-load",
+          "expand-hidden",
+          "expand-sf",
+          "expand-weight",
+          "source-metadata"
+        ]
+      },
+      {
+        "id": "prefix",
+        "name": "Fresh 专家核前缀",
+        "color": "#168765",
+        "description": "逐核局部直方图广播到后续核行，再加aligned专家起点。",
+        "transfer_ids": [
+          "hist-load",
+          "hist-count",
+          "counter-clear",
+          "counter-add",
+          "cursor-load",
+          "expert-base-load"
+        ]
+      },
+      {
+        "id": "padding",
+        "name": "可选 padding 补零",
+        "color": "#b66516",
+        "description": "仅do_zero_padding路径；未开启时padding不能当作0。",
+        "transfer_ids": [
+          "zero-hidden",
+          "zero-sf",
+          "zero-weights"
+        ]
+      },
+      {
+        "id": "cached",
+        "name": "Cached 恢复slot",
+        "color": "#8650b8",
+        "description": "cached从recv_src_metadata读取slot，复用旧routing，仅复制更新hidden/SF/weight。",
+        "transfer_ids": [
+          "token-load",
+          "cached-slot",
+          "expand-hidden",
+          "expand-sf",
+          "expand-weight"
+        ]
+      }
+    ],
+    "allocations": [
+      {
+        "id": "symmetric",
+        "space_id": "gm",
+        "name": "接收对称大块与控制区",
+        "kind": "aclrtMalloc / SymmetricMemory",
+        "scope": "每个Rank",
+        "capacity": "S+align2MiB(B+L)",
+        "base": "buffer=base+S；signals=base",
+        "alignment": "base2MiB；token32B",
+        "lifetime": "EPBuffer / Context共享owner到最后引用释放",
+        "reuse": "接收区跨dispatch/combine复用，先等通信完成",
+        "purpose": "recv只占本次R*M*T保留跨度；统计固定结构与payload分开",
+        "evidence": [
+          "csrc/buffers/ep.hpp:37-47",
+          "csrc/kernels/comm/api.hpp:48-63,95-100",
+          "csrc/kernels/comm/symmetric.hpp:16-24"
+        ],
+        "region_ids": [
+          "recv",
+          "counter"
+        ]
+      },
+      {
+        "id": "outputs",
+        "space_id": "gm",
+        "name": "专家输出与handle metadata",
+        "kind": "torch::empty / empty_strided",
+        "scope": "每个Rank",
+        "capacity": "Q*Hbytes+optional(2QP+4Q)+Nrecv_alloc*(K+2)*4",
+        "base": "recv_x / recv_sf / recv_topk_weights / recv_src_metadata",
+        "alignment": "NPU tensor allocator；expert行数A对齐，FP8 SF行连续",
+        "lifetime": "epilogue Host闭包分配；框架tensor持有到用户释放",
+        "reuse": "cached复用recv_src_metadata，重新分配并写hidden/SF/weights",
+        "purpose": "Q_exact与Q_worst分别列预算；未补零padding不定义内容",
+        "evidence": [
+          "csrc/buffers/ep.hpp:288-342,353-383"
+        ],
+        "region_ids": [
+          "out",
+          "out-aux",
+          "out-meta"
+        ]
+      },
+      {
+        "id": "ub",
+        "space_id": "ub",
+        "name": "每AIV分阶段UB",
+        "kind": "DeepJIT num_ubuf_bytes",
+        "scope": "每个使用AIV",
+        "capacity": "U bytes；histogram/copy两个峰值独立校验",
+        "base": "UB expert state从0开始；histogram/token staging复用",
+        "alignment": "32B UB对齐；vector宽256B",
+        "lifetime": "kernel执行期间",
+        "reuse": "ub_expert_token_count复用为cursor；histogram staging复用为token staging",
+        "purpose": "不能把互不同时存活的hist和token容量相加",
+        "evidence": [
+          "dispatch_copy_epilogue.hpp:223-261",
+          "csrc/kernels/ep/dispatch.hpp:127-132"
+        ],
+        "region_ids": [
+          "hist",
+          "token",
+          "expert",
+          "metadata-ub",
+          "zero"
+        ]
+      }
+    ],
+    "resource_budget": {
+      "summary": "分别列出用户buffer、layout保留跨度和end_offset、对称物理分配、全域容量、每AIV UB与独立输出张量。",
+      "assumptions": [
+        "R=通信Rank数；M=每Rank最大tokens；N=当前输入tokens；C=使用AIV数；E=专家数；K=top-k；A=专家alignment；U=runtime每AIV UB bytes。",
+        "Hbytes=hidden*元素字节；P=SF pack数；SFbytes=2P；meta_raw=4K+(fresh?align32(8K)+4:0)。",
+        "align32(v)=ceil(v/32)*32；alignA(v)=ceil(v/A)*A",
+        "合法expert索引为[0,E)或-1，每token有效top-k专家互异。host选择C>=16，kernel/worker要求C<=64、E<=512、K<=32。",
+        "没有显式L1 scratch分配；源码显式使用L2 cache hints。不把UBMEM通信协议当作片上AIV UB。"
+      ],
+      "cards": [
+        {
+          "id": "requested",
+          "label": "用户通信容量",
+          "value": "B=EPBuffer.num_buffer_bytes；L=可选LB bytes",
+          "detail": "B和L各自2MiB对齐；默认B=align2MiB(max(dispatch_fresh_span,combine_span))。workspace S另计。",
+          "evidence": [
+            "csrc/buffers/ep.hpp:37-47,583-604"
+          ],
+          "level": "verified"
+        },
+        {
+          "id": "offset",
+          "label": "本次 layout 基址偏移",
+          "value": "base_offset=S=sizeof(EPSignals)",
+          "detail": "workspace=allocation_base；buffer=allocation_base+S。本组编译常量使S为2MiB。",
+          "evidence": [
+            "csrc/kernels/comm/api.hpp:48-63",
+            "deep_ep/layout/ep/workspace.hpp:8-17"
+          ],
+          "level": "verified"
+        },
+        {
+          "id": "span",
+          "label": "接收 layout 保留跨度",
+          "value": "span=R*M*T；end_offset=S+span",
+          "detail": "T=Hbytes+align32(SFbytes)+align32(meta_raw)（SFbytes=0时省SF项）；fresh/cached的T不同，B按fresh门禁。源Rank s的分区跨度M*T，实际有效extent=N(s→d)*T。",
+          "evidence": [
+            "deep_ep/layout/ep/token.hpp:17-42,100-124",
+            "csrc/buffers/ep.hpp:195-204"
+          ],
+          "level": "verified"
+        },
+        {
+          "id": "physical",
+          "label": "每 Rank 对称物理分配",
+          "value": "S+align2MiB(B+L)；EP的RDMA storage=0",
+          "detail": "SymmetricMemory一次aclrtMalloc后清零。注册远端地址不新增本Rank物理分配。SQ/CQ、框架输入输出与Host通知另计。",
+          "evidence": [
+            "csrc/kernels/comm/api.hpp:48-63",
+            "csrc/kernels/comm/symmetric.hpp:16-24"
+          ],
+          "level": "verified"
+        },
+        {
+          "id": "domain",
+          "label": "全通信域对称分配",
+          "value": "R*(S+align2MiB(B+L))",
+          "detail": "假设各Rank同样B/L；不把远端虚拟映射再次乘以传输数。",
+          "evidence": [
+            "csrc/buffers/ep.hpp:44-47",
+            "csrc/kernels/comm/hccl.hpp:65-81"
+          ],
+          "level": "verified"
+        },
+        {
+          "id": "hint",
+          "label": "容量提示的形状假设",
+          "value": "K=0时按32；FP8 P≈ceil(H/32)",
+          "detail": "hint已经计入metadata并最终2MiB对齐；P是近似而运行时P来自sf.size(1)。当前Host用实际shape的fresh layout<=B断言，没有证据证明固定净缺口。",
+          "evidence": [
+            "csrc/buffers/ep.hpp:195-200,583-604"
+          ],
+          "level": "warning"
+        },
+        {
+          "id": "lifetime",
+          "label": "释放和异步源生命周期",
+          "value": "最后shared_ptr owner释放SymmetricMemory→aclrtFree",
+          "detail": "Context与HCCLContext共享memory；EP destroy先barrier再finalize。URMA仍读x和metadata，Host epilogue闭包捕获它们至drain排队。",
+          "evidence": [
+            "csrc/kernels/comm/api.hpp:95-100",
+            "csrc/buffers/ep.hpp:64-72,284-286",
+            "csrc/kernels/comm/symmetric.hpp:23-24"
+          ],
+          "level": "verified"
+        },
+        {
+          "id": "ub",
+          "label": "每 AIV UB：分阶段复用",
+          "value": "expertState=2*bins*4；histogram阶段expertState+4*32768<=U；copy阶段expertState+stages*tokensPerStage*T+2*metaStage+(zero?256:0)<=U",
+          "detail": "bins=256或512；tokensPerStage=max(1,65536/T)；stages=min(6,floor((U-expertState-2*metaStage-zero)/stageBytes))。histogram与token staging复用同一UB首址，不能把两个阶段预算相加。",
+          "evidence": [
+            "dispatch_copy_epilogue.hpp:212-261"
+          ],
+          "level": "verified"
+        },
+        {
+          "id": "outputs",
+          "label": "输出容量与有效专家行",
+          "value": "Q_exact=sum_e alignA(n_e)；Q_worst=alignA(R*M*min(K,E/R)+(A-1)*(E/R))",
+          "detail": "CPU-sync或cached使用exact/已缓存容量；无CPU-sync使用worst。recv_src_metadata allocated=Nrecv_alloc*(K+2)*4，Nrecv_alloc为CPU通知精确数、无CPU sync的R*M或cached缓存容量；实际used=nrecv*(K+2)*4且nrecv=psum_rank[R-1]。padding仅在do_zero_padding时写零。",
+          "evidence": [
+            "csrc/buffers/ep.hpp:288-342",
+            "dispatch_copy_epilogue.hpp:459-545,547-620"
+          ],
+          "level": "verified"
+        }
+      ]
+    },
+    "review": {
+      "model": "dispatch_copy_epilogue",
+      "status": "PASS",
+      "verdict": "PASS",
+      "reviewer": "independent-review",
+      "draft_author": "root-memory",
+      "revision": 4,
+      "draft_sha256": "dc01efb69a3429d1deae73490f57c535ea05bb5f6509f16613fce3dd9613ac6a",
+      "model_content_sha256": "c983271937b0108d3bcc0daeaabb2d3489d72e82f53243e02eada1a9c2b0144a",
+      "source_revisions": [
+        "DeepEP-Ascend@3b25377d04b24fc6154698ded78a2bcb2c59afff",
+        "DeepJIT-gitlink@65f513952b8771408a19202f65e36398522db6db"
+      ],
+      "required_changes": [],
+      "unresolved": [],
+      "verified": [
+        "重新对照两完整源码、TokenLayout、EPWorkspaceLayout、HcommJetty/barrier",
+        "全部region/transfer/path地址、Rank owner、byte/element长度与source evidence逐项核对",
+        "SymmetricMemory aclrtMalloc/memset/shared_ptr最终释放；Context/HCCLContext注册与映射",
+        "实际buffer fresh layout门禁、end_offset、2MiB对齐、hint形状假设和UB两个峰值",
+        "远端SGE直接x+紧凑metadata、固定SQ槽/NOP/末WRITE标志、advance仅UB/ring发布GM",
+        "count就绪不等payload；drain后消费；Host闭包保活x/metadata/context至drain排队",
+        "recv_src_metadata allocated Nrecv_alloc与used nrecv；fresh/cached专家raw-end与padding",
+        "L2显式hint、无显式L1 scratch、URMA控制内存不当payload或UB scratch",
+        "最终合并memory字段与上次PASS版本完全一致"
+      ],
+      "prior_model_content_sha256": "c983271937b0108d3bcc0daeaabb2d3489d72e82f53243e02eada1a9c2b0144a"
+    }
+  }
+}
