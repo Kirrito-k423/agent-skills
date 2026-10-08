@@ -1,0 +1,4 @@
+interface:
+  display_name: "简化技术英语"
+  short_description: "按简化技术英语原则改写说明和指令，保留事实、条件与不确定性"
+  default_prompt: "使用 $asd-ste100 改写这段英文技术说明，保留全部事实、条件和不确定性。"
