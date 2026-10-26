@@ -1,0 +1,4 @@
+interface:
+  display_name: "汇报润色师"
+  short_description: "把昇腾人工智能基础设施实验与草稿整理为面向技术管理者的汇报，并审阅已有报告"
+  default_prompt: "使用 $ascend-infra-report-polisher，把我提供的过去 24 小时实验数据、日志和草稿整理为日常技术汇报。"
