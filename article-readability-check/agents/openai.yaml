@@ -1,4 +1,4 @@
 interface:
   display_name: "文章可读性验证器"
-  short_description: "面向不耐烦的入门读者，压缩调试流水账，保留核心理念、实验发现与实际效果"
-  default_prompt: "使用 $article-readability-check 检查这篇文章是否适合想快速理解理念和效果的入门读者，指出最影响阅读的问题，并给出简短的改写建议。"
+  short_description: "面向目标读者，先检查整体框架与因果完整性，再精简冗余，保留必要机制与证据"
+  default_prompt: "使用 $article-readability-check 按目标读者审阅这篇文章：先检查整体框架、基本运行过程和因果桥梁是否完整，再检查冗余。保留用户认可的解释，指出最影响理解的问题，给出补桥、重排或精简建议，不以更短代替更懂。"
