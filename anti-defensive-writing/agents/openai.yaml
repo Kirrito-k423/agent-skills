@@ -1,0 +1,4 @@
+interface:
+  display_name: "去防御性写作"
+  short_description: "删除免责式铺垫、重复边界与自我削弱，让技术汇报和文章直接表达成果与判断"
+  default_prompt: "使用 $anti-defensive-writing 改写这份汇报，先讲成果和判断，用具体条件表达适用范围，删除重复免责句，直接交付成稿。"

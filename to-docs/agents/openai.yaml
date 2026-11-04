@@ -1,4 +1,4 @@
 interface:
   display_name: "会话转博客文档"
   short_description: "将当前会话保真整理为整体框架清楚、推理完整并保留真实作者声音的中文 Hugo 博客"
-  default_prompt: "使用 $to-docs 将当前会话整理成中文 Hugo 博客，先建立整体框架，再用具体例子讲完整机制与推理；保留用户认可的解释和真实作者声音，标题概括技术主题，不把全文写成逐条答疑。完成四层自检后，安排独立子代理使用 $article-readability-check 审核最终全文，默认以 Dev 内容发布到 main；通过不自动公开。"
+  default_prompt: "使用 $to-docs 将当前会话整理成中文 Hugo 博客，先建立整体框架，再用具体例子讲完整机制与推理；保留用户认可的解释和真实作者声音，标题概括技术主题，不把全文写成逐条答疑。使用 $anti-defensive-writing 删除免责式铺垫与重复边界，直接表达观点。完成四层自检后，安排独立子代理使用 $article-readability-check 审核最终全文，默认以 Dev 内容发布到 main；通过不自动公开。"
