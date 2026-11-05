@@ -1,0 +1,211 @@
+{
+  "version": 1,
+  "units": [
+    {
+      "id": "language.plain",
+      "revision": 1,
+      "kind": "preference",
+      "styles": [
+        "technical-project",
+        "insight-analysis"
+      ],
+      "when": {},
+      "rule": {
+        "guidance": "标题和正文用大白话；术语用准确含义，不硬凑抽象口号。"
+      },
+      "provenance": [
+        {
+          "kind": "user-preference",
+          "source": "本地PPT技能迭代中的用户明确要求"
+        }
+      ]
+    },
+    {
+      "id": "layout.compact",
+      "revision": 1,
+      "kind": "layout",
+      "styles": [
+        "technical-project",
+        "insight-analysis"
+      ],
+      "when": {},
+      "rule": {
+        "guidance": "减少大块无意义留白；先放大有效图表、调列宽和合并相关页，不用小字或装饰填充。"
+      },
+      "provenance": [
+        {
+          "kind": "user-preference",
+          "source": "本地PPT技能迭代中的用户明确要求"
+        }
+      ]
+    },
+    {
+      "id": "notes.provenance",
+      "revision": 1,
+      "kind": "content",
+      "styles": [
+        "technical-project",
+        "insight-analysis"
+      ],
+      "when": {},
+      "rule": {
+        "guidance": "来源和制作批注只放隐藏元数据/PPT备注；影响技术判断的条件放正文。"
+      },
+      "provenance": [
+        {
+          "kind": "user-preference",
+          "source": "本地PPT技能迭代中的用户明确要求"
+        }
+      ]
+    },
+    {
+      "id": "diagram.fidelity",
+      "revision": 1,
+      "kind": "diagram",
+      "styles": [
+        "technical-project",
+        "insight-analysis"
+      ],
+      "when": {},
+      "rule": {
+        "guidance": "保持主干、分支、回路、缓存及总览和放大关系；文字黑灰红、低饱和填充，图形不局限于方框。"
+      },
+      "provenance": [
+        {
+          "kind": "user-preference",
+          "source": "本地PPT技能迭代中的用户明确要求"
+        }
+      ]
+    },
+    {
+      "id": "chart.simple",
+      "revision": 1,
+      "kind": "preference",
+      "styles": [
+        "technical-project",
+        "insight-analysis"
+      ],
+      "when": {},
+      "rule": {
+        "guidance": "根据问题选图，优先简单曲线、柱状图、对比表；复杂统计图不是正文默认。"
+      },
+      "provenance": [
+        {
+          "kind": "user-preference",
+          "source": "本地PPT技能迭代中的用户明确要求"
+        }
+      ]
+    },
+    {
+      "id": "insight.conclusion",
+      "revision": 3,
+      "kind": "layout",
+      "styles": [
+        "insight-analysis"
+      ],
+      "when": {},
+      "rule": {
+        "guidance": "洞察先理解材料的核心变化、实现路径和资源约束，再形成结论与页面；每个内容页保留红色分析结论栏，封面和目录只承担标识与导航。概览提炼关键结构与变化，机制解释影响和代价，性能依据同口径结果定位瓶颈，部署写清P/D组合、规模、条件与占用。允许有依据的判断、优先级和取舍，不只摘抄参数或写“需关注、待验证”。事实、推断、建议有对应证据；不把容量可行写成性能最优。人工修正要追溯理解错误与遗漏条件，形成适用范围明确的经验。详见references/insight-conclusions.md。"
+      },
+      "provenance": [
+        {
+          "kind": "user-preference",
+          "source": "用户要求：深入理解材料后形成有实际信息的结论，持续吸收人工修正"
+        }
+      ]
+    },
+    {
+      "id": "project.summary",
+      "revision": 1,
+      "kind": "layout",
+      "styles": [
+        "technical-project"
+      ],
+      "when": {},
+      "rule": {
+        "guidance": "单专题写挑战+目标或目标+进展；组合页用专题目标、节点、布局和各专题总进展。"
+      },
+      "provenance": [
+        {
+          "kind": "user-preference",
+          "source": "本地PPT技能迭代中的用户明确要求"
+        }
+      ]
+    },
+    {
+      "id": "hardware.scenarios",
+      "revision": 2,
+      "kind": "content",
+      "styles": [
+        "insight-analysis"
+      ],
+      "when": {},
+      "rule": {
+        "guidance": "涉及昇腾的模型洞察按references/ascend-deployment-analysis.md分别建立A3/A5场景：核对物理卡、die、rank和节点映射，分清原生/部署精度；同口径列权重、各类Cache、PP最重stage及已计运行时开销。给出具体P/D组合、规模、请求条件和容量起点，并从结构变化解释通信与扩展限制。不同状态按各自规则分片，P/D交接列完整持久状态。基准小计与含系统开销的总量分列，不擅自补OS/HCCL值或根据账面余量保证并发。可复用pd-state-transfer组件；硬件数字、精度和支持状态由本次依据确定。"
+      },
+      "provenance": [
+        {
+          "kind": "user-preference",
+          "source": "用户确认结论与分平台部署分析的表达方式，要求推广通用规则且不上传材料"
+        }
+      ]
+    },
+    {
+      "id": "project.source-images",
+      "revision": 2,
+      "kind": "diagram",
+      "styles": [
+        "technical-project"
+      ],
+      "when": {},
+      "rule": {
+        "guidance": "技术项目优先复用匹配版本的文档、论文和用户原图，核对模型、特性、拓扑及支持范围；区分当前文档引用、历史资产与算法示意，不把旧图参数当现行配置。原图保留比例与颜色、来源入备注，新文字黑灰红。按密度选择原图配短对照表与进展、原图配实现核验表、或通栏原图；复用source-figure-layouts局部组件，不固定页数。没有合适图的状态依赖、配置条件与验收项用表格讲清实际影响和下一步。HTML可本地放大，正文仍须可读。区分代码存在、已有测试和本轮实测。完整报告、原图和私有证据不进入核心包。详见references/technical-project-style.md。"
+      },
+      "provenance": [
+        {
+          "kind": "user-preference",
+          "source": "用户确认原图复用与图表搭配，要求推广通用经验且不上传报告、原图。"
+        }
+      ]
+    },
+    {
+      "id": "analysis.model-feature",
+      "revision": 1,
+      "kind": "content",
+      "styles": [
+        "technical-project",
+        "insight-analysis"
+      ],
+      "when": {},
+      "rule": {
+        "guidance": "模型洞察与涉及模型特性的技术项目共用数据和分析底稿：先确定模型/版本、特性及场景，理解相关层型、模块、缓存和状态，再沿匹配版本的运行代码核对特性作用、约束和结果。用户基准优先，缺失部分按需从官方模型资料、分析工具和vLLM/vLLM-Ascend补充，不强制跑全部工具。事实、估算、源码支持和实测分清；同一特性更换模型或场景后重查受影响部分。两种风格引用同一份事实与结果，分别组织为变化/影响或目标/方案/进展；非模型项目直接用项目材料。详见references/source-acquisition.md。"
+      },
+      "provenance": [
+        {
+          "kind": "user-preference",
+          "source": "用户要求把模型结构与特性分析的数据来源作为两种风格的公共部分。"
+        }
+      ]
+    },
+    {
+      "id": "paper.structure",
+      "revision": 1,
+      "kind": "layout",
+      "styles": [
+        "insight-analysis"
+      ],
+      "when": {
+        "report_kind": "paper-analysis"
+      },
+      "rule": {
+        "guidance": "论文分析报告按references/paper-analysis-report.md制作。用paper_report.assemble组装PDCP风格封面、各章高亮完整目录及正文：先核心创新，再按创新点讲设计与机制，实验结果收尾。目录包含核心创新，目录在对应内容之前，每章可有多页；正文标题不加模块编号。封面标题为论文题目加论文分析报告，本地背景和参考原件不打包。内容页保留具体结论和图文证据，导航页不套结论栏。"
+      },
+      "provenance": [
+        {
+          "kind": "user-preference",
+          "source": "用户确认论文汇报的封面、目录与章节组织，要求沉淀通用组件。"
+        }
+      ]
+    }
+  ]
+}

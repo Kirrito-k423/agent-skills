@@ -1,0 +1,4 @@
+interface:
+  display_name: "华为技术汇报"
+  short_description: "使用黑灰红技术项目版式，生成含封面、目录和可编辑图表的完整汇报"
+  default_prompt: "使用 $huawei-html-ppt 制作技术汇报，默认包含独立封面、目录和正文。"
