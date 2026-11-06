@@ -1,4 +1,4 @@
 interface:
   display_name: "华为技术汇报"
-  short_description: "使用黑灰红技术项目版式，按章展示目录并将已讲章节置灰，保留可编辑图表"
-  default_prompt: "使用 $huawei-html-ppt 制作技术汇报，包含独立封面，每个一级章节前展示完整目录，当前章标红、已讲章节变灰。"
+  short_description: "复用华为模板背景封面和 Thanks 页，补齐作者日期，按章导航并保留可编辑图表"
+  default_prompt: "使用 $huawei-html-ppt 制作技术汇报，复用默认模板的背景封面与 Thanks 页，填入作者和版本日期；每章前展示完整目录，当前章标红、已讲章节变灰。"

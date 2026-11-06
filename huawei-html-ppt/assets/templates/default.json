@@ -1,0 +1,10 @@
+{
+  "file": "huawei-light-16-9.pptx",
+  "sha256": "c6f6cc8245ebec463396f1b35fe2700c34dc85edfd2836509cdbdd7e23f00127",
+  "cover_slide": 1,
+  "closing_slide": 5,
+  "author": "谭邵杰 t00906153",
+  "date_policy": "封面填写版本日期。优先使用用户指定日期，否则使用宿主当前日期；实验时点在正文另行标注。",
+  "source": "用户上传的 PPT模板-浅色版16-9.pptx",
+  "authorization": "用户明确要求将背景封面、作者日期与 Thanks 页复用更新到 Skill 并推送远端。"
+}
