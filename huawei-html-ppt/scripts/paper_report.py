@@ -119,9 +119,10 @@ def render_frontmatter(slide, deck, number, logo):
         css = 'paper-cover'
     else:
         rows = []
+        active_index = next(i for i, chapter in enumerate(deck['chapters'], 1) if chapter['id'] == slide['active_chapter'])
         for i, chapter in enumerate(deck['chapters'], 1):
             current = chapter['id'] == slide['active_chapter']
-            attrs = ' class="current" aria-current="step"' if current else ''
+            attrs = ' class="current" aria-current="step"' if current else ' class="completed"' if i < active_index else ''
             rows.append(f'<li{attrs}><span class="chapter-number">{i}.</span><span>{escape(chapter["title"])}</span></li>')
         body = f'<h1>{title}</h1><div class="agenda-rule"></div><ol class="chapter-list">{"".join(rows)}</ol>'
         css = 'paper-agenda'

@@ -44,7 +44,9 @@ class CompleteReportTests(unittest.TestCase):
         chapters = [{'title': '机制', 'start_content': 1, 'end_content': 2},
                     {'title': '验证', 'start_content': 3, 'end_content': 10}]
         deck = report_frontmatter.assemble(sample(count=10), {'chapters': chapters})
-        self.assertEqual(deck['slides'][1]['chapters'][-1]['end_page'], 12)
+        self.assertEqual(deck['slides'][1]['chapters'][-1]['end_page'], 13)
+        self.assertEqual(len(deck['slides']), 13)
+        self.assertEqual(deck['slides'][4]['active_chapter'], 2)
         self.assertFalse(report_frontmatter.validate_structure(deck))
         for bad in [chapters[:1], [dict(chapters[0], start_content=2), chapters[1]],
                     [chapters[0], dict(chapters[1], end_content=11)]]:
@@ -52,6 +54,31 @@ class CompleteReportTests(unittest.TestCase):
                 report_frontmatter.assemble(sample(count=10), {'chapters': bad})
         with self.assertRaises(ValueError):
             report_frontmatter.assemble(sample(count=10))
+
+    def test_chapter_navigation_states_and_ranges(self):
+        chapters = [{'title': '机制', 'start_content': 1, 'end_content': 2},
+                    {'title': '验证', 'start_content': 3, 'end_content': 4},
+                    {'title': '计划', 'start_content': 5, 'end_content': 5}]
+        for style in ['technical-project', 'insight-analysis']:
+            deck = report_frontmatter.assemble(sample(style, 5), {'chapters': chapters})
+            agendas = [(i+1, s) for i, s in enumerate(deck['slides']) if s.get('role') == 'agenda']
+            self.assertEqual([i for i, s in agendas], [2, 5, 8])
+            self.assertEqual([s['active_chapter'] for i, s in agendas], [1, 2, 3])
+            self.assertEqual([(c['start_page'], c['end_page']) for c in agendas[0][1]['chapters']], [(3, 4), (6, 7), (9, 9)])
+            self.assertFalse(report_frontmatter.validate_structure(deck))
+            rendered = report_frontmatter.render_frontmatter(agendas[1][1], deck, 5, '')
+            self.assertEqual(rendered.count('agenda-completed'), 1)
+            self.assertEqual(rendered.count('agenda-current'), 1)
+            self.assertEqual(rendered.count('agenda-upcoming'), 1)
+            corrupted = copy.deepcopy(deck)
+            corrupted['slides'][4]['active_chapter'] = 1
+            self.assertTrue(report_frontmatter.validate_structure(corrupted))
+            corrupted = copy.deepcopy(deck)
+            corrupted['slides'][4]['chapters'][0]['end_page'] = 99
+            self.assertTrue(report_frontmatter.validate_structure(corrupted))
+        one_agenda = report_frontmatter.assemble(sample(count=5), {'chapters': chapters, 'repeat_agenda': False})
+        self.assertEqual(len(one_agenda['slides']), 7)
+        self.assertFalse(report_frontmatter.validate_structure(one_agenda))
 
     def test_render_and_escape(self):
         with tempfile.TemporaryDirectory() as tmp:

@@ -10,3 +10,6 @@
 .report-chapters li{display:grid;grid-template-columns:74px 1fr 130px;align-items:center;min-height:62px;gap:20px;margin:0;padding:0}
 .agenda-number{font-size:28px;font-weight:700;color:#c00000}.agenda-title{font-size:28px;color:#333}.agenda-pages{font-size:20px;color:#777;text-align:right}
 .report-chapters:has(li:nth-child(6)){gap:12px}.report-chapters:has(li:nth-child(6)) li{min-height:44px}.report-chapters:has(li:nth-child(6)) .agenda-title{font-size:24px}
+.agenda-completed .agenda-number,.agenda-completed .agenda-title,.agenda-completed .agenda-pages{color:#aaa}
+.agenda-current .agenda-number,.agenda-current .agenda-title,.agenda-current .agenda-pages{color:#c00000;font-weight:700}
+.agenda-upcoming .agenda-number,.agenda-upcoming .agenda-title{color:#333}

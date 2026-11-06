@@ -99,7 +99,9 @@ def plan(request, units=None):
     active = [u for u in units if applicable(u, result['style'], context)]
     catalog = read(ROOT / 'assets/units/catalog.json')
     return {'route': result, 'report_kind': report_kind,
-            'complete_report': {'default': True, 'order': ['cover', 'agenda', 'content'],
+            'complete_report': {'default': True, 'order': ['cover', 'chapter-agenda', 'chapter-content'],
+                                'repeat_agenda_with_explicit_chapters': True,
+                                'agenda_states': {'current': '#C00000', 'completed': '#AAAAAA', 'upcoming': '#333333'},
                                 'reference': 'references/complete-report.md'},
             'report_reference': 'references/paper-analysis-report.md' if report_kind else None,
             'units': active,

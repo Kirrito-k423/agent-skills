@@ -13,5 +13,6 @@
 .paper-agenda .chapter-list{position:absolute;left:120px;top:190px;width:1080px;margin:0;padding:0;list-style:none}
 .paper-agenda .chapter-list li{display:flex;align-items:baseline;gap:12px;min-height:54px;margin:0;padding:0;font-size:30px;line-height:1.45;font-weight:400;color:#1d1d1a}
 .paper-agenda .chapter-list li.current{font-size:39px;color:#c00000}
+.paper-agenda .chapter-list li.completed{color:#aaa}
 .paper-agenda .chapter-number{flex:0 0 40px;text-align:left}
 .paper-cover footer,.paper-agenda footer{left:40px;right:40px;bottom:18px;z-index:1}
