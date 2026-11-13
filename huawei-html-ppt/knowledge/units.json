@@ -79,14 +79,25 @@
     },
     {
       "id": "conclusion.ribbon",
-      "revision": 1,
+      "revision": 2,
       "kind": "layout",
       "styles": ["technical-project", "insight-analysis"],
       "when": {},
       "rule": {
-        "guidance": "正文页使用分析结论时，标签为整块品牌红矩形并居中显示白色‘分析结论’，右侧紧接等高浅灰内容区；PPTX 使用可编辑原生形状。封面和目录不使用结论栏。"
+        "guidance": "正文页使用分析结论时，标签为品牌红正方形，边长等于右侧浅灰结论区高度；白字分‘分析’‘结论’两行各两字居中。PPTX 使用可编辑原生形状。封面和目录不使用结论栏。"
       },
       "provenance": [{"kind": "user-preference", "source": "用户要求沿用参考 PPT 的红底白字结论标签。"}]
+    },
+    {
+      "id": "experiment.figure-config",
+      "revision": 1,
+      "kind": "content",
+      "styles": ["technical-project", "insight-analysis"],
+      "when": {},
+      "rule": {
+        "guidance": "实测图表旁用投影可读的原生文字标注模型、设备型号与数量、推理并行和每卡 HBM 的 KV 配置，并补充影响比较的关键条件。区分自动可用预算与固定容量，缺失信息标待核对；多实验和参考图各自对应其配置。"
+      },
+      "provenance": [{"kind": "user-preference", "source": "用户要求在实验图旁清楚标注模型、设备、并行及单卡 KV HBM 配置。"}]
     },
     {
       "id": "chart.simple",
@@ -120,14 +131,14 @@
     },
     {
       "id": "insight.conclusion",
-      "revision": 4,
+      "revision": 5,
       "kind": "layout",
       "styles": [
         "insight-analysis"
       ],
       "when": {},
       "rule": {
-        "guidance": "洞察先理解材料的核心变化、实现路径和资源约束，再形成结论与页面；内容页的分析结论使用红底白字矩形标签，右侧紧接等高浅灰结论块，PPTX 采用原生可编辑形状；封面和目录只承担标识与导航。概览提炼结构，机制解释影响，性能依据同口径结果定位瓶颈。事实、推断和建议各有依据，去除重复免责声明但保留影响判断的必要条件。"
+        "guidance": "洞察先理解材料的核心变化、实现路径和资源约束，再形成结论与页面；内容页的分析结论使用红底白字正方形标签，‘分析’‘结论’分两行居中，右侧紧接等高浅灰结论块，PPTX 采用原生可编辑形状；封面和目录只承担标识与导航。概览提炼结构，机制解释影响，性能依据同口径结果定位瓶颈。事实、推断和建议各有依据，去除重复免责声明但保留影响判断的必要条件。"
       },
       "provenance": [
         {

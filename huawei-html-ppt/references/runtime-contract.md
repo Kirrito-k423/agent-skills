@@ -33,6 +33,8 @@ deck 格式沿用 `title, style, slides[]`。slides 支持共享两分支布局�
 完整汇报用 `frontmatter.chapters` 声明一级章节及正文范围，默认在每章前重复完整目录。`frontmatter.repeat_agenda: false` 显式保留单次总目录。目录页的 `active_chapter` 从 1 开始；当前章红色、已讲章节灰色、后续章节深灰。交付页码包含封面和每次目录，校验同时检查章节切换位置与各次页码一致性。未提供章节的短稿保持一次逐页总目录。
 
 共享内容页：`title, layout, panels[]`；洞察内容页还要 `conclusion`。单专题项目页默认用 `labels:[挑战,目标]` 或 `[目标,进展]` 及两段 `summary`。特性实现分析可显式设置 `header_mode: "conclusion"`，改用 `conclusion` 字符串或非空字符串数组，渲染为可多段的分析结论；此模式不再要求 `summary`。默认模式为 `paired`，其他值报错。多段结论仍需按实际显示尺寸检查溢出。
+
+普通内容页可设置 `experiment_config`，包括非空字符串 `model`、`hardware`、`parallel`、`kv_hbm` 和可选非空 `scope`；缺失数据明确写“未记录/待核对”。HTML 将其渲染为图表附近的可见文字；PPTX 制作时也须以原生文本明确展示。`scope` 用于区分多图或外部参考图，`kv_hbm` 应写明每卡容量、自动预算或固定配置。来源与完整日志可放备注，但判断所需配置必须可见。封面、目录及正式项目组合布局不支持此字段。静态验证不替代对配置与图片对应关系、文本可读性的人工核验。
 slide 可选 `panel_widths`，用正数指定各栏相对宽度；图像可选 `height`（40–600，逻辑像素），等比适配，便于图表让出合适空间。
 
 panel 为 `title, blocks[]`；block 支持 text、heading、bullets、table、diagram、chart、image。

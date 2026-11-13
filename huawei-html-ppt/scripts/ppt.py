@@ -222,6 +222,15 @@ def validate(deck):
         if layout not in catalog or catalog[layout]['style'] != style:
             errors.append(prefix + 'layout does not match style'); continue
         if not s.get('title'): errors.append(prefix + 'missing title')
+        if 'experiment_config' in s:
+            cfg=s['experiment_config']
+            keys=('model','hardware','parallel','kv_hbm')
+            if not isinstance(cfg,dict) or any(not isinstance(cfg.get(k),str) or not cfg[k].strip() for k in keys):
+                errors.append(prefix + 'experiment_config requires nonempty model, hardware, parallel and kv_hbm strings')
+            elif 'scope' in cfg and (not isinstance(cfg['scope'],str) or not cfg['scope'].strip()):
+                errors.append(prefix + 'experiment_config scope must be a nonempty string')
+            if layout in paper_report.LAYOUTS or layout in report_frontmatter.LAYOUTS or catalog[layout].get('class') == 'project-report':
+                errors.append(prefix + 'experiment_config is supported on content layouts only')
         if layout in paper_report.LAYOUTS or layout in report_frontmatter.LAYOUTS:
             continue
         formal = catalog[layout].get('class') == 'project-report'

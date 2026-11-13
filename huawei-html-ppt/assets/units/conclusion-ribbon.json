@@ -1,6 +1,6 @@
 {
   "id": "conclusion-ribbon",
-  "revision": 1,
+  "revision": 2,
   "kind": "fragment",
   "styles": [
     "insight-analysis"
@@ -34,7 +34,7 @@
         "type": "rect",
         "x": 0,
         "y": 10,
-        "w": 110,
+        "w": 64,
         "h": 64,
         "fill": "#C00000",
         "stroke": "#C00000",
@@ -42,16 +42,17 @@
       },
       {
         "type": "text",
-        "x": 14,
-        "y": 48,
-        "text": "分析结论",
-        "fs": 20,
+        "x": 32,
+        "y": 36,
+        "text": "分析\n结论",
+        "anchor": "middle",
+        "fs": 18,
         "color": "#FFFFFF",
         "bold": true
       },
       {
         "type": "text",
-        "x": 128,
+        "x": 82,
         "y": 48,
         "text": "关键判断；写清适用条件。",
         "fs": 16,

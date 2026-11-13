@@ -154,14 +154,20 @@ def render(spec,outdir,asset_root=ROOT):
             lines=s.get('conclusion')
             lines=lines if isinstance(lines,list) else [lines]
             assert lines and all(isinstance(v,str) and v.strip() for v in lines)
-            top='<aside class="feature-conclusion" aria-label="分析结论"><strong>分析结论</strong><div>'+''.join(f'<p>{E(v).replace(chr(10),"<br>")}</p>' for v in lines)+'</div></aside>'
+            top='<aside class="feature-conclusion" aria-label="分析结论"><strong><span>分析</span><span>结论</span></strong><div>'+''.join(f'<p>{E(v).replace(chr(10),"<br>")}</p>' for v in lines)+'</div></aside>'
         elif style=='technical-project':
             labels=s.get('labels',lay['header']);assert labels in [['挑战','目标'],['目标','进展']]
             assert len(s.get('summary',[]))==2
             top='<div class="summary">'+''.join(f'<div class="pair"><strong>{E(l)}</strong><p>{E(v)}</p></div>' for l,v in zip(labels,s['summary']))+'</div>'
         else:
             assert s.get('conclusion')
-            top=f'<aside class="insight-conclusion" aria-label="分析结论"><strong class="conclusion-label">分析结论</strong><p>{E(s["conclusion"])}</p></aside>'
+            top=f'<aside class="insight-conclusion" aria-label="分析结论"><strong class="conclusion-label"><span>分析</span><span>结论</span></strong><p>{E(s["conclusion"])}</p></aside>'
+        cfg=s.get('experiment_config')
+        config=''
+        if cfg:
+            scope=E(cfg.get('scope','实验配置'))
+            fields=(('模型', 'model'),('设备', 'hardware'),('并行', 'parallel'),('KV HBM', 'kv_hbm'))
+            config='<div class="experiment-config" aria-label="实验配置"><strong>'+scope+'：</strong>'+''.join(f'<span>{label}：{E(cfg[key])}</span>' for label,key in fields)+'</div>'
         panels=[]
         for k,p in enumerate(s['panels'],1):
             body=''
@@ -185,8 +191,8 @@ def render(spec,outdir,asset_root=ROOT):
             panels.append(f'<section class="frame {E(p.get("class",""))}{image_class}"><h2>{E(p["title"])}</h2>{body}</section>')
         widths=s.get('panel_widths')
         grid_style=(' style="grid-template-columns:'+ ' '.join(f'{float(w):g}fr' for w in widths)+'"') if widths else ''
-        page_class=' feature-analysis-page' if feature_conclusion else ''
-        pages.append(f'<article class="slide {style}{page_class}" data-slide="{n}" data-layout="{s["layout"]}"><span class="eyebrow">{E(spec.get("chapter",catalog["styles"][style]["name"]))}</span><h1>{E(s["title"])}</h1><div class="head-rule"></div>{top}<div class="body-grid {lay["class"]}"{grid_style}>{"".join(panels)}</div><footer><span>{n:02d} / {len(spec["slides"]):02d}　 Huawei Confidential</span><img alt="HUAWEI" src="data:image/png;base64,{logo}"></footer></article>')
+        page_class=(' feature-analysis-page' if feature_conclusion else '')+(' has-experiment-config' if config else '')
+        pages.append(f'<article class="slide {style}{page_class}" data-slide="{n}" data-layout="{s["layout"]}"><span class="eyebrow">{E(spec.get("chapter",catalog["styles"][style]["name"]))}</span><h1>{E(s["title"])}</h1><div class="head-rule"></div>{top}{config}<div class="body-grid {lay["class"]}"{grid_style}>{"".join(panels)}</div><footer><span>{n:02d} / {len(spec["slides"]):02d}　 Huawei Confidential</span><img alt="HUAWEI" src="data:image/png;base64,{logo}"></footer></article>')
     metadata=json.dumps(spec,ensure_ascii=False).replace('</','<\\/')
     doc=f'<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>{E(spec["title"])}</title><style>{styles}</style></head><body><main class="deck">{"".join(pages)}</main><script type="application/json" id="deck-model">{metadata}</script><script>{viewer}</script></body></html>'
     output=outdir/(spec['title']+'.html');output.write_text(doc,encoding='utf-8');(outdir/'deck-model.json').write_text(json.dumps(spec,ensure_ascii=False,indent=2),encoding='utf-8')
