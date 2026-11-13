@@ -146,8 +146,69 @@ def diagrams(slide):
         if 'diagram' in t: yield t['diagram']
 
 
+def validate_source_draft(deck):
+    """核对宿主声明的原稿逐页映射；语义和视觉仍由人工检查。"""
+    draft = deck.get('source_draft')
+    if draft is None:
+        return []
+    if not isinstance(draft, dict):
+        return ['source_draft 必须是对象']
+    count = draft.get('slide_count')
+    preserve = draft.get('preserve_pages')
+    if type(count) is not int or count < 1 or type(preserve) is not bool:
+        return ['source_draft 必须提供正整数 slide_count 和布尔值 preserve_pages']
+    slides = deck.get('slides', [])
+    total = len(slides) + (1 if deck.get('closing') else 0)
+    errors = []
+    if preserve:
+        if total < count:
+            errors.append('最终页数少于原稿页数')
+        mapping = draft.get('page_map')
+        if not isinstance(mapping, list) or any(not isinstance(item, dict) for item in mapping):
+            errors.append('逐页映射 page_map 必须是对象列表')
+        else:
+            sources = [item.get('source_page') for item in mapping]
+            outputs = [item.get('output_page') for item in mapping]
+            if len(sources) != count or any(type(n) is not int for n in sources) or set(sources) != set(range(1, count + 1)):
+                errors.append('逐页映射必须恰好覆盖原稿全部页码')
+            if any(type(n) is not int or not 1 <= n <= total for n in outputs) or len(set(outputs)) != len(outputs):
+                errors.append('保留原稿页时，每页必须映射到不同的有效交付页')
+
+    figures = draft.get('required_figures', [])
+    identifiers = draft.get('required_identifiers', [])
+    if not isinstance(figures, list) or any(not isinstance(item, str) or not item for item in figures):
+        errors.append('required_figures 必须是非空文件名的列表')
+        figures = []
+    if not isinstance(identifiers, list) or any(not isinstance(item, str) or not item for item in identifiers):
+        errors.append('required_identifiers 必须是非空文本的列表')
+        identifiers = []
+
+    def image_names(value):
+        if isinstance(value, dict):
+            if value.get('type') == 'image' and isinstance(value.get('path'), str):
+                yield Path(value['path']).name
+            for key, child in value.items():
+                if key != 'notes':
+                    yield from image_names(child)
+        elif isinstance(value, list):
+            for child in value:
+                yield from image_names(child)
+
+    found = set(image_names(slides))
+    for name in figures:
+        if Path(name).name not in found:
+            errors.append('缺少必须展示的原图：' + name)
+    visible = json.dumps([{k: v for k, v in slide.items() if k in
+                           ('title', 'conclusion', 'summary', 'panels', 'topics', 'rows')}
+                          for slide in slides], ensure_ascii=False)
+    for identifier in identifiers:
+        if identifier not in visible:
+            errors.append('缺少必须展示的问题编号：' + identifier)
+    return errors
+
+
 def validate(deck):
-    errors, warnings = paper_report.validate_structure(deck) + report_frontmatter.validate_structure(deck), []
+    errors, warnings = paper_report.validate_structure(deck) + report_frontmatter.validate_structure(deck) + validate_source_draft(deck), []
     title = deck.get('title', '')
     if not title or title.strip() in ('.', '..') or re.search(r'[\\/:*?"<>|\x00-\x1f]', title):
         errors.append('title must be a safe nonempty filename')

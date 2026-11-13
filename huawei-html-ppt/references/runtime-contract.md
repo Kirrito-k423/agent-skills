@@ -28,6 +28,8 @@ context 是字符串键值，例如 `{hardware:"ascend", scenario:"long-context"
 
 deck 格式沿用 `title, style, slides[]`。slides 支持共享两分支布局和四种正式项目布局，可在同一项目报告混用。显式 deck.style/用户style冲突时报错，不静默改风格。单个slide已指定layout时保留；未指定时按page_kind和有效规则选择。
 
+整理已有 PPT 草稿时，可在 deck 设置 `source_draft`：`slide_count` 为原稿页数，`preserve_pages: true` 要求最终交付页数不少于原稿，`page_map` 为每个原页 `{source_page, output_page}` 的一对一交付映射；封面和目录计入 output_page，若 deck 有 `closing` 则结束页计入最终页数。可用 `required_figures` 列出必须展示的本地图文件名，用 `required_identifiers` 列出必须显示的问题编号。校验检查覆盖、映射、页数和元素存在；人工仍须逐页核验原图是否清晰、问题是否完整、含义是否保真。非草稿任务无需提供该对象。
+
 完整汇报用 `frontmatter.chapters` 声明一级章节及正文范围，默认在每章前重复完整目录。`frontmatter.repeat_agenda: false` 显式保留单次总目录。目录页的 `active_chapter` 从 1 开始；当前章红色、已讲章节灰色、后续章节深灰。交付页码包含封面和每次目录，校验同时检查章节切换位置与各次页码一致性。未提供章节的短稿保持一次逐页总目录。
 
 共享内容页：`title, layout, panels[]`；洞察内容页还要 `conclusion`。单专题项目页默认用 `labels:[挑战,目标]` 或 `[目标,进展]` 及两段 `summary`。特性实现分析可显式设置 `header_mode: "conclusion"`，改用 `conclusion` 字符串或非空字符串数组，渲染为可多段的分析结论；此模式不再要求 `summary`。默认模式为 `paired`，其他值报错。多段结论仍需按实际显示尺寸检查溢出。
@@ -36,7 +38,7 @@ slide 可选 `panel_widths`，用正数指定各栏相对宽度；图像可选 `
 panel 为 `title, blocks[]`；block 支持 text、heading、bullets、table、diagram、chart、image。
 chart 为 `{type:"chart",data:{kind:"line"|"bar", x_label,y_label, x:[...], series:[{name,values:[...]}]}}`，最多3组、数据长度一致。不虚构缺失数据。
 diagram 为已确认的 width/height/elements 格式，输出 SVG 与可编辑draw.io。
-image 为 `{type:"image",path:"本地绝对路径",alt:"图的内容",source:{url:"原文地址",revision:"commit或论文版本",figure:"文件路径或图号"}}`。source 必须记录真实来源，可以按资料补充页码或改动说明。支持 PNG/JPEG/GIF/WebP，其他格式先在本地导出；HTML 原字节嵌入，保留校验摘要、等比例完整显示，不联网取图。建议原图独占一个 panel，解释放旁栏；图片中的来源不另行转写为可见页脚。
+image 为 `{type:"image",path:"本地绝对路径",alt:"图的内容",source:{url:"原文地址",revision:"commit或论文版本",figure:"文件路径或图号"}}`。source 必须记录真实来源，可以按资料补充页码或改动说明。支持 PNG/JPEG/GIF/WebP，其他格式先在本地导出；HTML 原字节嵌入，保留校验摘要，不联网取图。可给 PNG 添加 `crop:{left,top,right,bottom}`，四项为各边裁掉的 0–1 比例；HTML 显示裁切局部，点击仍可放大原图，PPT 原生图片使用同一裁切参数。裁切不得丢失支撑判断的图例或条件，条件可在页面补充，来源与裁切范围写备注。建议原图独占一个 panel，解释放旁栏；图片中的来源不另行转写为可见页脚。
 组合页每个 topic 在 `diagram` 与 `image` 中选一个，image 字段同上但不需 type。原图不受新绘图的组件重放校验，不输出伪造的 SVG/draw.io；来源保留在隐藏 deck-model。局部放大或新增覆盖标注由宿主准备，记录处理依据并视觉核验。
 
 技术项目原图页可用 `page_kind:"figure-overview"|"figure-evidence"|"figure-full"` 自动选择对应的 `project-figure-*` 布局；显式 layout 优先。前两种需要两个 panel，通栏需要一个 panel，均须含 image。局部组件说明见 `assets/units/source-figure-layouts.json`：概览页左 panel 用 `class:"source-with-table"`、右 panel 用 `class:"project-progress-text"`；图表核验页右 panel 可用 `class:"project-evidence-detail"`。这些类只调局部间距和字号，不带报告内容。

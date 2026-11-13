@@ -52,10 +52,12 @@ class PartImporter:
         self.mapping = {}
         ct = E.fromstring(source['[Content_Types].xml'])
         self.overrides = {e.get('PartName').lstrip('/'): e.get('ContentType') for e in ct if e.tag.endswith('Override')}
-        existing = {e.get('Extension') for e in content_types if e.tag.endswith('Default')}
+        # OPC 扩展名按大小写无关匹配；合并不同模板时不能把 jpg / JPG 当成两种默认类型。
+        existing = {e.get('Extension', '').lower() for e in content_types if e.tag.endswith('Default')}
         for e in ct:
-            if e.tag.endswith('Default') and e.get('Extension') not in existing:
-                content_types.append(copy.deepcopy(e)); existing.add(e.get('Extension'))
+            extension = e.get('Extension', '').lower()
+            if e.tag.endswith('Default') and extension not in existing:
+                content_types.append(copy.deepcopy(e)); existing.add(extension)
 
     def copy(self, part):
         if part in self.mapping:
@@ -129,7 +131,8 @@ def fill_cover(value, title, author, date, department=None):
     return xml(root)
 
 def apply_bookends(input_path, template_path, output_path, title, author, date,
-                   department=None, replacements=None, cover_slide=1, closing_slide=None):
+                   department=None, replacements=None, cover_slide=1, closing_slide=None,
+                   preserve_replacement_layouts=None):
     output_path = Path(output_path)
     if output_path.exists():
         raise ValueError('输出文件已存在，请使用新路径')
@@ -182,6 +185,9 @@ def apply_bookends(input_path, template_path, output_path, title, author, date,
         base[closing], base[layout_part] = xml(closing_root), xml(layout_root)
     base[cover] = fill_cover(base[cover], title, author, date, department)
     by_id[slide_list[0].get('{'+NS['r']+'}id')].set('Target', '/' + cover)
+    preserve_replacement_layouts = set(preserve_replacement_layouts or [])
+    if not preserve_replacement_layouts <= set(replacements or {}):
+        raise ValueError('保留源布局的页码必须对应正文替换页')
     for number, file_path in (replacements or {}).items():
         if not 1 < number <= len(slide_list):
             raise ValueError('正文替换页码越界')
@@ -198,6 +204,12 @@ def apply_bookends(input_path, template_path, output_path, title, author, date,
         for relation in source_relations:
             kind = relation.get('Type', '')
             if kind.endswith('/slideLayout'):
+                if number in preserve_replacement_layouts:
+                    destination = imported.copy(resolve(source_part, relation.get('Target')))
+                    target_layout = next((r for r in target_relations if r.get('Type', '').endswith('/slideLayout')), None)
+                    if target_layout is None:
+                        raise ValueError('正文替换页缺少布局引用')
+                    target_layout.set('Target', '/' + destination)
                 continue
             if kind.endswith('/notesSlide'):
                 destination_note = next((r for r in target_relations if r.get('Type', '').endswith('/notesSlide')), None)
@@ -303,11 +315,13 @@ def main():
     parser.add_argument('--date', required=True, help='宿主提供的版本日期，不替代实验时点')
     parser.add_argument('--department', help='用户明确提供时填写部门')
     parser.add_argument('--replace-slide', action='append', default=[], help='可选正文替换，格式为页码=单页原生PPTX')
+    parser.add_argument('--preserve-replacement-layout', action='append', type=int, default=[], help='替换时保留指定页的原始布局、母版与主题')
     args = parser.parse_args()
     replacements = {int(v.split('=', 1)[0]): v.split('=', 1)[1] for v in args.replace_slide}
     result = apply_bookends(args.input, args.template or ROOT/'assets/templates'/defaults['file'], args.output,
                             args.title, args.author, args.date, args.department, replacements,
-                            defaults['cover_slide'], defaults['closing_slide'] if not args.template else None)
+                            defaults['cover_slide'], defaults['closing_slide'] if not args.template else None,
+                            args.preserve_replacement_layout)
     print(json.dumps(result, ensure_ascii=False, indent=2))
 
 if __name__ == '__main__':

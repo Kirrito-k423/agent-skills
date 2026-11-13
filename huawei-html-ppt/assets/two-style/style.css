@@ -7,7 +7,7 @@
 
 /* Insight pages retain an explicit conclusion panel, independent of the title. */
 .insight-conclusion{display:flex;align-items:stretch;margin-top:15px;height:66px;background:var(--panel);color:var(--ink)}
-.insight-conclusion .conclusion-label{display:flex;align-items:center;justify-content:center;flex:0 0 104px;background:var(--brand);color:#fff;font-size:19px;letter-spacing:1px;padding:8px}
+.insight-conclusion .conclusion-label{display:flex;align-items:center;justify-content:center;flex:0 0 140px;background:var(--brand);color:#fff;font-size:20px;letter-spacing:1px;padding:8px}
 .insight-conclusion p{align-self:center;margin:0;padding:6px 15px;font-size:18px;line-height:1.5;font-weight:500}
 .insight-analysis .body-grid{height:478px;margin-top:23px}
 
@@ -22,7 +22,7 @@
 
 /* Feature implementation analysis can lead with several conclusion paragraphs. */
 .feature-conclusion{display:flex;margin-top:15px;height:132px;background:var(--panel);color:var(--ink)}
-.feature-conclusion>strong{display:flex;align-items:center;justify-content:center;flex:0 0 104px;background:var(--brand);color:#fff;font-size:19px;letter-spacing:1px;padding:8px}
+.feature-conclusion>strong{display:flex;align-items:center;justify-content:center;flex:0 0 140px;background:var(--brand);color:#fff;font-size:20px;letter-spacing:1px;padding:8px}
 .feature-conclusion>div{align-self:center;padding:6px 15px;min-width:0}
 .feature-conclusion p{margin:3px 0;font-size:18px;line-height:1.45;font-weight:500}
 .technical-project.feature-analysis-page .body-grid{height:418px;margin-top:23px}

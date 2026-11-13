@@ -11,6 +11,38 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 import pptx_template_bookends as bookends
 
 class TemplateBookendTests(unittest.TestCase):
+    def test_content_type_extensions_ignore_case(self):
+        template = bookends.read_package(bookends.ROOT/'assets/templates/huawei-light-16-9.pptx')
+        root = E.fromstring(template['[Content_Types].xml'])
+        E.SubElement(root, '{'+bookends.NS['ct']+'}Default', Extension='JPG', ContentType='image/.jpg')
+        template['[Content_Types].xml'] = bookends.xml(root)
+        output_types = E.fromstring(bookends.read_package(bookends.ROOT/'assets/templates/huawei-light-16-9.pptx')['[Content_Types].xml'])
+        if not any(e.get('Extension', '').lower() == 'jpg' for e in output_types if e.tag.endswith('Default')):
+            E.SubElement(output_types, '{'+bookends.NS['ct']+'}Default', Extension='jpg', ContentType='image/jpeg')
+        bookends.PartImporter(template, {}, output_types, 'ppt/test')
+        defaults = [e.get('Extension', '').lower() for e in output_types if e.tag.endswith('Default')]
+        self.assertEqual(len(defaults), len(set(defaults)))
+
+    def test_replacement_can_preserve_source_theme(self):
+        template = bookends.ROOT/'assets/templates/huawei-light-16-9.pptx'
+        original = bookends.read_package(template)
+        second = bookends.ordered_slides(original)[1]
+        before = E.fromstring(original[bookends.rel_name(second)])
+        old_target = next(r.get('Target') for r in before if r.get('Type', '').endswith('/slideLayout'))
+        with tempfile.TemporaryDirectory() as folder:
+            output = Path(folder)/'with-source-theme.pptx'
+            bookends.apply_bookends(template, template, output, '题目', '作者', '2026-01-01',
+                                    replacements={2: template}, preserve_replacement_layouts=[2])
+            result = bookends.read_package(output)
+            second = bookends.ordered_slides(result)[1]
+            after = E.fromstring(result[bookends.rel_name(second)])
+            target = next(r.get('Target') for r in after if r.get('Type', '').endswith('/slideLayout'))
+            self.assertNotEqual(target, old_target)
+            self.assertIn(bookends.resolve(second, target), result)
+            with self.assertRaisesRegex(ValueError, '必须对应正文替换页'):
+                bookends.apply_bookends(template, template, Path(folder)/'invalid.pptx', '题目', '作者',
+                                        '2026-01-01', replacements={2: template}, preserve_replacement_layouts=[3])
+
     def test_replacement_keeps_target_layout(self):
         template = bookends.ROOT/'assets/templates/huawei-light-16-9.pptx'
         fragment = bookends.read_package(template)

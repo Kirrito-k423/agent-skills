@@ -10,6 +10,18 @@ from diagram_components import Diagram
 from diagram_audit import audit
 
 class ComponentTests(unittest.TestCase):
+    def test_load_pressure_has_queue_and_recompute_paths(self):
+        d=Diagram('Synthetic load pressure',1120,340)
+        p=d.use('load-pressure-flow','load',0,0,1120,340)
+        labels=' '.join(e.get('text','') for e in d.data['elements'] if e['type']=='text')
+        self.assertIn('并发轨迹数',labels)
+        self.assertIn('重算可能增加',labels)
+        d.contract('mechanism',paths=[[p['traces'],p['inflight'],p['queue']],
+                                      [p['inflight'],p['kv'],p['pool'],p['miss'],p['recompute'],p['rate'],p['runtime']]])
+        self.assertTrue(audit(d.data,True)['ok'])
+        d.data['graph']['edges']=[e for e in d.data['graph']['edges'] if e['target']!='load.recompute']
+        self.assertFalse(audit(d.data,True)['ok'])
+
     def moe(self):
         d=Diagram('Synthetic MoE')
         p=d.use('moe-routing','m',10,30,800,230,hidden=2048,intermediate=1024,experts=32,top_k=2,shared=1)

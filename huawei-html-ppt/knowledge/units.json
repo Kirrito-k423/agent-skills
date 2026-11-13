@@ -3,7 +3,7 @@
   "units": [
     {
       "id": "language.plain",
-      "revision": 1,
+      "revision": 2,
       "kind": "preference",
       "styles": [
         "technical-project",
@@ -11,7 +11,7 @@
       ],
       "when": {},
       "rule": {
-        "guidance": "标题和正文用大白话；术语用准确含义，不硬凑抽象口号。"
+        "guidance": "标题和结论先说结果及依据，采用 anti-defensive-writing：删除重复免责、自我贬低和叠加保留词；保留影响结论的条件、真实不确定性和不利结果。使用准确术语，不硬凑抽象口号。"
       },
       "provenance": [
         {
@@ -60,7 +60,7 @@
     },
     {
       "id": "diagram.fidelity",
-      "revision": 1,
+      "revision": 2,
       "kind": "diagram",
       "styles": [
         "technical-project",
@@ -68,7 +68,7 @@
       ],
       "when": {},
       "rule": {
-        "guidance": "保持主干、分支、回路、缓存及总览和放大关系；文字黑灰红、低饱和填充，图形不局限于方框。"
+        "guidance": "保持主干、分支、回路、缓存及总览和放大关系；新绘图的标题、节点、边注、图例和坐标轴默认用中文，保留必要技术缩写；原图可保留原有语言。文字黑灰红、低饱和填充，图形不局限于方框。"
       },
       "provenance": [
         {
@@ -78,8 +78,19 @@
       ]
     },
     {
-      "id": "chart.simple",
+      "id": "conclusion.ribbon",
       "revision": 1,
+      "kind": "layout",
+      "styles": ["technical-project", "insight-analysis"],
+      "when": {},
+      "rule": {
+        "guidance": "正文页使用分析结论时，标签为整块品牌红矩形并居中显示白色‘分析结论’，右侧紧接等高浅灰内容区；PPTX 使用可编辑原生形状。封面和目录不使用结论栏。"
+      },
+      "provenance": [{"kind": "user-preference", "source": "用户要求沿用参考 PPT 的红底白字结论标签。"}]
+    },
+    {
+      "id": "chart.simple",
+      "revision": 3,
       "kind": "preference",
       "styles": [
         "technical-project",
@@ -87,7 +98,7 @@
       ],
       "when": {},
       "rule": {
-        "guidance": "根据问题选图，优先简单曲线、柱状图、对比表；复杂统计图不是正文默认。"
+        "guidance": "图表须直接回答本页问题：目标图、关键趋势和机制优先用相关原图或重绘图；精确的逐档数值可用可编辑表格。纯文字或表格截图、信息量低或与标题结论无关的图片，提取有效事实、数值、单位及条件后用原生文字或表格呈现，不为用图而用图。"
       },
       "provenance": [
         {
@@ -97,15 +108,26 @@
       ]
     },
     {
+      "id": "draft.preservation",
+      "revision": 2,
+      "kind": "content",
+      "styles": ["technical-project", "insight-analysis"],
+      "when": {},
+      "rule": {
+        "guidance": "整理用户提供的 PPT 草稿时先建立逐页映射，默认保留每页及其独立信息、问题和推导，新稿总页数不少于原稿；用户明确要求删页或合并时按指定范围执行，将相关有效事实、数据、单位和条件整合进其他页面。目标图与能回答页面问题的关键曲线实际展示，纯文字截图或不相关图片转为原生内容。保留待确认项，使用 source_draft 和人工语义、视觉核验。"
+      },
+      "provenance": [{"kind": "user-preference", "source": "用户要求整理草稿时保留原稿页数、问题链与关键图，未知项可以在 PPT 中保留提问。"}]
+    },
+    {
       "id": "insight.conclusion",
-      "revision": 3,
+      "revision": 4,
       "kind": "layout",
       "styles": [
         "insight-analysis"
       ],
       "when": {},
       "rule": {
-        "guidance": "洞察先理解材料的核心变化、实现路径和资源约束，再形成结论与页面；每个内容页保留红色分析结论栏，封面和目录只承担标识与导航。概览提炼关键结构与变化，机制解释影响和代价，性能依据同口径结果定位瓶颈，部署写清P/D组合、规模、条件与占用。允许有依据的判断、优先级和取舍，不只摘抄参数或写“需关注、待验证”。事实、推断、建议有对应证据；不把容量可行写成性能最优。人工修正要追溯理解错误与遗漏条件，形成适用范围明确的经验。详见references/insight-conclusions.md。"
+        "guidance": "洞察先理解材料的核心变化、实现路径和资源约束，再形成结论与页面；内容页的分析结论使用红底白字矩形标签，右侧紧接等高浅灰结论块，PPTX 采用原生可编辑形状；封面和目录只承担标识与导航。概览提炼结构，机制解释影响，性能依据同口径结果定位瓶颈。事实、推断和建议各有依据，去除重复免责声明但保留影响判断的必要条件。"
       },
       "provenance": [
         {
@@ -152,14 +174,14 @@
     },
     {
       "id": "project.source-images",
-      "revision": 2,
+      "revision": 4,
       "kind": "diagram",
       "styles": [
         "technical-project"
       ],
       "when": {},
       "rule": {
-        "guidance": "技术项目优先复用匹配版本的文档、论文和用户原图，核对模型、特性、拓扑及支持范围；区分当前文档引用、历史资产与算法示意，不把旧图参数当现行配置。原图保留比例与颜色、来源入备注，新文字黑灰红。按密度选择原图配短对照表与进展、原图配实现核验表、或通栏原图；复用source-figure-layouts局部组件，不固定页数。没有合适图的状态依赖、配置条件与验收项用表格讲清实际影响和下一步。HTML可本地放大，正文仍须可读。区分代码存在、已有测试和本轮实测。完整报告、原图和私有证据不进入核心包。详见references/technical-project-style.md。"
+        "guidance": "技术项目先判断图片能否直接解释当前结论：复现目标图与相关关键曲线优先展示；信息量低、文字截图或与页面不相关的图片，提取信息为原生文字或表格。原图保持比例及内容，来源与裁切范围写备注；新增图内标题、图例、轴和节点默认中文，技术缩写保留。完整报告和私有证据不进入核心包。详见references/technical-project-style.md。"
       },
       "provenance": [
         {

@@ -305,6 +305,32 @@ def pd_state_transfer(d,i,p):
     if p.get('note'):d.text(440,254,p['note'],15,color=GRAY,anchor='middle')
 
 
+def load_pressure_flow(d,i,p):
+    """多轨迹、缓存压力与采集耗时的条件性推导。"""
+    k=lambda s:i+'.'+s
+    specs=[
+        ('traces',15,18,190,62,'并发轨迹数 ↑','input',BLUE),
+        ('inflight',285,18,200,62,'在途请求数 ↑','compute',WHITE),
+        ('queue',555,18,200,62,'排队可能增加','outcome',FILL),
+        ('kv',285,138,200,62,'活跃 KV 与\n复用需求 ↑','compute',BLUE),
+        ('pool',555,138,200,62,'有限 KV 池\n容量压力 ↑','capacity',PALE),
+        ('miss',840,138,250,62,'驱逐 / 缺失\n可能增加','compute',PALE),
+        ('recompute',840,258,250,62,'重算可能增加','compute',PALE),
+        ('rate',555,258,200,62,'服务耗时 ↑\nQPS 可能下降','outcome',WHITE),
+        ('runtime',285,258,200,62,'相同工作量\n采集耗时 ↑','output',FILL),
+    ]
+    for name,x,y,w,h,label,role,fill in specs:
+        d.node(k(name),x,y,w,h,label,role,fill=fill,red=name in ('pool','miss','recompute'),fs=20)
+    for source,target,sp,tp in [
+        ('traces','inflight','e','w'),('inflight','queue','e','w'),
+        ('inflight','kv','s','n'),('kv','pool','e','w'),('pool','miss','e','w'),
+        ('miss','recompute','s','n'),('recompute','rate','w','e'),('rate','runtime','w','e'),
+    ]:
+        d.connect(k(source),k(target),sp,tp,kind='conditional' if target in ('miss','recompute','rate') else 'data',
+                  red=target in ('miss','recompute'))
+
+
 BUILDERS={'moe-routing':moe,'model-backbone':backbone,'version-locator':locator,
           'mhc-mixer':mhc,'recurrent-state':recurrent,'pooled-sparse-attention':sparse,
-          'comparison-table':comparison,'memory-budget':budget,'pd-state-transfer':pd_state_transfer}
+          'comparison-table':comparison,'memory-budget':budget,'pd-state-transfer':pd_state_transfer,
+          'load-pressure-flow':load_pressure_flow}

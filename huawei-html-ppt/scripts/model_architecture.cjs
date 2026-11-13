@@ -99,13 +99,7 @@ function nodeSVG(n){const line=n.selected?C.red:C.line;let shape='';
  if(n.shape==='experts')shape+=textSVG(n.x+n.w/2,n.y+n.h+22,n.label,17,C.ink);
  return `<g data-node="${esc(n.id)}" ${n.module?`data-module="${esc(n.module)}" tabindex="0" role="button" aria-label="${esc(n.label)}"`:''}>${shape}</g>`;
 }
-function assertEnglishLabels(scene){
- const labels=[scene.title,...scene.nodes.flatMap(n=>[n.label,n.sub]),...scene.frames.map(f=>f.label),...scene.labels.map(l=>l.text)];
- const invalid=labels.filter(v=>v&&/\p{Script=Han}/u.test(String(v)));
- if(invalid.length)throw Error('Translate Chinese diagram labels before export: '+invalid.join(' | '));
-}
 function svg(scene){
- assertEnglishLabels(scene);
  let out=`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${scene.width} ${scene.height}" width="${scene.width}" height="${scene.height}" role="img" aria-label="${esc(scene.title)}"><defs><marker id="arch-arrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto-start-reverse"><path d="M0 0 L8 4 L0 8 Z" fill="${C.muted}"/></marker><marker id="arch-red-arrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto-start-reverse"><path d="M0 0 L8 4 L0 8 Z" fill="${C.red}"/></marker></defs><style>text{font-family:Arial,'Microsoft YaHei',sans-serif}g[data-module]{cursor:pointer}g[data-module]:focus{outline:none}g[data-module]:hover>rect{stroke:#C00000;stroke-width:2}</style><rect width="100%" height="100%" fill="white"/>`;
  for(const f of scene.frames){out+=`<rect x="${f.x}" y="${f.y}" width="${f.w}" height="${f.h}" rx="6" fill="${f.fill||C.white}" stroke="${f.accent?C.red:'#BCC5CD'}" ${f.dash?'stroke-dasharray="6 5"':''}/>`;if(f.label)out+=textSVG(f.x+18,f.y+29,f.label,20,f.accent?C.red:C.ink,'start',true);}
  for(const e of scene.edges){const pts=scene.path(e);out+=`<polyline data-edge="${e.id}" data-source="${esc(e.source)}" data-target="${esc(e.target)}" points="${pts.map(p=>p.join(',')).join(' ')}" fill="none" stroke="${e.red?C.red:C.muted}" stroke-width="${e.role==='focus'?1.9:1.35}" stroke-linejoin="round" ${['control','zoom'].includes(e.role)?'stroke-dasharray="5 4"':''} marker-end="url(#${e.red?'arch-red-arrow':'arch-arrow'})"/>`;}
@@ -225,7 +219,7 @@ function compare(a,b,options={}){
  s.frame('after',650,499,824,340,b.name+' · '+bMod.label,{fill:'#FBFCFD',accent:true});moduleGraph(s,bMod,'after',{x:667,y:553,w:790,h:260},options);
  s.text(652,882,b.change_note||'Only explicitly defined module changes are shown.',{fs:18,color:C.red});return s;
 }
-function drawio(s){assertEnglishLabels(s);let cells='<mxCell id="0"/><mxCell id="1" parent="0"/>';
+function drawio(s){let cells='<mxCell id="0"/><mxCell id="1" parent="0"/>';
  for(const f of s.frames)cells+=`<mxCell id="frame-${esc(f.id)}" value="${esc(f.label)}" style="rounded=1;absoluteArcSize=1;arcSize=12;fillColor=${f.fill||C.white};strokeColor=${f.accent?C.red:C.line};dashed=${f.dash?1:0};verticalAlign=top;align=left;spacingLeft=14;fontSize=20;fontFamily=Microsoft YaHei;" vertex="1" parent="1"><mxGeometry x="${f.x}" y="${f.y}" width="${f.w}" height="${f.h}" as="geometry"/></mxCell>`;
  for(const n of s.nodes){
   if(['tensor','experts'].includes(n.shape)){
@@ -244,7 +238,6 @@ function drawio(s){assertEnglishLabels(s);let cells='<mxCell id="0"/><mxCell id=
 function audit(s){
  const errors=[];for(const n of s.nodes){if(n.x<0||n.y<0||n.x+n.w>s.width+1||n.y+n.h>s.height+1)errors.push('Node outside canvas: '+n.id);}
  for(const e of s.edges){const ps=s.path(e);for(let i=1;i<ps.length;i++)if(ps[i][0]!==ps[i-1][0]&&ps[i][1]!==ps[i-1][1])errors.push('Diagonal edge: '+e.id);}
- try{assertEnglishLabels(s);}catch(e){errors.push(e.message);}
  return{ok:!errors.length,errors,node_count:s.nodes.length,edge_count:s.edges.length,orthogonal:true,visual_review_required:true};
 }
 return{validate,render,compare,svg,drawio,Scene,colors:C,clone,moduleGraph,backbone,orthogonalPath,audit};
