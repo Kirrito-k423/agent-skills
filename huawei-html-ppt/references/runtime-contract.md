@@ -4,6 +4,7 @@
 
 ```text
 python scripts/ppt.py route request.json
+python scripts/ppt.py inspect-draft 原稿.pptx
 python scripts/ppt.py plan request.json
 python scripts/ppt.py render request.json output-dir
 python scripts/ppt.py validate deck-model.json
@@ -28,7 +29,11 @@ context 是字符串键值，例如 `{hardware:"ascend", scenario:"long-context"
 
 deck 格式沿用 `title, style, slides[]`。slides 支持共享两分支布局和四种正式项目布局，可在同一项目报告混用。显式 deck.style/用户style冲突时报错，不静默改风格。单个slide已指定layout时保留；未指定时按page_kind和有效规则选择。
 
-整理已有 PPT 草稿时，可在 deck 设置 `source_draft`：`slide_count` 为原稿页数，`preserve_pages: true` 要求最终交付页数不少于原稿，`page_map` 为每个原页 `{source_page, output_page}` 的一对一交付映射；封面和目录计入 output_page，若 deck 有 `closing` 则结束页计入最终页数。可用 `required_figures` 列出必须展示的本地图文件名，用 `required_identifiers` 列出必须显示的问题编号。校验检查覆盖、映射、页数和元素存在；人工仍须逐页核验原图是否清晰、问题是否完整、含义是否保真。非草稿任务无需提供该对象。
+整理 PPTX 前运行 `inspect-draft`。它按演示文稿的顺序读取每张幻灯片根元素的 `show` 属性，输出原稿物理总页数 `slide_count`、原始页码列表 `visible_pages` 和 `hidden_pages`。缺省或为真表示可见。空白页、母版上才有内容的页同样按这个标记判定。
+
+将 `slide_count` 和 `hidden_pages` 填入 deck 的 `source_draft`。`hidden_pages` 省略时视为空列表，兼容旧稿。`preserve_pages: true` 要求每个可见原页分别以 `{source_page, output_page}` 映射到不同的交付页，且总页数至少等于可见页数。例如五页原稿隐藏第 2、4 页，`page_map` 的原页码就是 1、3、5。全部隐藏时报告可见页为零。用户明确要求展示部分隐藏页时，仅从排除列表移出其指定的页码，并记录该选择。封面、目录及 `closing` 结束页计入交付页码。
+
+用 `required_figures` 和 `required_identifiers` 可分别声明需展示的图和问题编号，默认只从可见页提取。静态校验检查页数、映射和元素覆盖，逐页复核图表清晰度、问题和含义。非草稿任务可省略 `source_draft`。
 
 完整汇报用 `frontmatter.chapters` 声明一级章节及正文范围，默认在每章前重复完整目录。`frontmatter.repeat_agenda: false` 显式保留单次总目录。目录页的 `active_chapter` 从 1 开始；当前章红色、已讲章节灰色、后续章节深灰。交付页码包含封面和每次目录，校验同时检查章节切换位置与各次页码一致性。未提供章节的短稿保持一次逐页总目录。
 

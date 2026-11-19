@@ -120,14 +120,14 @@
     },
     {
       "id": "draft.preservation",
-      "revision": 2,
+      "revision": 3,
       "kind": "content",
       "styles": ["technical-project", "insight-analysis"],
       "when": {},
       "rule": {
-        "guidance": "整理用户提供的 PPT 草稿时先建立逐页映射，默认保留每页及其独立信息、问题和推导，新稿总页数不少于原稿；用户明确要求删页或合并时按指定范围执行，将相关有效事实、数据、单位和条件整合进其他页面。目标图与能回答页面问题的关键曲线实际展示，纯文字截图或不相关图片转为原生内容。保留待确认项，使用 source_draft 和人工语义、视觉核验。"
+        "guidance": "整理 PPTX 草稿先用 inspect-draft 读取原页序和隐藏标记。默认跳过隐藏页及其专属图文，页数下限为可见页数。每张可见页用原页码映射到独立的交付页，保留问题、推导、关键曲线、数据、单位及条件。要求页数不变时按可见页一一对应。用户明确要求纳入隐藏页或精简可见页时按指定范围处理。纯文字截图转为原生内容，使用 source_draft 和人工语义、视觉核验。"
       },
-      "provenance": [{"kind": "user-preference", "source": "用户要求整理草稿时保留原稿页数、问题链与关键图，未知项可以在 PPT 中保留提问。"}]
+      "provenance": [{"kind": "user-preference", "source": "用户要求逐页保留草稿的可见页、问题链与关键图，默认跳过隐藏页。"}]
     },
     {
       "id": "insight.conclusion",

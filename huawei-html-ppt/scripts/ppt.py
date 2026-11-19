@@ -10,6 +10,8 @@ import os
 import re
 import sys
 import uuid
+import zipfile
+import xml.etree.ElementTree as ET
 
 sys.dont_write_bytecode = True
 ROOT = Path(__file__).resolve().parents[1]
@@ -19,6 +21,7 @@ import diagram_audit
 import source_images
 import paper_report
 import report_frontmatter
+from pptx_template_bookends import ordered_slides
 
 
 def read(path):
@@ -146,6 +149,24 @@ def diagrams(slide):
         if 'diagram' in t: yield t['diagram']
 
 
+def inspect_source_draft(path):
+    """按实际放映顺序列出原页码，只读取幻灯片 XML。"""
+    visible, hidden = [], []
+    with zipfile.ZipFile(path) as package:
+        index = {name: package.read(name) for name in
+                 ('ppt/presentation.xml', 'ppt/_rels/presentation.xml.rels')}
+        slides = ordered_slides(index)
+        for page, part in enumerate(slides, 1):
+            show = ET.fromstring(package.read(part)).get('show', '1')
+            if show in ('0', 'false'):
+                hidden.append(page)
+            elif show in ('1', 'true'):
+                visible.append(page)
+            else:
+                raise ValueError(f'原稿第 {page} 页的 show 属性无效：{show}')
+    return {'slide_count': len(slides), 'visible_pages': visible, 'hidden_pages': hidden}
+
+
 def validate_source_draft(deck):
     """核对宿主声明的原稿逐页映射；语义和视觉仍由人工检查。"""
     draft = deck.get('source_draft')
@@ -157,20 +178,27 @@ def validate_source_draft(deck):
     preserve = draft.get('preserve_pages')
     if type(count) is not int or count < 1 or type(preserve) is not bool:
         return ['source_draft 必须提供正整数 slide_count 和布尔值 preserve_pages']
+    hidden = draft.get('hidden_pages', [])
+    if (not isinstance(hidden, list) or
+            any(type(page) is not int or not 1 <= page <= count for page in hidden) or
+            len(set(hidden)) != len(hidden)):
+        return ['hidden_pages 必须是原稿范围内不重复的整数页码列表']
+    visible_pages = set(range(1, count + 1)).difference(hidden)
     slides = deck.get('slides', [])
     total = len(slides) + (1 if deck.get('closing') else 0)
     errors = []
     if preserve:
-        if total < count:
-            errors.append('最终页数少于原稿页数')
+        if total < len(visible_pages):
+            errors.append('最终页数少于原稿可见页数')
         mapping = draft.get('page_map')
         if not isinstance(mapping, list) or any(not isinstance(item, dict) for item in mapping):
             errors.append('逐页映射 page_map 必须是对象列表')
         else:
             sources = [item.get('source_page') for item in mapping]
             outputs = [item.get('output_page') for item in mapping]
-            if len(sources) != count or any(type(n) is not int for n in sources) or set(sources) != set(range(1, count + 1)):
-                errors.append('逐页映射必须恰好覆盖原稿全部页码')
+            if (len(sources) != len(visible_pages) or any(type(n) is not int for n in sources)
+                    or set(sources) != visible_pages):
+                errors.append('逐页映射必须恰好覆盖原稿可见页的全部页码')
             if any(type(n) is not int or not 1 <= n <= total for n in outputs) or len(set(outputs)) != len(outputs):
                 errors.append('保留原稿页时，每页必须映射到不同的有效交付页')
 
@@ -438,10 +466,15 @@ def rollback(req):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('operation', choices=['route', 'plan', 'render', 'validate', 'catalog', 'feedback', 'evaluate', 'review', 'promote', 'rollback'])
+    parser.add_argument('operation', choices=['route', 'inspect-draft', 'plan', 'render', 'validate', 'catalog', 'feedback', 'evaluate', 'review', 'promote', 'rollback'])
     parser.add_argument('input', nargs='?'); parser.add_argument('output', nargs='?')
     args = parser.parse_args()
     try:
+        if args.operation == 'inspect-draft':
+            if not args.input:
+                raise ValueError('inspect-draft 需要原稿 PPTX 路径')
+            print(json.dumps(inspect_source_draft(args.input), ensure_ascii=False, indent=2))
+            return 0
         req = read(args.input) if args.input else {}
         operations = {'route': route_request.from_request, 'plan': plan, 'validate': validate,
                       'feedback': feedback, 'evaluate': evaluate, 'review': review, 'promote': promote, 'rollback': rollback}
@@ -453,7 +486,7 @@ def main():
         print(json.dumps(result, ensure_ascii=False, indent=2))
         if args.operation == 'validate' and not result['ok']: return 1
         return 0
-    except (ValueError, KeyError, TypeError, OSError) as exc:
+    except (ValueError, KeyError, TypeError, OSError, ET.ParseError, zipfile.BadZipFile) as exc:
         print(json.dumps({'error': str(exc), 'operation': args.operation}, ensure_ascii=False))
         return 1
 

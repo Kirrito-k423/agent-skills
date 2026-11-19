@@ -43,7 +43,10 @@ def ordered_slides(parts):
     presentation = E.fromstring(parts['ppt/presentation.xml'])
     relationships = E.fromstring(parts['ppt/_rels/presentation.xml.rels'])
     mapping = {r.get('Id'): resolve('ppt/presentation.xml', r.get('Target')) for r in relationships}
-    return [mapping[s.get('{'+NS['r']+'}id')] for s in presentation.find('p:sldIdLst', NS)]
+    rel_id = '{'+NS['r']+'}id'
+    strict_rel_id = '{http://purl.oclc.org/ooxml/officeDocument/relationships}id'
+    return [mapping[s.get(rel_id) or s.get(strict_rel_id)]
+            for s in presentation.findall('{*}sldIdLst/{*}sldId')]
 
 class PartImporter:
     def __init__(self, source, output, content_types, prefix, skip_notes=False):
