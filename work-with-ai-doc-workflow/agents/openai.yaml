@@ -1,4 +1,4 @@
 interface:
   display_name: "AI 技术文档工作流"
   short_description: "调研并发布主线流畅、证据清楚、平易近人且有真实作者声音的中文 Hugo 技术文章"
-  default_prompt: "使用 $work-with-ai-doc-workflow 调研技术主题，沿读者问题链写成判断明确、有作者声音、来源可追溯的中文 Hugo 文章。论文图用本地截图随文展示，结合实验配置解释坐标、基线与读数。使用 $anti-defensive-writing 精简表达。完成四层自检后，安排独立子代理使用 $article-readability-check 审核最终全文，默认以 Dev 内容发布到 main。"
+  default_prompt: "使用 $work-with-ai-doc-workflow 调研技术主题，沿读者问题链写成有作者声音、来源可追溯的中文 Hugo 文章。论文精读先完整解释各项核心设计，再以本地截图结合实验配置解释坐标、基线与读数。使用 $anti-defensive-writing 精简表达。四层自检后由独立子代理使用 $article-readability-check 分别审核设计与实验的覆盖，默认以 Dev 内容发布到 main。"
